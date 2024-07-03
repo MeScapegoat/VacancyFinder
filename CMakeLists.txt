@@ -1,11 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 
+set(CMAKE_CXX_COMPILER "g++")
+
 project(LinkedInParser
         VERSION 1.0
-        DESCRIPTION "Nice search, linkedIn!"
         LANGUAGES CXX
         )
 
-add_executable(LinkedInParser source/main.cpp)
+message(STATUS "Using compiler: ${CMAKE_CXX_COMPILER}")
 
-target_include_directories(LinkedInParser PUBLIC source)
+add_executable(LinkedInParser source/main.cpp)

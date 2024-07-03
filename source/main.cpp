@@ -2,6 +2,8 @@
 
 int main()
 {
-    std::cout << "\n\nLinkedInParser\n\n";
+    int a, b;
+    std::cin >> a >> b;
+    std::cout << "\n" << a << " / " << b << " = " << a / b; 
     return 0;
 }
