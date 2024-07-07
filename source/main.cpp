@@ -1,9 +1,32 @@
 #include <iostream>
+#include <QCoreApplication>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QUrl>
+#include <QNetworkReply>
 
-int main()
+int main(int argc, char *argv[])
 {
-    int a, b;
-    std::cin >> a >> b;
-    std::cout << "\n" << a << " / " << b << " = " << a / b; 
-    return 0;
+    QCoreApplication app(argc, argv);
+    std::cout << "App started!\n";
+    QNetworkAccessManager networkManager;
+    QNetworkRequest request;
+    request.setUrl(QUrl("https://www.google.com/"));
+    QNetworkReply *reply = networkManager.get(request);
+    if (reply->isRunning())
+        std::cout << "reply is running\n";
+    else
+        std::cout << "reply is not running\n";
+        
+    if (reply->isFinished())
+        std::cout << "reply is finished\n";
+    else
+        std::cout << "reply is not finished\n";
+    while (reply->isRunning() && !reply->isFinished())
+    {
+        // std::cout << "?\n";
+    }
+    std::cout << "App finished!\n";
+
+    return app.exec();
 }
