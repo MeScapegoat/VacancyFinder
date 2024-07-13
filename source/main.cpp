@@ -1,32 +1,20 @@
+// std
 #include <iostream>
-#include <QCoreApplication>
-#include <QNetworkAccessManager>
-#include <QNetworkRequest>
-#include <QUrl>
-#include <QNetworkReply>
+#include <fstream>
+
+// Qt
+#include <QCoreApplication> // TODO swap to gui
+
+// custom
+#include <LinkedApp.h>
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication app(argc, argv);
+    QCoreApplication app(argc, argv); // TODO swap to gui
     std::cout << "App started!\n";
-    QNetworkAccessManager networkManager;
-    QNetworkRequest request;
-    request.setUrl(QUrl("https://www.google.com/"));
-    QNetworkReply *reply = networkManager.get(request);
-    if (reply->isRunning())
-        std::cout << "reply is running\n";
-    else
-        std::cout << "reply is not running\n";
-        
-    if (reply->isFinished())
-        std::cout << "reply is finished\n";
-    else
-        std::cout << "reply is not finished\n";
-    while (reply->isRunning() && !reply->isFinished())
-    {
-        // std::cout << "?\n";
-    }
+    LinkedApp linkedApp(&app);
+    linkedApp.sendRequest();
     std::cout << "App finished!\n";
-
+    app.quit();
     return app.exec();
 }

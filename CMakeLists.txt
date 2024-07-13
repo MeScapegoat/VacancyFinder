@@ -12,10 +12,19 @@ project(LinkedInParser
 
 find_package(Qt6 COMPONENTS Core Network REQUIRED)
 
-add_executable(LinkedInParser source/main.cpp)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+add_executable(LinkedInParser)
+
+target_sources(LinkedInParser 
+                PUBLIC source/main.cpp 
+                PUBLIC source/LinkedApp.cpp 
+                PUBLIC source/LinkedApp.h) # TODO change this
 
 target_link_libraries(LinkedInParser PRIVATE Qt6::Core Qt6::Network)
-
+target_include_directories(LinkedInParser PUBLIC source)
 message(STATUS "")
 message(STATUS "INFO:")
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
