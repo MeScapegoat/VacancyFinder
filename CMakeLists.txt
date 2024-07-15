@@ -8,8 +8,6 @@ project(LinkedInParser
         LANGUAGES CXX
         )
 
-
-
 find_package(Qt6 COMPONENTS Core Network REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
@@ -19,7 +17,9 @@ add_executable(LinkedInParser)
 target_sources(LinkedInParser 
                 PUBLIC source/main.cpp 
                 PUBLIC source/LinkedApp.cpp 
-                PUBLIC source/LinkedApp.h) # TODO change this
+                PUBLIC source/LinkedApp.h
+                PUBLIC source/LinkedVacancy.cpp
+                PUBLIC source/LinkedVacancy.h) # TODO change this
 
 target_link_libraries(LinkedInParser PRIVATE Qt6::Core Qt6::Network)
 target_include_directories(LinkedInParser PUBLIC source)

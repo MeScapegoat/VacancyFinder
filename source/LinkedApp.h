@@ -7,6 +7,9 @@
 #include <QUrl>
 #include <QNetworkReply>
 
+// custom
+#include "LinkedVacancy.h"
+
 class LinkedApp : public QObject
 {
     Q_OBJECT

@@ -8,7 +8,7 @@
 LinkedApp::LinkedApp(QObject *parent) : QObject(parent)
 {
     std::cout << "LinkedApp ctr\n";
-    QObject::connect(&networkManager, QNetworkAccessManager::finished, this, parseHTML);
+    QObject::connect(&networkManager, &QNetworkAccessManager::finished, this, &LinkedApp::parseHTML);
 }
 
 void LinkedApp::removeSpaces(QString &str)
@@ -31,11 +31,39 @@ void LinkedApp::removeSpaces(QString &str)
 
 void LinkedApp::sendRequest()
 {
-    std::cout << "sendRequest start\n";
-    request.setUrl(link.arg(vacancies.size()));
-    std::cout << "about to send request: " << request.url().toDisplayString().toStdString() << "\n";
-    networkManager.get(request);
-    std::cout << "sendRequest end\n";
+    std::cout << "sendRequest START\n";
+    QFile test("response.html");
+    QFile test2("output");
+    if (!test.open(QIODeviceBase::ReadOnly))
+    {
+        std::cout << " couldn't open file" << test2.fileName().toStdString();
+        return;
+    }
+    if (!test2.open(QIODeviceBase::WriteOnly))
+    {
+        std::cout << " couldn't open file" << test.fileName().toStdString();
+        return;
+    }
+    QTextStream test2Stream(&test2);
+    QString fileString = test.readAll();
+    fileString.remove("</li>");
+    removeSpaces(fileString);
+    auto data = fileString.split("<li>");
+    LinkedVacancy vacancy;
+    for (auto n = 1; n < data.size(); ++n)
+    {
+        vacancy.load(data[n]);
+        test2Stream << "!!! " << n << " !!!\n";
+        vacancy.print(test2Stream);
+        test2Stream << "\n";
+    }
+    test2.close();
+    std::cout << "sendRequest END\n";
+    // std::cout << "sendRequest start\n";
+    // request.setUrl(link.arg(vacancies.size()));
+    // std::cout << "about to send request: " << request.url().toDisplayString().toStdString() << "\n";
+    // networkManager.get(request);
+    // std::cout << "sendRequest end\n";
 }
 
 void LinkedApp::getVacancies()
