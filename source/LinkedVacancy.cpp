@@ -9,14 +9,14 @@ LinkedVacancy::LinkedVacancy(const QString &data)
 bool LinkedVacancy::load(QString data)
 {
     link = extract(data, "href=\"", ";");
-    std::cout << "link: " << link.toStdString() << "\n";
+    //std::cout << "link: " << link.toStdString() << "\n";
     data = data.mid(link.size() + data.indexOf(link));
 
     header = extract(data, "class=\"sr-only\">\n", "\n");
-    std::cout << "header: " << header.toStdString() << "\n";
+    //std::cout << "header: " << header.toStdString() << "\n";
     data = data.mid(header.size());
 
-    std::cout << "\n";
+    //std::cout << "\n";
     return true;
 }
 

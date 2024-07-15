@@ -15,7 +15,7 @@ public:
 private:
     QString extract(QString data, const QString& start, const QString& end);
 
-private:
+public:
     QString header;
     QString link;
     QString companyName;

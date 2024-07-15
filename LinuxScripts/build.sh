@@ -10,7 +10,6 @@ fi
 cmake --build build
 errorCode=$?
 if [[ $errorCode -ne 0 ]]; then
-    echo Error: Build failed.
     exit $errorCode
 fi
 echo Build successfully compeleted!
