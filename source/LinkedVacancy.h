@@ -10,18 +10,17 @@ public:
     LinkedVacancy(const QString &);
 
 public:
-    bool load(QString);
+    void load(QString);
     void print(QTextStream &);
 private:
     QString extract(QString data, const QString& start, const QString& end);
 
 public:
-    QString header;
+    QString title;
     QString link;
     QString companyName;
     QString companyLink;
     QString description;
     QString publishTime;
-    QString country;
-    QString city;
+    QString location;
 };
