@@ -12,12 +12,9 @@ public:
 public:
     void load(QString);
     void print(QTextStream &);
+    void clear();
 
-private:
-    QString extract(QString data, const QString &start, const QString &end);
-    QString loadDescription(const QString &);
-
-private:
+public:
     QString title;
     QString link;
     QString companyName;
@@ -25,4 +22,7 @@ private:
     QString description;
     QString publishTime;
     QString location;
+
+private:
+    QString extract(QString data, const QString &start, const QString &end);
 };

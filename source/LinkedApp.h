@@ -20,23 +20,34 @@ public:
     ~LinkedApp() = default;
 
 public:
-    void sendRequest();
-    void getVacancies(); // TODO return vector of vacancies
+    void sendSearchRequest(QString req = "C++", QString location = "Serbia");
+    void sendRequest(QString link);
+    const QList<LinkedVacancy>& getVacancies();
 
 public slots:
-    void parseHTML(QNetworkReply *reply); // TODO temporrary
+    void parseHTML(QNetworkReply *reply);
 
 private:
+    void parseTitle(QNetworkReply *reply);
+    void parseDescription(QNetworkReply *reply);
+
     void removeSpaces(QString &);
-    // consts
+
 private:
-    const QString link = "https://rs.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/c%2B%2B-developer-jobs?countryRedirected=1&position=1&pageNum=0&start=%1";
+    enum class RequestType
+    {
+        title,
+        description
+    };
 
 private:
     QNetworkAccessManager networkManager;
     QNetworkRequest request;
-    QList<LinkedVacancy> vacancies; // only names for now
-    QSet<QString> links;
-    QSet<QString> names;
-    bool vacanciesProcessed = false;
+    RequestType currrentRequestType;
+
+    QList<LinkedVacancy> vacancies; // no description for now
+    LinkedVacancy currentVacancy; // proccesing right now
+
+    QString lastLink;
+    QString titleLink = "https://rs.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/c%2B%2B-developer-jobs?countryRedirected=1&position=1&pageNum=0&start=%1";
 };

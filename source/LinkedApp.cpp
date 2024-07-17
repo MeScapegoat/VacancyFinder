@@ -30,7 +30,16 @@ void LinkedApp::removeSpaces(QString &str)
     }
 }
 
-void LinkedApp::sendRequest()
+void LinkedApp::sendSearchRequest(QString req, QString location)
+{
+    vacancies.clear();
+    // use req and location once, but for now just:
+    QString link = titleLink;
+    currrentRequestType = RequestType::title;
+    sendRequest(link.arg(vacancies.size()));
+}
+
+void LinkedApp::sendRequest(QString link)
 {
     // std::cout << "sendRequest START\n";
     // QFile test("response.html");
@@ -60,21 +69,16 @@ void LinkedApp::sendRequest()
     // }
     // test2.close();
     // std::cout << "sendRequest END\n";
-
-    if (vacanciesProcessed)
-    {
-        std::cout << "Finished!\n";
-        QCoreApplication::quit();
-        return;
-    }
+    lastLink = link;
     QThread::msleep(500);
     request.setUrl(link.arg(vacancies.size()));
-    std::cout << "about to send request: " << request.url().toDisplayString().toStdString() << "\n";
+    std::cout << "about to send " << (currrentRequestType == RequestType::title ? "title" : "description") << " request: " << request.url().toDisplayString().toStdString() << "\n";
     networkManager.get(request);
 }
 
-void LinkedApp::getVacancies()
+const QList<LinkedVacancy>& LinkedApp::getVacancies()
 {
+    return vacancies;
 }
 
 void LinkedApp::parseHTML(QNetworkReply *reply)
@@ -83,28 +87,59 @@ void LinkedApp::parseHTML(QNetworkReply *reply)
     if (errorState != QNetworkReply::NoError)
     {
         std::cout << "Reply error " << errorState << "\n";
-        sendRequest();
+        if (currrentRequestType == RequestType::title)
+            sendRequest(titleLink.arg(vacancies.size()));
+        else
+            sendRequest(lastLink.arg(vacancies.size()));
         return;
     }
-    QFile out(QString("response%1.html").arg(vacancies.size()));
+    if (currrentRequestType == RequestType::title)
+        parseTitle(reply);
+    else
+        parseDescription(reply);
+}
+
+void LinkedApp::parseTitle(QNetworkReply *reply)
+{
+    QFile out(QString("response_%1_title.html").arg(vacancies.size()));
     if (!out.open(QIODeviceBase::WriteOnly))
         std::cout << "couldn't open file\n";
     QTextStream outStream(&out);
+
     QString replyString = reply->readAll();
     replyString.remove("</li>");
     removeSpaces(replyString);
+
     outStream << replyString;
+    out.close();
+
     auto data = replyString.split("<li>");
     if (data.size() < 2)
-    {
-        vacanciesProcessed = true;
-        sendRequest();
         return;
-    }
+
     for (auto n = 1; n < data.size(); ++n)
     {
-        LinkedVacancy vacancy(data[n]);
-        vacancies << vacancy;
+        currentVacancy.load(data[n]);
+        currrentRequestType = RequestType::description;
+        sendRequest(currentVacancy.link);
+        vacancies << currentVacancy;
+        currentVacancy.clear();
     }
-    sendRequest();
+    currrentRequestType = RequestType::title;
+    sendRequest(titleLink.arg(vacancies.size()));
+}
+
+void LinkedApp::parseDescription(QNetworkReply *reply)
+{
+    QFile out(QString("response_%1_description.html").arg(vacancies.size()));
+    if (!out.open(QIODeviceBase::WriteOnly))
+        std::cout << "couldn't open file\n";
+    QTextStream outStream(&out);
+
+    // some actions maybe...
+    
+    QString replyString = reply->readAll();
+    outStream << replyString;
+    out.close();
+    currentVacancy.description = out.fileName();
 }

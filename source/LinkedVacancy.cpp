@@ -32,13 +32,6 @@ void LinkedVacancy::load(QString data)
 
     publishTime = extract(data, publishTimeStart, publishTimeEnd);
     data = data.mid(publishTime.size() + data.indexOf(publishTime));
-
-    description = loadDescription(link);
-}
-
-QString LinkedVacancy::loadDescription(const QString &link)
-{
-    return link;
 }
 
 void LinkedVacancy::print(QTextStream &stream)
@@ -68,4 +61,15 @@ QString LinkedVacancy::extract(QString data, const QString &start, const QString
     }
 
     return data.mid(0, secondIndex);
+}
+
+void LinkedVacancy::clear()
+{
+    title = QString();
+    link = QString();
+    companyName = QString();
+    companyLink = QString();
+    location = QString();
+    publishTime = QString();
+    description = QString();
 }
