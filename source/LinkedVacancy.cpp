@@ -8,17 +8,6 @@ LinkedVacancy::LinkedVacancy(const QString &data)
 
 void LinkedVacancy::load(QString data)
 {
-    /*
-    parser order from html
-    PART        - STARTS                                - ENDS
-
-    link        - href="                                - ;
-    title       - class="base-search-card__title">\n    - \n
-    companyLink - href="                                - "
-    companyName - >\n                                   - \n
-    country     - class="job-search-card__location">\n  - \n
-    publishTime - datetime="                            - "
-    */
     QString linkStart = "href=\"", linkEnd = ";";
     QString titleStart = "class=\"base-search-card__title\">\n", titleEnd = "\n";
     QString companyLinkStart = "href=\"", companyLinkEnd = "\"";
@@ -43,21 +32,17 @@ void LinkedVacancy::load(QString data)
 
     publishTime = extract(data, publishTimeStart, publishTimeEnd);
     data = data.mid(publishTime.size() + data.indexOf(publishTime));
+
+    description = loadDescription(link);
 }
 
+QString LinkedVacancy::loadDescription(const QString &link)
+{
+    return link;
+}
 
 void LinkedVacancy::print(QTextStream &stream)
 {
-    /*
-    QString title;
-    QString link;
-    QString companyName;
-    QString companyLink;
-    QString description;
-    QString publishTime;
-    QString country;
-    QString city;
-    */
     stream << "title:       " << title << "\n";
     stream << "Link:        " << link << "\n";
     stream << "companyName: " << companyName << "\n";
@@ -66,7 +51,6 @@ void LinkedVacancy::print(QTextStream &stream)
     stream << "publishTime: " << publishTime << "\n";
     stream << "description: " << description << "\n";
 }
-
 
 QString LinkedVacancy::extract(QString data, const QString &start, const QString &end)
 {
