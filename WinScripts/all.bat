@@ -10,7 +10,7 @@ if not %currentFolder% == %projectFolder% (
 
 set scriptsFolder=WinScripts
 call %scriptsFolder%\generate.bat
-if not %errorCode%==0 (
+if %ERRORLEVEL% NEQ 0 (
     exit /b %errorCode%
 )
 call %scriptsFolder%\buildAndRun.bat

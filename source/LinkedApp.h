@@ -22,12 +22,12 @@ public:
 public:
     void sendSearchRequest(QString req = "C++", QString location = "Serbia");
     void sendRequest(QString link);
-    const QList<LinkedVacancy>& getVacancies();
-    
-    const QList<LinkedVacancy>& sortByTime();
-    const QList<LinkedVacancy>& sortByTitle();
-    const QList<LinkedVacancy>& sortByCompany();
-    const QList<LinkedVacancy>& sortByRelevance(const QString&);
+    const QList<LinkedVacancy> &getVacancies();
+
+    const QList<LinkedVacancy> &sortByTime();
+    const QList<LinkedVacancy> &sortByTitle();
+    const QList<LinkedVacancy> &sortByCompany();
+    const QList<LinkedVacancy> &sortByRelevance(const QString &);
 
 public slots:
     void parseHTML(QNetworkReply *reply);
@@ -51,8 +51,10 @@ private:
     RequestType currrentRequestType;
 
     QList<LinkedVacancy> vacancies; // no description for now
-    LinkedVacancy currentVacancy; // proccesing right now
+    LinkedVacancy currentVacancy;   // proccesing right now
 
-    QString lastLink;
+    qsizetype descriptionsFinished = 0;
+
+    QString descriptionLink;
     QString titleLink = "https://rs.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/c%2B%2B-developer-jobs?countryRedirected=1&position=1&pageNum=0&start=%1";
 };

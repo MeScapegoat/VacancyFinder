@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include <QFile>
+#include <QDir>
 #include <QThread>
 
 #include <LinkedApp.h>
@@ -34,9 +35,8 @@ void LinkedApp::sendSearchRequest(QString req, QString location)
 {
     vacancies.clear();
     // use req and location once, but for now just:
-    QString link = titleLink;
     currrentRequestType = RequestType::title;
-    sendRequest(link.arg(vacancies.size()));
+    sendRequest(titleLink.arg(vacancies.size()));
     sortByRelevance(req);
 }
 
@@ -71,10 +71,16 @@ void LinkedApp::sendRequest(QString link)
     // test2.close();
     // std::cout << "sendRequest END\n";
 
-    lastLink = link;
+    QString info;
+    if (currrentRequestType == RequestType::title)
+        info = QString::number(vacancies.size()) + " title";
+    else
+        info = QString::number(descriptionsFinished) + "/" + QString::number(vacancies.size()) + " description";
+
+    request.setUrl(link);
+
     QThread::msleep(500);
-    request.setUrl(link.arg(vacancies.size()));
-    std::cout << "about to send " << (currrentRequestType == RequestType::title ? "title" : "description") << " request: " << request.url().toDisplayString().toStdString() << "\n";
+    std::cout << "about to send " << info.toStdString() << " request: " << request.url().toDisplayString().toStdString() << "\n";
     networkManager.get(request);
 }
 
@@ -85,9 +91,9 @@ const QList<LinkedVacancy> &LinkedApp::getVacancies()
 
 const QList<LinkedVacancy> &LinkedApp::sortByTime()
 {
-    auto compareByTime = [](const auto& left, const auto& right)
+    auto compareByTime = [](const auto &left, const auto &right)
     {
-        return left.date > right.date; 
+        return left.date > right.date;
     };
     std::sort(vacancies.begin(), vacancies.end(), compareByTime);
     return vacancies;
@@ -95,9 +101,9 @@ const QList<LinkedVacancy> &LinkedApp::sortByTime()
 
 const QList<LinkedVacancy> &LinkedApp::sortByTitle()
 {
-    auto compareByTitle = [](const auto& left, const auto& right)
+    auto compareByTitle = [](const auto &left, const auto &right)
     {
-        return left.title > right.title; 
+        return left.title > right.title;
     };
     std::sort(vacancies.begin(), vacancies.end(), compareByTitle);
     return vacancies;
@@ -105,7 +111,7 @@ const QList<LinkedVacancy> &LinkedApp::sortByTitle()
 
 const QList<LinkedVacancy> &LinkedApp::sortByCompany()
 {
-    auto compareByCompany = [](const auto& left, const auto& right)
+    auto compareByCompany = [](const auto &left, const auto &right)
     {
         return left.companyName > right.companyName;
     };
@@ -114,11 +120,11 @@ const QList<LinkedVacancy> &LinkedApp::sortByCompany()
     return vacancies;
 }
 
-const QList<LinkedVacancy> &LinkedApp::sortByRelevance(const QString& str)
+const QList<LinkedVacancy> &LinkedApp::sortByRelevance(const QString &str)
 {
-    auto compareByRelevance = [&](const auto& left, const auto& right)
+    auto compareByRelevance = [&](const auto &left, const auto &right)
     {
-        return left.count(str) > right.count(str); 
+        return left.count(str) > right.count(str);
     };
 
     std::sort(vacancies.begin(), vacancies.end(), compareByRelevance);
@@ -134,7 +140,7 @@ void LinkedApp::parseHTML(QNetworkReply *reply)
         if (currrentRequestType == RequestType::title)
             sendRequest(titleLink.arg(vacancies.size()));
         else
-            sendRequest(lastLink.arg(vacancies.size()));
+            sendRequest(descriptionLink);
         return;
     }
     if (currrentRequestType == RequestType::title)
@@ -145,45 +151,134 @@ void LinkedApp::parseHTML(QNetworkReply *reply)
 
 void LinkedApp::parseTitle(QNetworkReply *reply)
 {
-    QFile out(QString("response_%1_title.html").arg(vacancies.size()));
-    if (!out.open(QIODeviceBase::WriteOnly))
-        std::cout << "couldn't open file\n";
-    QTextStream outStream(&out);
-
     QString replyString = reply->readAll();
     replyString.remove("</li>");
     removeSpaces(replyString);
 
-    outStream << replyString;
-    out.close();
-
     auto data = replyString.split("<li>");
     if (data.size() < 2)
+    {
+        if (descriptionsFinished < vacancies.size())
+        {
+            currrentRequestType = RequestType::description;
+            descriptionLink = vacancies[descriptionsFinished].link;
+            sendRequest(descriptionLink);
+        }
+        else
+            std::cout << "Error: descriptionsFinished >= vacancies.size() " << descriptionsFinished << " >= " << vacancies.size() << "\n";
         return;
+    }
+
+    QDir titlesFolder("titles");
+    if (!titlesFolder.exists())
+        titlesFolder.mkpath(".");
+    QString fileName = "response_%1_title.html";
+
+    QFile out(titlesFolder.absoluteFilePath(fileName.arg(vacancies.size())));
+    if (out.open(QIODeviceBase::WriteOnly))
+    {
+        QTextStream outStream(&out);
+        outStream << replyString;
+        out.close();
+    }
+    else
+        std::cout << "couldn't open file " << out.fileName().toStdString() << "\n";
 
     for (auto n = 1; n < data.size(); ++n)
     {
         currentVacancy.load(data[n]);
-        currrentRequestType = RequestType::description;
-        sendRequest(currentVacancy.link);
         vacancies << currentVacancy;
         currentVacancy.clear();
     }
-    currrentRequestType = RequestType::title;
     sendRequest(titleLink.arg(vacancies.size()));
 }
 
 void LinkedApp::parseDescription(QNetworkReply *reply)
 {
-    QFile out(QString("response_%1_description.html").arg(vacancies.size()));
-    if (!out.open(QIODeviceBase::WriteOnly))
-        std::cout << "couldn't open file\n";
-    QTextStream outStream(&out);
-
     // some actions maybe...
 
     QString replyString = reply->readAll();
-    outStream << replyString;
-    out.close();
+
+    QDir descriptionFolder("description");
+    if (!descriptionFolder.exists())
+        descriptionFolder.mkpath(".");
+    QString fileName = "response_%1_description.html";
+
+    QFile out(descriptionFolder.absoluteFilePath(fileName.arg(descriptionsFinished)));
+    if (out.open(QIODeviceBase::WriteOnly))
+    {
+        QTextStream outStream(&out);
+        outStream << replyString;
+        out.close();
+    }
+    else
+        std::cout << "couldn't open file\n";
+
     currentVacancy.description = out.fileName();
+    ++descriptionsFinished;
+    if (descriptionsFinished >= vacancies.size())
+    {
+        QDir sortedDir("sorted");
+        if (!sortedDir.exists())
+            sortedDir.mkpath(".");
+
+        QFile relevanceSorted(sortedDir.absoluteFilePath("relevanceSorted"));
+        if (relevanceSorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream relevanceSortedStream(&relevanceSorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(relevanceSortedStream);
+                relevanceSortedStream << "\n";
+            }
+            relevanceSorted.close();
+        }
+
+        sortByTime();
+
+        QFile timeSorted(sortedDir.absoluteFilePath("timeSorted"));
+        if (timeSorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream timeSortedStream(&timeSorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(timeSortedStream);
+                timeSortedStream << "\n";
+            }
+            timeSorted.close();
+        }
+
+        sortByTitle();
+
+        QFile titleSorted(sortedDir.absoluteFilePath("titleSorted"));
+        if (titleSorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream titleSortedStream(&titleSorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(titleSortedStream);
+                titleSortedStream << "\n";
+            }
+            titleSorted.close();
+        }
+
+        sortByCompany();
+
+        QFile companySorted(sortedDir.absoluteFilePath("companySorted"));
+        if (companySorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream companySortedStream(&companySorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(companySortedStream);
+                companySortedStream << "\n";
+            }
+            companySorted.close();
+        }
+
+        QCoreApplication::quit();
+        return;
+    }
+    descriptionLink = vacancies[descriptionsFinished].link;
+    sendRequest(descriptionLink);
 }
