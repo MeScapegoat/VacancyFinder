@@ -37,6 +37,7 @@ void LinkedApp::sendSearchRequest(QString req, QString location)
     QString link = titleLink;
     currrentRequestType = RequestType::title;
     sendRequest(link.arg(vacancies.size()));
+    sortByRelevance(req);
 }
 
 void LinkedApp::sendRequest(QString link)
@@ -69,6 +70,7 @@ void LinkedApp::sendRequest(QString link)
     // }
     // test2.close();
     // std::cout << "sendRequest END\n";
+
     lastLink = link;
     QThread::msleep(500);
     request.setUrl(link.arg(vacancies.size()));
@@ -76,8 +78,50 @@ void LinkedApp::sendRequest(QString link)
     networkManager.get(request);
 }
 
-const QList<LinkedVacancy>& LinkedApp::getVacancies()
+const QList<LinkedVacancy> &LinkedApp::getVacancies()
 {
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByTime()
+{
+    auto compareByTime = [](const auto& left, const auto& right)
+    {
+        return left.date > right.date; 
+    };
+    std::sort(vacancies.begin(), vacancies.end(), compareByTime);
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByTitle()
+{
+    auto compareByTitle = [](const auto& left, const auto& right)
+    {
+        return left.title > right.title; 
+    };
+    std::sort(vacancies.begin(), vacancies.end(), compareByTitle);
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByCompany()
+{
+    auto compareByCompany = [](const auto& left, const auto& right)
+    {
+        return left.companyName > right.companyName;
+    };
+
+    std::sort(vacancies.begin(), vacancies.end(), compareByCompany);
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByRelevance(const QString& str)
+{
+    auto compareByRelevance = [&](const auto& left, const auto& right)
+    {
+        return left.count(str) > right.count(str); 
+    };
+
+    std::sort(vacancies.begin(), vacancies.end(), compareByRelevance);
     return vacancies;
 }
 
@@ -137,7 +181,7 @@ void LinkedApp::parseDescription(QNetworkReply *reply)
     QTextStream outStream(&out);
 
     // some actions maybe...
-    
+
     QString replyString = reply->readAll();
     outStream << replyString;
     out.close();

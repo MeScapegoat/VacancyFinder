@@ -23,6 +23,11 @@ public:
     void sendSearchRequest(QString req = "C++", QString location = "Serbia");
     void sendRequest(QString link);
     const QList<LinkedVacancy>& getVacancies();
+    
+    const QList<LinkedVacancy>& sortByTime();
+    const QList<LinkedVacancy>& sortByTitle();
+    const QList<LinkedVacancy>& sortByCompany();
+    const QList<LinkedVacancy>& sortByRelevance(const QString&);
 
 public slots:
     void parseHTML(QNetworkReply *reply);

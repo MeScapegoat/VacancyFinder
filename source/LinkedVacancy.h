@@ -1,5 +1,6 @@
 
 #include <QString>
+#include <QDate>
 #include <QTextStream>
 
 class LinkedVacancy
@@ -11,7 +12,8 @@ public:
 
 public:
     void load(QString);
-    void print(QTextStream &);
+    void print(QTextStream &) const;
+    qsizetype count(const QString& str, Qt::CaseSensitivity cs = Qt::CaseInsensitive) const;
     void clear();
 
 public:
@@ -20,7 +22,7 @@ public:
     QString companyName;
     QString companyLink;
     QString description;
-    QString publishTime;
+    QDate date;
     QString location;
 
 private:

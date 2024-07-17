@@ -30,18 +30,19 @@ void LinkedVacancy::load(QString data)
     location = extract(data, locationStart, locationEnd);
     data = data.mid(location.size() + data.indexOf(location));
 
-    publishTime = extract(data, publishTimeStart, publishTimeEnd);
-    data = data.mid(publishTime.size() + data.indexOf(publishTime));
+    QString dateStr = extract(data, publishTimeStart, publishTimeEnd);
+    date = QDate::fromString(dateStr, "YYYY-MM-DD");
+    data = data.mid(dateStr.size() + data.indexOf(dateStr));
 }
 
-void LinkedVacancy::print(QTextStream &stream)
+void LinkedVacancy::print(QTextStream &stream) const
 {
     stream << "title:       " << title << "\n";
     stream << "Link:        " << link << "\n";
     stream << "companyName: " << companyName << "\n";
     stream << "companyLink: " << companyLink << "\n";
     stream << "location:    " << location << "\n";
-    stream << "publishTime: " << publishTime << "\n";
+    stream << "date       : " << date.toString("DD-MM-YYYY") << "\n";
     stream << "description: " << description << "\n";
 }
 
@@ -63,6 +64,11 @@ QString LinkedVacancy::extract(QString data, const QString &start, const QString
     return data.mid(0, secondIndex);
 }
 
+qsizetype LinkedVacancy::count(const QString& str, Qt::CaseSensitivity cs) const
+{
+    return title.count(str, cs) + description.count(str, cs);
+}
+
 void LinkedVacancy::clear()
 {
     title = QString();
@@ -70,6 +76,6 @@ void LinkedVacancy::clear()
     companyName = QString();
     companyLink = QString();
     location = QString();
-    publishTime = QString();
+    date = QDate();
     description = QString();
 }
