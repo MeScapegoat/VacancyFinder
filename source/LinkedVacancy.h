@@ -1,4 +1,4 @@
-
+#pragma once
 #include <QString>
 #include <QDate>
 #include <QTextStream>
@@ -12,6 +12,7 @@ public:
 
 public:
     void load(QString);
+    void loadDescription(QString);
     void print(QTextStream &) const;
     qsizetype count(const QString& str, Qt::CaseSensitivity cs = Qt::CaseInsensitive) const;
     void clear();

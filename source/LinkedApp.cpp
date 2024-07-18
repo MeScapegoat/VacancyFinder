@@ -10,7 +10,7 @@
 LinkedApp::LinkedApp(QObject *parent) : QObject(parent)
 {
     std::cout << "LinkedApp ctr\n";
-    QObject::connect(&networkManager, &QNetworkAccessManager::finished, this, &LinkedApp::parseHTML);
+    QObject::connect(&networkManager, &QNetworkAccessManager::finished, this, &LinkedApp::processHTML);
 }
 
 void LinkedApp::removeSpaces(QString &str)
@@ -37,7 +37,7 @@ void LinkedApp::sendSearchRequest(QString req, QString location)
     // use req and location once, but for now just:
     currrentRequestType = RequestType::title;
     sendRequest(titleLink.arg(vacancies.size()));
-    sortByRelevance(req);
+    std::cout << "sendSearchRequest finished\n";
 }
 
 void LinkedApp::sendRequest(QString link)
@@ -84,54 +84,7 @@ void LinkedApp::sendRequest(QString link)
     networkManager.get(request);
 }
 
-const QList<LinkedVacancy> &LinkedApp::getVacancies()
-{
-    return vacancies;
-}
-
-const QList<LinkedVacancy> &LinkedApp::sortByTime()
-{
-    auto compareByTime = [](const auto &left, const auto &right)
-    {
-        return left.date > right.date;
-    };
-    std::sort(vacancies.begin(), vacancies.end(), compareByTime);
-    return vacancies;
-}
-
-const QList<LinkedVacancy> &LinkedApp::sortByTitle()
-{
-    auto compareByTitle = [](const auto &left, const auto &right)
-    {
-        return left.title > right.title;
-    };
-    std::sort(vacancies.begin(), vacancies.end(), compareByTitle);
-    return vacancies;
-}
-
-const QList<LinkedVacancy> &LinkedApp::sortByCompany()
-{
-    auto compareByCompany = [](const auto &left, const auto &right)
-    {
-        return left.companyName > right.companyName;
-    };
-
-    std::sort(vacancies.begin(), vacancies.end(), compareByCompany);
-    return vacancies;
-}
-
-const QList<LinkedVacancy> &LinkedApp::sortByRelevance(const QString &str)
-{
-    auto compareByRelevance = [&](const auto &left, const auto &right)
-    {
-        return left.count(str) > right.count(str);
-    };
-
-    std::sort(vacancies.begin(), vacancies.end(), compareByRelevance);
-    return vacancies;
-}
-
-void LinkedApp::parseHTML(QNetworkReply *reply)
+void LinkedApp::processHTML(QNetworkReply *reply)
 {
     auto errorState = reply->error();
     if (errorState != QNetworkReply::NoError)
@@ -144,16 +97,14 @@ void LinkedApp::parseHTML(QNetworkReply *reply)
         return;
     }
     if (currrentRequestType == RequestType::title)
-        parseTitle(reply);
+        processTitle(reply);
     else
-        parseDescription(reply);
+        processDescription(reply);
 }
 
-void LinkedApp::parseTitle(QNetworkReply *reply)
+void LinkedApp::processTitle(QNetworkReply *reply)
 {
-    QString replyString = reply->readAll();
-    replyString.remove("</li>");
-    removeSpaces(replyString);
+    QString replyString = parseTitle(reply->readAll());
 
     auto data = replyString.split("<li>");
     if (data.size() < 2)
@@ -172,9 +123,9 @@ void LinkedApp::parseTitle(QNetworkReply *reply)
     QDir titlesFolder("titles");
     if (!titlesFolder.exists())
         titlesFolder.mkpath(".");
-    QString fileName = "response_%1_title.html";
 
-    QFile out(titlesFolder.absoluteFilePath(fileName.arg(vacancies.size())));
+    QString fileName = "%1_title_response.html";
+    QFile out(titlesFolder.absoluteFilePath(fileName.arg(vacancies.size(), 5, 10, QChar('0'))));
     if (out.open(QIODeviceBase::WriteOnly))
     {
         QTextStream outStream(&out);
@@ -193,18 +144,18 @@ void LinkedApp::parseTitle(QNetworkReply *reply)
     sendRequest(titleLink.arg(vacancies.size()));
 }
 
-void LinkedApp::parseDescription(QNetworkReply *reply)
+void LinkedApp::processDescription(QNetworkReply *reply)
 {
     // some actions maybe...
 
-    QString replyString = reply->readAll();
+    QString replyString = parseDescription(reply->readAll());
 
     QDir descriptionFolder("description");
     if (!descriptionFolder.exists())
         descriptionFolder.mkpath(".");
-    QString fileName = "response_%1_description.html";
+    QString fileName = "%1_description_response.html";
 
-    QFile out(descriptionFolder.absoluteFilePath(fileName.arg(descriptionsFinished)));
+    QFile out(descriptionFolder.absoluteFilePath(fileName.arg(descriptionsFinished, 5, 10, QChar('0'))));
     if (out.open(QIODeviceBase::WriteOnly))
     {
         QTextStream outStream(&out);
@@ -214,71 +165,165 @@ void LinkedApp::parseDescription(QNetworkReply *reply)
     else
         std::cout << "couldn't open file\n";
 
-    currentVacancy.description = out.fileName();
+    vacancies[descriptionsFinished].loadDescription(replyString);
     ++descriptionsFinished;
     if (descriptionsFinished >= vacancies.size())
     {
-        QDir sortedDir("sorted");
-        if (!sortedDir.exists())
-            sortedDir.mkpath(".");
-
-        QFile relevanceSorted(sortedDir.absoluteFilePath("relevanceSorted"));
-        if (relevanceSorted.open(QIODeviceBase::WriteOnly))
-        {
-            QTextStream relevanceSortedStream(&relevanceSorted);
-            for (const auto &vacancy : vacancies)
-            {
-                vacancy.print(relevanceSortedStream);
-                relevanceSortedStream << "\n";
-            }
-            relevanceSorted.close();
-        }
-
-        sortByTime();
-
-        QFile timeSorted(sortedDir.absoluteFilePath("timeSorted"));
-        if (timeSorted.open(QIODeviceBase::WriteOnly))
-        {
-            QTextStream timeSortedStream(&timeSorted);
-            for (const auto &vacancy : vacancies)
-            {
-                vacancy.print(timeSortedStream);
-                timeSortedStream << "\n";
-            }
-            timeSorted.close();
-        }
-
-        sortByTitle();
-
-        QFile titleSorted(sortedDir.absoluteFilePath("titleSorted"));
-        if (titleSorted.open(QIODeviceBase::WriteOnly))
-        {
-            QTextStream titleSortedStream(&titleSorted);
-            for (const auto &vacancy : vacancies)
-            {
-                vacancy.print(titleSortedStream);
-                titleSortedStream << "\n";
-            }
-            titleSorted.close();
-        }
-
-        sortByCompany();
-
-        QFile companySorted(sortedDir.absoluteFilePath("companySorted"));
-        if (companySorted.open(QIODeviceBase::WriteOnly))
-        {
-            QTextStream companySortedStream(&companySorted);
-            for (const auto &vacancy : vacancies)
-            {
-                vacancy.print(companySortedStream);
-                companySortedStream << "\n";
-            }
-            companySorted.close();
-        }
-
+        finishedRequest();
         QCoreApplication::quit();
         return;
     }
     descriptionLink = vacancies[descriptionsFinished].link;
     sendRequest(descriptionLink);
+}
+
+QString LinkedApp::parseTitle(QString str)
+{
+    str.remove("</li>");
+    removeSpaces(str);
+    return str;
+}
+
+QString LinkedApp::parseDescription(QString str)
+{
+    removeSpaces(str);
+    return str;
+}
+
+void LinkedApp::finishedRequest()
+{
+    QDir sortedDir("sorted");
+    if (!sortedDir.exists())
+        sortedDir.mkpath(".");
+
+    sortByRelevance("C++");
+
+    QFile relevanceSorted(sortedDir.absoluteFilePath("relevanceSorted"));
+    if (relevanceSorted.open(QIODeviceBase::WriteOnly))
+    {
+        QTextStream relevanceSortedStream(&relevanceSorted);
+        for (const auto &vacancy : vacancies)
+        {
+            vacancy.print(relevanceSortedStream);
+            relevanceSortedStream << "\n";
+        }
+        relevanceSorted.close();
+    }
+
+    sortByTime();
+
+    QFile timeSorted(sortedDir.absoluteFilePath("timeSorted"));
+    if (timeSorted.open(QIODeviceBase::WriteOnly))
+    {
+        QTextStream timeSortedStream(&timeSorted);
+        for (const auto &vacancy : vacancies)
+        {
+            vacancy.print(timeSortedStream);
+            timeSortedStream << "\n";
+        }
+        timeSorted.close();
+    }
+
+    sortByTitle();
+
+    QFile titleSorted(sortedDir.absoluteFilePath("titleSorted"));
+    if (titleSorted.open(QIODeviceBase::WriteOnly))
+    {
+        QTextStream titleSortedStream(&titleSorted);
+        for (const auto &vacancy : vacancies)
+        {
+            vacancy.print(titleSortedStream);
+            titleSortedStream << "\n";
+        }
+        titleSorted.close();
+    }
+
+    sortByCompany();
+
+    QFile companySorted(sortedDir.absoluteFilePath("companySorted"));
+    if (companySorted.open(QIODeviceBase::WriteOnly))
+    {
+        QTextStream companySortedStream(&companySorted);
+        for (const auto &vacancy : vacancies)
+        {
+            vacancy.print(companySortedStream);
+            companySortedStream << "\n";
+        }
+        companySorted.close();
+    }
+}
+
+QString LinkedApp::loadTitleFromFile(const QString &path)
+{
+    QFile file(path);
+    QString ret;
+    if (file.open(QIODeviceBase::ReadOnly))
+    {
+        ret = file.readAll();
+        file.close();
+    }
+    else
+        qInfo() << "couldn't open " << path;
+    return ret;
+}
+
+QString LinkedApp::loadDescriptionFromFile(const QString &path)
+{
+    QFile file(path);
+    QString ret;
+    if (file.open(QIODeviceBase::ReadOnly))
+    {
+        ret = file.readAll();
+        file.close();
+    }
+    else
+        qInfo() << "couldn't open " << path;
+    return ret;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByTime()
+{
+    auto compareByTime = [](const auto &left, const auto &right)
+    {
+        return left.date > right.date;
+    };
+    std::sort(vacancies.begin(), vacancies.end(), compareByTime);
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByTitle()
+{
+    auto compareByTitle = [](const auto &left, const auto &right)
+    {
+        return left.title < right.title;
+    };
+    std::sort(vacancies.begin(), vacancies.end(), compareByTitle);
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByCompany()
+{
+    auto compareByCompany = [](const auto &left, const auto &right)
+    {
+        return left.companyName < right.companyName;
+    };
+
+    std::sort(vacancies.begin(), vacancies.end(), compareByCompany);
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByRelevance(const QString &str)
+{
+    auto compareByRelevance = [&](const auto &left, const auto &right)
+    {
+        return left.count(str) > right.count(str);
+    };
+
+    std::sort(vacancies.begin(), vacancies.end(), compareByRelevance);
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::getVacancies()
+{
+    return vacancies;
 }

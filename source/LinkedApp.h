@@ -1,3 +1,4 @@
+#pragma once
 // std
 
 // Qt
@@ -22,6 +23,10 @@ public:
 public:
     void sendSearchRequest(QString req = "C++", QString location = "Serbia");
     void sendRequest(QString link);
+
+    QString loadTitleFromFile(const QString &path);
+    QString loadDescriptionFromFile(const QString &path);
+
     const QList<LinkedVacancy> &getVacancies();
 
     const QList<LinkedVacancy> &sortByTime();
@@ -30,13 +35,20 @@ public:
     const QList<LinkedVacancy> &sortByRelevance(const QString &);
 
 public slots:
-    void parseHTML(QNetworkReply *reply);
+    void processHTML(QNetworkReply *reply);
 
-private:
-    void parseTitle(QNetworkReply *reply);
-    void parseDescription(QNetworkReply *reply);
+    // private:
+public:
+    void processTitle(QNetworkReply *reply);
+    void processDescription(QNetworkReply *reply);
 
-    void removeSpaces(QString &);
+    QString parseTitle(QString);
+    QString parseDescription(QString);
+
+    void finishedRequest();
+
+public:
+    static void removeSpaces(QString &);
 
 private:
     enum class RequestType
@@ -45,7 +57,8 @@ private:
         description
     };
 
-private:
+    // private:
+public:
     QNetworkAccessManager networkManager;
     QNetworkRequest request;
     RequestType currrentRequestType;
