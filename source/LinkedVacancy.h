@@ -11,7 +11,7 @@ public:
     LinkedVacancy(const QString &);
 
 public:
-    void load(QString);
+    void loadTitle(QString);
     void loadDescription(QString);
     void print(QTextStream &) const;
     qsizetype count(const QString& str, Qt::CaseSensitivity cs = Qt::CaseInsensitive) const;
@@ -25,6 +25,8 @@ public:
     QString description;
     QDate date;
     QString location;
+    QString level;
+    QString employmentType;
 
 private:
     QString extract(QString data, const QString &start, const QString &end);

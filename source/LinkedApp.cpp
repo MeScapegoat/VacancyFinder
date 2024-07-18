@@ -75,7 +75,7 @@ void LinkedApp::sendRequest(QString link)
     if (currrentRequestType == RequestType::title)
         info = QString::number(vacancies.size()) + " title";
     else
-        info = QString::number(descriptionsFinished) + "/" + QString::number(vacancies.size()) + " description";
+        info = QString::number(descriptionsFinished + 1) + "/" + QString::number(vacancies.size()) + " description";
 
     request.setUrl(link);
 
@@ -137,7 +137,7 @@ void LinkedApp::processTitle(QNetworkReply *reply)
 
     for (auto n = 1; n < data.size(); ++n)
     {
-        currentVacancy.load(data[n]);
+        currentVacancy.loadTitle(data[n]);
         vacancies << currentVacancy;
         currentVacancy.clear();
     }
@@ -146,8 +146,6 @@ void LinkedApp::processTitle(QNetworkReply *reply)
 
 void LinkedApp::processDescription(QNetworkReply *reply)
 {
-    // some actions maybe...
-
     QString replyString = parseDescription(reply->readAll());
 
     QDir descriptionFolder("description");
@@ -251,6 +249,20 @@ void LinkedApp::finishedRequest()
         }
         companySorted.close();
     }
+
+    sortByLevel();
+
+    QFile levelSorted(sortedDir.absoluteFilePath("levelSorted"));
+    if (levelSorted.open(QIODeviceBase::WriteOnly))
+    {
+        QTextStream levelSortedStream(&levelSorted);
+        for (const auto &vacancy : vacancies)
+        {
+            vacancy.print(levelSortedStream);
+            levelSortedStream << "\n";
+        }
+        levelSorted.close();
+    }
 }
 
 QString LinkedApp::loadTitleFromFile(const QString &path)
@@ -317,6 +329,17 @@ const QList<LinkedVacancy> &LinkedApp::sortByRelevance(const QString &str)
     auto compareByRelevance = [&](const auto &left, const auto &right)
     {
         return left.count(str) > right.count(str);
+    };
+
+    std::sort(vacancies.begin(), vacancies.end(), compareByRelevance);
+    return vacancies;
+}
+
+const QList<LinkedVacancy> &LinkedApp::sortByLevel()
+{
+    auto compareByRelevance = [&](const auto &left, const auto &right)
+    {
+        return left.level < right.level;
     };
 
     std::sort(vacancies.begin(), vacancies.end(), compareByRelevance);

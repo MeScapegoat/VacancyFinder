@@ -32,6 +32,7 @@ public:
     const QList<LinkedVacancy> &sortByTime();
     const QList<LinkedVacancy> &sortByTitle();
     const QList<LinkedVacancy> &sortByCompany();
+    const QList<LinkedVacancy> &sortByLevel();
     const QList<LinkedVacancy> &sortByRelevance(const QString &);
 
 public slots:

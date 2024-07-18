@@ -2,12 +2,9 @@
 
 #include "LinkedVacancy.h"
 #include "LinkedApp.h"
-LinkedVacancy::LinkedVacancy(const QString &data)
-{
-    load(data);
-}
+LinkedVacancy::LinkedVacancy(const QString &data) {}
 
-void LinkedVacancy::load(QString data)
+void LinkedVacancy::loadTitle(QString data)
 {
     QString linkStart = "href=\"", linkEnd = ";";
     QString titleStart = "class=\"base-search-card__title\">\n", titleEnd = "\n";
@@ -43,12 +40,30 @@ void LinkedVacancy::load(QString data)
 void LinkedVacancy::loadDescription(QString data)
 {
     QString descriptionStart = "relative overflow-hidden\">\n", descriptionEnd = "\n";
+    QString levelStart = "<span class=\"description__job-criteria-text description__job-criteria-text--criteria\">\n", levelEnd = "\n";
+    QString employmentTypeStart = "<span class=\"description__job-criteria-text description__job-criteria-text--criteria\">\n", employmentTypeEnd = "\n";
+
     description = extract(data, descriptionStart, descriptionEnd);
+    data = data.mid(description.size() + data.indexOf(description));
+
+    if (data.contains("Seniority level"))
+    {
+        level = extract(data, levelStart, levelEnd);
+        data = data.mid(level.size() + data.indexOf(level));
+    }
+
+    if (data.contains("Employment type"))
+    {
+        employmentType = extract(data, employmentTypeStart, employmentTypeEnd);
+        data = data.mid(employmentType.size() + data.indexOf(employmentType));
+    }
+
     description.replace("<br>", "\n");
     description.replace("<p>", "\n");
     description.replace("<ol>", "\n");
     description.replace("<ul>", "\n");
     description.replace("<li>", "\n");
+    description.replace("&nbsp;", " ");
 
     description.remove("</p>");
     description.remove("<strong>");
@@ -64,18 +79,20 @@ void LinkedVacancy::loadDescription(QString data)
     description.remove("</u>");
 
     LinkedApp::removeSpaces(description);
-    description.replace("\n", "\n" + QString(12, ' ') + "| ");
+    description.replace("\n", "\n" + QString(17, ' ') + "| ");
 }
 
 void LinkedVacancy::print(QTextStream &stream) const
 {
-    stream << "      title | " << title << "\n";
-    stream << "       link | " << link << "\n";
-    stream << "companyName | " << companyName << "\n";
-    stream << "companyLink | " << companyLink << "\n";
-    stream << "   location | " << location << "\n";
-    stream << "       date | " << date.toString("dd-MM-yyyy") << "\n";
-    stream << "description | " << description << "\n";
+    stream << "           title | " << title << "\n";
+    stream << "            link | " << link << "\n";
+    stream << "     companyName | " << companyName << "\n";
+    stream << "     companyLink | " << companyLink << "\n";
+    stream << "           level | " << level << "\n";
+    stream << "employement type | " << employmentType << "\n";
+    stream << "        location | " << location << "\n";
+    stream << "            date | " << date.toString("dd-MM-yyyy") << "\n";
+    stream << "     description | " << description << "\n";
     stream << QString(200, '-') << "\n";
 }
 
