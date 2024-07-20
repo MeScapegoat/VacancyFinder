@@ -13,4 +13,4 @@ errorCode=$?
 if [[ $errorCode -ne 0 ]]; then
     exit $errorCode
 fi
-build/LinkedInParser
+build/LinkedIn_search_app

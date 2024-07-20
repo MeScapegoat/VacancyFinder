@@ -5,20 +5,22 @@
 // Qt
 #include <QCoreApplication> // TODO swap to gui
 #include <QDir>
+#include <QUrl>
+#include <QUrlQuery>
 #include <QFile>
 #include <QLoggingCategory>
 #include <QTextStream>
 
 // custom
-#include <LinkedApp.h>
+#include <App.h>
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication app(argc, argv); // TODO swap to gui
+    QCoreApplication coreApplication(argc, argv); // TODO swap to gui
     std::cout << "App started!\n";
 
-    LinkedApp linkedApp;
-    linkedApp.sendSearchRequest();
+    Linked::App app;
+    app.sendSearchRequest();
 
     // {
     //     QList<LinkedVacancy> vacancies;
@@ -30,7 +32,7 @@ int main(int argc, char *argv[])
     //     qInfo() << "titles start";
     //     for (auto id = 0; id < titles.size(); ++id)
     //     {
-    //         QString titleContent = linkedApp.loadTitleFromFile(titleFolder.absoluteFilePath(titleFileName.arg(id * 10, 5, 10, QChar('0'))));
+    //         QString titleContent = Linked::App.loadTitleFromFile(titleFolder.absoluteFilePath(titleFileName.arg(id * 10, 5, 10, QChar('0'))));
     //         auto data = titleContent.split("<li>");
     //         for (auto n = 1; n < data.size(); ++n)
     //         {
@@ -46,19 +48,19 @@ int main(int argc, char *argv[])
 
     //     for (auto id = 0; id < vacancies.size(); ++id)
     //     {
-    //         QString descriptionContent = linkedApp.loadDescriptionFromFile(descriptionFolder.absoluteFilePath(descriptionFileName.arg(id, 5, 10, QChar('0'))));
+    //         QString descriptionContent = Linked::App.loadDescriptionFromFile(descriptionFolder.absoluteFilePath(descriptionFileName.arg(id, 5, 10, QChar('0'))));
     //         vacancies[id].loadDescription(descriptionContent);
     //     }
     //     qInfo() << "desc end";
 
-    //     linkedApp.vacancies = vacancies;
+    //     Linked::App.vacancies = vacancies;
 
     //     QFile out("timeSorted");
     //     if (out.open(QIODevice::WriteOnly))
     //     {
-    //         linkedApp.sortByTime();
+    //         Linked::App.sortByTime();
     //         QTextStream outStream(&out);
-    //         for (auto vacancy : linkedApp.vacancies)
+    //         for (auto vacancy : Linked::App.vacancies)
     //             vacancy.print(outStream);
     //         out.close();
     //     }
@@ -68,9 +70,9 @@ int main(int argc, char *argv[])
     //     out.setFileName("relevanceSorted");
     //     if (out.open(QIODevice::WriteOnly))
     //     {
-    //         linkedApp.sortByRelevance("C++");
+    //         Linked::App.sortByRelevance("C++");
     //         QTextStream outStream(&out);
-    //         for (auto vacancy : linkedApp.vacancies)
+    //         for (auto vacancy : Linked::App.vacancies)
     //             vacancy.print(outStream);
     //         out.close();
     //     }
@@ -80,9 +82,9 @@ int main(int argc, char *argv[])
     //     out.setFileName("titleSorted");
     //     if (out.open(QIODevice::WriteOnly))
     //     {
-    //         linkedApp.sortByTitle();
+    //         Linked::App.sortByTitle();
     //         QTextStream outStream(&out);
-    //         for (auto vacancy : linkedApp.vacancies)
+    //         for (auto vacancy : Linked::App.vacancies)
     //             vacancy.print(outStream);
     //         out.close();
     //     }
@@ -92,16 +94,16 @@ int main(int argc, char *argv[])
     //     out.setFileName("companySorted");
     //     if (out.open(QIODevice::WriteOnly))
     //     {
-    //         linkedApp.sortByCompany();
+    //         Linked::App.sortByCompany();
     //         QTextStream outStream(&out);
-    //         for (auto vacancy : linkedApp.vacancies)
+    //         for (auto vacancy : Linked::App.vacancies)
     //             vacancy.print(outStream);
     //         out.close();
     //     }
     //     else
     //         qInfo() << "couldn't open" << out.fileName();
     // }
-    
+
     qInfo() << "App finished!\n";
-    return app.exec();
+    return coreApplication.exec();
 }
