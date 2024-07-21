@@ -12,7 +12,7 @@ namespace Linked
         ~NetworkManager() = default;
 
     public slots:
-        void sendRequest(QUrl link);
+        void sendRequest(QUrl);
 
     signals:
         void titleFinished();

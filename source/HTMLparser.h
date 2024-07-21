@@ -24,6 +24,10 @@ namespace Linked
     signals:
         void titleReady(Vacancy);
         void descrReady(Vacancy);
+        void sendRequest(QUrl);
+
+        void titlesProcessed();
+        void requestFinished();
 
     private:
         void removeSpaces(QString &);

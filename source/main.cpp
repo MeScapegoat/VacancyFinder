@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     std::cout << "App started!\n";
 
     Linked::App app;
-    app.sendSearchRequest();
+    app.sendSearchRequest("C++", "Serbia");
 
     // {
     //     QList<LinkedVacancy> vacancies;

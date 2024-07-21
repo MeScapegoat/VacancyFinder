@@ -13,21 +13,32 @@ namespace Linked
     App::App()
     {
         qInfo() << "App ctr";
-        qInfo() << "QObject::connect(&networkManager, &NetworkManager::finished, &parser, &HTMLparser::processHTML);";
+
+        networkManager.moveToThread(&networkThread);
+        parser.moveToThread(&parserThread);
+
         QObject::connect(&networkManager, &NetworkManager::finished, &parser, &HTMLparser::processHTML);
-        qInfo() << "QObject::connect(this, &App::sendRequest, &networkManager, &NetworkManager::sendRequest);";
         QObject::connect(this, &App::sendRequest, &networkManager, &NetworkManager::sendRequest);
-        qInfo() << "QObject::connect(this, &App::titleReady, &parser, &HTMLparser::titleReady);";
+        QObject::connect(&parser, &HTMLparser::sendRequest, &networkManager, &NetworkManager::sendRequest);
+
+        QObject::connect(&parser, &HTMLparser::titlesProcessed, this, &App::titlesProcessed);
+        QObject::connect(&parser, &HTMLparser::requestFinished, this, &App::requestFinished);
         QObject::connect(&parser, &HTMLparser::titleReady, this, &App::titleReady);
-        qInfo() << "QObject::connect(this, &App::descrReady, &parser, &HTMLparser::descrReady);";
         QObject::connect(&parser, &HTMLparser::descrReady, this, &App::descrReady);
+
+        networkThread.start();
+        parserThread.start();
     }
 
-    void App::sendSearchRequest(QString keyword, QString location)
+    void App::sendSearchRequest(QString k, QString l)
     {
         qInfo() << "sendSearchRequest";
 
         vacancies.clear();
+        descrProcessed = 0;
+
+        keyword = k;
+        location = l;
 
         QUrl url(baseUrl);
         QUrlQuery query;
@@ -88,95 +99,119 @@ namespace Linked
 
     void App::titleReady(Vacancy vacancy)
     {
-        QString link = vacancy.link;
+        qInfo() << "titleReady" << "vacancies.size():" << vacancies.size();
         vacancies.push_back(std::move(vacancy));
 
-        emit sendRequest(link);
+        // emit sendRequest(link);
     }
 
-    void App::descrReady(Vacancy vacancy)
+    void App::descrReady(const Vacancy &vacancy)
     {
-        qInfo() << "descrReady" << "vacancies.size():" << vacancies.size();
+        qInfo() << "descrReady" << "descrProcessed:" << descrProcessed + 1;
+        Vacancy &vac = vacancies[descrProcessed++];
+        vac.description = vacancy.description;
+        vac.level = vacancy.level;
+        vac.employmentType = vacancy.employmentType;
+
+        if (descrProcessed == vacancies.size())
+        {
+            QUrl url(baseUrl);
+            QUrlQuery query;
+            query.addQueryItem("keyword", QUrl::toPercentEncoding(keyword));
+            query.addQueryItem("location", QUrl::toPercentEncoding(location));
+            query.addQueryItem("start", QUrl::toPercentEncoding(QString::number(vacancies.size())));
+            url.setQuery(query);
+            emit sendRequest(url);
+        }
+        else
+            emit sendRequest(vacancies[descrProcessed].link);
     }
 
-    // void App::finishedRequest()
-    // {
-    //     qInfo() << "finishedRequest";
+    void App::titlesProcessed()
+    {
+        qInfo() << "titlesProcessed";
 
-    //     QDir sortedDir("sorted");
-    //     if (!sortedDir.exists())
-    //         sortedDir.mkpath(".");
+        emit sendRequest(vacancies[descrProcessed].link);
+    }
 
-    //     sortByRelevance("C++");
+    void App::requestFinished()
+    {
+        qInfo() << "finishedRequest";
 
-    //     QFile relevanceSorted(sortedDir.absoluteFilePath("relevanceSorted"));
-    //     if (relevanceSorted.open(QIODeviceBase::WriteOnly))
-    //     {
-    //         QTextStream relevanceSortedStream(&relevanceSorted);
-    //         for (const auto &vacancy : vacancies)
-    //         {
-    //             vacancy.print(relevanceSortedStream);
-    //             relevanceSortedStream << "\n";
-    //         }
-    //         relevanceSorted.close();
-    //     }
+        QDir sortedDir("sorted");
+        if (!sortedDir.exists())
+            sortedDir.mkpath(".");
 
-    //     sortByTime();
+        sortByRelevance(keyword);
 
-    //     QFile timeSorted(sortedDir.absoluteFilePath("timeSorted"));
-    //     if (timeSorted.open(QIODeviceBase::WriteOnly))
-    //     {
-    //         QTextStream timeSortedStream(&timeSorted);
-    //         for (const auto &vacancy : vacancies)
-    //         {
-    //             vacancy.print(timeSortedStream);
-    //             timeSortedStream << "\n";
-    //         }
-    //         timeSorted.close();
-    //     }
+        QFile relevanceSorted(sortedDir.absoluteFilePath("relevanceSorted"));
+        if (relevanceSorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream relevanceSortedStream(&relevanceSorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(relevanceSortedStream);
+                relevanceSortedStream << "\n";
+            }
+            relevanceSorted.close();
+        }
 
-    //     sortByTitle();
+        sortByTime();
 
-    //     QFile titleSorted(sortedDir.absoluteFilePath("titleSorted"));
-    //     if (titleSorted.open(QIODeviceBase::WriteOnly))
-    //     {
-    //         QTextStream titleSortedStream(&titleSorted);
-    //         for (const auto &vacancy : vacancies)
-    //         {
-    //             vacancy.print(titleSortedStream);
-    //             titleSortedStream << "\n";
-    //         }
-    //         titleSorted.close();
-    //     }
+        QFile timeSorted(sortedDir.absoluteFilePath("timeSorted"));
+        if (timeSorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream timeSortedStream(&timeSorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(timeSortedStream);
+                timeSortedStream << "\n";
+            }
+            timeSorted.close();
+        }
 
-    //     sortByCompany();
+        sortByTitle();
 
-    //     QFile companySorted(sortedDir.absoluteFilePath("companySorted"));
-    //     if (companySorted.open(QIODeviceBase::WriteOnly))
-    //     {
-    //         QTextStream companySortedStream(&companySorted);
-    //         for (const auto &vacancy : vacancies)
-    //         {
-    //             vacancy.print(companySortedStream);
-    //             companySortedStream << "\n";
-    //         }
-    //         companySorted.close();
-    //     }
+        QFile titleSorted(sortedDir.absoluteFilePath("titleSorted"));
+        if (titleSorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream titleSortedStream(&titleSorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(titleSortedStream);
+                titleSortedStream << "\n";
+            }
+            titleSorted.close();
+        }
 
-    //     sortByLevel();
+        sortByCompany();
 
-    //     QFile levelSorted(sortedDir.absoluteFilePath("levelSorted"));
-    //     if (levelSorted.open(QIODeviceBase::WriteOnly))
-    //     {
-    //         QTextStream levelSortedStream(&levelSorted);
-    //         for (const auto &vacancy : vacancies)
-    //         {
-    //             vacancy.print(levelSortedStream);
-    //             levelSortedStream << "\n";
-    //         }
-    //         levelSorted.close();
-    //     }
-    // }
+        QFile companySorted(sortedDir.absoluteFilePath("companySorted"));
+        if (companySorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream companySortedStream(&companySorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(companySortedStream);
+                companySortedStream << "\n";
+            }
+            companySorted.close();
+        }
+
+        sortByLevel();
+
+        QFile levelSorted(sortedDir.absoluteFilePath("levelSorted"));
+        if (levelSorted.open(QIODeviceBase::WriteOnly))
+        {
+            QTextStream levelSortedStream(&levelSorted);
+            for (const auto &vacancy : vacancies)
+            {
+                vacancy.print(levelSortedStream);
+                levelSortedStream << "\n";
+            }
+            levelSorted.close();
+        }
+    }
 
     QString App::loadTitleFromFile(const QString &path)
     {

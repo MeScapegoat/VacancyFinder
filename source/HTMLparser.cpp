@@ -9,12 +9,13 @@ namespace Linked
 {
     void HTMLparser::processHTML(QNetworkReply *reply)
     {
-        qInfo() << "processHTML" << reply->url();
+        qInfo() << "processHTML:" << reply->url();
 
         auto errorState = reply->error();
         if (errorState != QNetworkReply::NoError)
         {
             qInfo() << "Reply error:" << errorState;
+            emit sendRequest(reply->url());
             return;
         }
 
@@ -36,20 +37,14 @@ namespace Linked
 
         if (data.size() < 2)
         {
-            qInfo() << "Titles finished";
-            // if (descriptionsFinished < vacancies.size())
-            // {
-            //     currrentRequestType = RequestType::description;
-            //     descriptionLink = vacancies[descriptionsFinished].link;
-            //     sendRequest(descriptionLink);
-            // }
-            // else
-            //     qInfo() << "Error: descriptionsFinished >= vacancies.size() " << descriptionsFinished << " >= " << vacancies.size() << "\n";
-            // return;
+            qInfo() << "Request finished";
+            emit requestFinished();
+            return;
         }
 
         for (auto n = 1; n < data.size(); ++n)
             parseTitle(data[n]);
+        emit titlesProcessed();
     }
 
     void HTMLparser::processDescr(QString str)
@@ -57,6 +52,7 @@ namespace Linked
         qInfo() << "processDescr";
 
         removeSpaces(str);
+        parseDescr(str);
     }
 
     void HTMLparser::parseTitle(QString data)
