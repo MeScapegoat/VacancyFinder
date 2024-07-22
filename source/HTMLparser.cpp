@@ -5,16 +5,18 @@
 // custom
 #include <HTMLparser.h>
 
+Q_LOGGING_CATEGORY(LinkedParser, "Parser");
+
 namespace Linked
 {
     void HTMLparser::processHTML(QNetworkReply *reply)
     {
-        qInfo() << "processHTML:" << reply->url();
+        qCDebug(LinkedParser) << "   " << reply->url();
 
         auto errorState = reply->error();
         if (errorState != QNetworkReply::NoError)
         {
-            qInfo() << "Reply error:" << errorState;
+            qCWarning(LinkedParser) << errorState;
             emit sendRequest(reply->url());
             return;
         }
@@ -28,7 +30,7 @@ namespace Linked
 
     void HTMLparser::processTitle(QString str)
     {
-        qInfo() << "processTitle";
+        qCDebug(LinkedParser);
 
         str.remove("</li>");
         removeSpaces(str);
@@ -37,7 +39,6 @@ namespace Linked
 
         if (data.size() < 2)
         {
-            qInfo() << "Request finished";
             emit requestFinished();
             return;
         }
@@ -49,7 +50,7 @@ namespace Linked
 
     void HTMLparser::processDescr(QString str)
     {
-        qInfo() << "processDescr";
+        qCDebug(LinkedParser);
 
         removeSpaces(str);
         parseDescr(str);
@@ -57,7 +58,7 @@ namespace Linked
 
     void HTMLparser::parseTitle(QString data)
     {
-        qInfo() << "parseTitle";
+        qCDebug(LinkedParser);
 
         QString linkStart = "href=\"", linkEnd = ";";
         QString titleStart = "class=\"base-search-card__title\">\n", titleEnd = "\n";
@@ -96,7 +97,7 @@ namespace Linked
 
     void HTMLparser::parseDescr(QString data)
     {
-        qInfo() << "parseDescr";
+        qCDebug(LinkedParser);
 
         QString descriptionStart = "relative overflow-hidden\">\n", descriptionEnd = "\n";
         QString levelStart = "<span class=\"description__job-criteria-text description__job-criteria-text--criteria\">\n", levelEnd = "\n";

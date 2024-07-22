@@ -1,12 +1,15 @@
 #pragma once
 
 // std
-#include <QNetworkReply>
 
 // Qt
+#include <QNetworkReply>
+#include <QLoggingCategory>
 
 // custom
 #include <Vacancy.h>
+
+Q_DECLARE_LOGGING_CATEGORY(LinkedParser);
 
 namespace Linked
 {

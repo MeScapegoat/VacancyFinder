@@ -6,11 +6,13 @@
 // custom
 #include "NetworkManager.h"
 
+Q_LOGGING_CATEGORY(LinkedNetwork, "Network");
+
 namespace Linked
 {
     void NetworkManager::sendRequest(QUrl link)
     {
-        qInfo() << "SendRequest:" << link;
+        qCDebug(LinkedNetwork) << link;
 
         request.setUrl(link);
         QThread::msleep(500);

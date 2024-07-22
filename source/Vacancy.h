@@ -1,7 +1,16 @@
 #pragma once
+
+// std
+
+// Qt
 #include <QString>
 #include <QDate>
 #include <QTextStream>
+#include <QLoggingCategory>
+
+// custom
+
+Q_DECLARE_LOGGING_CATEGORY(LinkedVacancy);
 
 namespace Linked
 {

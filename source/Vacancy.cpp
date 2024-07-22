@@ -1,7 +1,12 @@
-#include <iostream> //tmp
+// std
 
+// Qt
+
+//custom
 #include "Vacancy.h"
-#include "App.h"
+
+Q_LOGGING_CATEGORY(LinkedVacancy, "Vacancy");
+
 namespace Linked
 {
     Vacancy::Vacancy(const QString &data) {}

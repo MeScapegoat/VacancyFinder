@@ -1,6 +1,4 @@
 // std
-#include <iostream>
-#include <fstream>
 
 // Qt
 #include <QCoreApplication> // TODO swap to gui
@@ -8,16 +6,20 @@
 #include <QUrl>
 #include <QUrlQuery>
 #include <QFile>
-#include <QLoggingCategory>
 #include <QTextStream>
 
 // custom
-#include <App.h>
+#include "App.h"
+#include "Logger.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication coreApplication(argc, argv); // TODO swap to gui
-    std::cout << "App started!\n";
+    qWarning() << "App started!";
+
+    QString logRulesPath("log_rules.ini");
+    Linked::Logger logger;
+    logger.setLogRulesPath(logRulesPath);
 
     Linked::App app;
     app.sendSearchRequest("C++", "Serbia");
@@ -104,6 +106,6 @@ int main(int argc, char *argv[])
     //         qInfo() << "couldn't open" << out.fileName();
     // }
 
-    qInfo() << "App finished!\n";
+    qWarning() << "App finished!";
     return coreApplication.exec();
 }

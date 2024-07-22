@@ -3,11 +3,14 @@
 
 // Qt
 #include <QThread>
+#include <QLoggingCategory>
 
 // custom
 #include "Vacancy.h"
 #include "NetworkManager.h"
 #include "HTMLparser.h"
+
+Q_DECLARE_LOGGING_CATEGORY(LinkedApp);
 
 namespace Linked
 {

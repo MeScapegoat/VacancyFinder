@@ -22,7 +22,9 @@ target_sources(LinkedIn_search_app
                 PUBLIC source/NetworkManager.h
                 PUBLIC source/NetworkManager.cpp
                 PUBLIC source/HTMLparser.h
-                PUBLIC source/HTMLparser.cpp) # TODO change this
+                PUBLIC source/HTMLparser.cpp
+                PUBLIC source/Logger.h
+                PUBLIC source/Logger.cpp) # TODO change this
 
 find_package(Qt6 COMPONENTS Core Network REQUIRED)
 target_link_libraries(LinkedIn_search_app 
@@ -30,10 +32,12 @@ target_link_libraries(LinkedIn_search_app
 
 target_include_directories(LinkedIn_search_app 
                            PUBLIC source)
+
+target_compile_definitions(LinkedIn_search_app
+                           PUBLIC -DQT_MESSAGELOGCONTEXT)
              
 message(STATUS "")
 message(STATUS "INFO:")
-message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 message(STATUS "Using generator: ${CMAKE_GENERATOR}")
 message(STATUS "Using compiler: ${CMAKE_CXX_COMPILER}")
 message(STATUS "Qt6_DIR: ${Qt6_DIR}")

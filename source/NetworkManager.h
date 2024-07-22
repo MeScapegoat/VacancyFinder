@@ -1,5 +1,13 @@
 #pragma once
+// std
+
+// Qt
 #include <QNetworkAccessManager>
+#include <QLoggingCategory>
+
+// custom
+
+Q_DECLARE_LOGGING_CATEGORY(LinkedNetwork);
 
 namespace Linked
 {

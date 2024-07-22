@@ -1,30 +1,33 @@
-#include <iostream>
-#include <fstream>
+// std
 
+// Qt
 #include <QCoreApplication>
 #include <QFile>
 #include <QUrlQuery>
 #include <QDir>
 #include <QThread>
 
+// custom
 #include <App.h>
+
+Q_LOGGING_CATEGORY(LinkedApp, "App");
 namespace Linked
 {
     App::App()
     {
-        qInfo() << "App ctr";
+        qCInfo(LinkedApp) << "App ctr";
 
         networkManager.moveToThread(&networkThread);
         parser.moveToThread(&parserThread);
 
-        QObject::connect(&networkManager, &NetworkManager::finished, &parser, &HTMLparser::processHTML);
-        QObject::connect(this, &App::sendRequest, &networkManager, &NetworkManager::sendRequest);
-        QObject::connect(&parser, &HTMLparser::sendRequest, &networkManager, &NetworkManager::sendRequest);
+        QObject::connect(&networkManager, &NetworkManager::finished, &parser, &HTMLparser::processHTML, Qt::QueuedConnection);
+        QObject::connect(this, &App::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
+        QObject::connect(&parser, &HTMLparser::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
 
-        QObject::connect(&parser, &HTMLparser::titlesProcessed, this, &App::titlesProcessed);
-        QObject::connect(&parser, &HTMLparser::requestFinished, this, &App::requestFinished);
-        QObject::connect(&parser, &HTMLparser::titleReady, this, &App::titleReady);
-        QObject::connect(&parser, &HTMLparser::descrReady, this, &App::descrReady);
+        QObject::connect(&parser, &HTMLparser::titlesProcessed, this, &App::titlesProcessed, Qt::QueuedConnection);
+        QObject::connect(&parser, &HTMLparser::requestFinished, this, &App::requestFinished, Qt::QueuedConnection);
+        QObject::connect(&parser, &HTMLparser::titleReady, this, &App::titleReady, Qt::QueuedConnection);
+        QObject::connect(&parser, &HTMLparser::descrReady, this, &App::descrReady, Qt::QueuedConnection);
 
         networkThread.start();
         parserThread.start();
@@ -32,13 +35,13 @@ namespace Linked
 
     void App::sendSearchRequest(QString k, QString l)
     {
-        qInfo() << "sendSearchRequest";
-
         vacancies.clear();
         descrProcessed = 0;
 
         keyword = k;
         location = l;
+
+        qCDebug(LinkedApp) << "keyword:" << keyword << "location:" << location;
 
         QUrl url(baseUrl);
         QUrlQuery query;
@@ -99,7 +102,7 @@ namespace Linked
 
     void App::titleReady(Vacancy vacancy)
     {
-        qInfo() << "titleReady" << "vacancies.size():" << vacancies.size();
+        qCInfo(LinkedApp) << "vacancies:" << vacancies.size() + 1;
         vacancies.push_back(std::move(vacancy));
 
         // emit sendRequest(link);
@@ -107,7 +110,12 @@ namespace Linked
 
     void App::descrReady(const Vacancy &vacancy)
     {
-        qInfo() << "descrReady" << "descrProcessed:" << descrProcessed + 1;
+        qCInfo(LinkedApp) << "Processing description:" << descrProcessed + 1;
+        if (vacancies.size() < descrProcessed + 1)
+        {
+            qCCritical(LinkedApp) << "there are less vacancies than descriptions provided";
+            return;
+        }
         Vacancy &vac = vacancies[descrProcessed++];
         vac.description = vacancy.description;
         vac.level = vacancy.level;
@@ -129,14 +137,14 @@ namespace Linked
 
     void App::titlesProcessed()
     {
-        qInfo() << "titlesProcessed";
+        qCDebug(LinkedApp);
 
         emit sendRequest(vacancies[descrProcessed].link);
     }
 
     void App::requestFinished()
     {
-        qInfo() << "finishedRequest";
+        qCDebug(LinkedApp);
 
         QDir sortedDir("sorted");
         if (!sortedDir.exists())
@@ -223,7 +231,7 @@ namespace Linked
             file.close();
         }
         else
-            qInfo() << "couldn't open " << path;
+            qCWarning(LinkedApp) << "couldn't open " << path;
         return ret;
     }
 
@@ -237,7 +245,7 @@ namespace Linked
             file.close();
         }
         else
-            qInfo() << "couldn't open " << path;
+            qCWarning(LinkedApp) << "couldn't open " << path;
         return ret;
     }
 
