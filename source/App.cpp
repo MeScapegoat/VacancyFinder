@@ -50,62 +50,12 @@ namespace Linked
         query.addQueryItem("start", QUrl::toPercentEncoding("0"));
         url.setQuery(query);
         emit sendRequest(url);
-
-        // currrentRequestType = RequestType::title;
-        // sendRequest(titleLink.arg(vacancies.size()));
-        // qInfo() << "sendSearchRequest finished\n";
     }
-
-    // void App::sendRequest(QString link)
-    // {
-    //     // qInfo() << "sendRequest START\n";
-    //     // QFile test("response.html");
-    //     // QFile test2("output");
-    //     // if (!test.open(QIODeviceBase::ReadOnly))
-    //     // {
-    //     //     qInfo() << " couldn't open file" << test2.fileName().toStdString();
-    //     //     return;
-    //     // }
-    //     // if (!test2.open(QIODeviceBase::WriteOnly))
-    //     // {
-    //     //     qInfo() << " couldn't open file" << test.fileName().toStdString();
-    //     //     return;
-    //     // }
-    //     // QTextStream test2Stream(&test2);
-    //     // QString fileString = test.readAll();
-    //     // fileString.remove("</li>");
-    //     // removeSpaces(fileString);
-    //     // auto data = fileString.split("<li>");
-    //     // Vacancy vacancy;
-    //     // for (auto n = 1; n < data.size(); ++n)
-    //     // {
-    //     //     vacancy.load(data[n]);
-    //     //     test2Stream << "!!! " << n << " !!!\n";
-    //     //     vacancy.print(test2Stream);
-    //     //     test2Stream << "\n";
-    //     // }
-    //     // test2.close();
-    //     // qInfo() << "sendRequest END\n";
-
-    //     QString info;
-    //     if (currrentRequestType == RequestType::title)
-    //         info = QString::number(vacancies.size()) + " title";
-    //     else
-    //         info = QString::number(descriptionsFinished + 1) + "/" + QString::number(vacancies.size()) + " description";
-
-    //     request.setUrl(link);
-
-    //     QThread::msleep(500);
-    //     qInfo() << "about to send " << info.toStdString() << " request: " << request.url().toDisplayString().toStdString() << "\n";
-    //     networkManager.get(request);
-    // }
 
     void App::titleReady(Vacancy vacancy)
     {
         qCInfo(LinkedApp) << "vacancies:" << vacancies.size() + 1;
         vacancies.push_back(std::move(vacancy));
-
-        // emit sendRequest(link);
     }
 
     void App::descrReady(const Vacancy &vacancy)
@@ -123,6 +73,12 @@ namespace Linked
 
         if (descrProcessed == vacancies.size())
         {
+            if (vacancies.size() > 999)
+            {
+                requestFinished();
+                return;
+            }
+
             QUrl url(baseUrl);
             QUrlQuery query;
             query.addQueryItem("keyword", QUrl::toPercentEncoding(keyword));
@@ -130,9 +86,10 @@ namespace Linked
             query.addQueryItem("start", QUrl::toPercentEncoding(QString::number(vacancies.size())));
             url.setQuery(query);
             emit sendRequest(url);
+            return;
         }
-        else
-            emit sendRequest(vacancies[descrProcessed].link);
+
+        emit sendRequest(vacancies[descrProcessed].link);
     }
 
     void App::titlesProcessed()

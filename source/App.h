@@ -64,8 +64,6 @@ namespace Linked
         QString baseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
         QString keyword = "";
         QString location = "";
-        //                     https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keyword=C%2B%2B&location=Serbia&start=0
-        //QString titleLink = "https://rs.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/c%2B%2B-developer-jobs?countryRedirected=1&position=1&pageNum=0&start=%1";
     };
 
 } // namespace Linked

@@ -5,6 +5,7 @@
 #include <QFileSystemWatcher>
 #include <QThread>
 #include <QLoggingCategory>
+
 // custom
 
 Q_DECLARE_LOGGING_CATEGORY(LinkedLogger);
