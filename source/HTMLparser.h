@@ -9,17 +9,17 @@
 // custom
 #include <Vacancy.h>
 
-Q_DECLARE_LOGGING_CATEGORY(LinkedParser);
-
 namespace Linked
 {
+    Q_DECLARE_LOGGING_CATEGORY(LinkedParser);
+
     class HTMLparser : public QObject
     {
         Q_OBJECT
 
     public:
-        HTMLparser() = default;
-        ~HTMLparser() = default;
+        HTMLparser();
+        ~HTMLparser();
 
     public slots:
         void processHTML(QNetworkReply *reply);

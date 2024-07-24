@@ -1,27 +1,40 @@
 // std
 
 // Qt
+#include <QThread>
 
 // custom
 #include <HTMLparser.h>
 
-Q_LOGGING_CATEGORY(LinkedParser, "Parser");
-
 namespace Linked
 {
+    Q_LOGGING_CATEGORY(LinkedParser, "parser");
+
+    HTMLparser::HTMLparser()
+    {
+        qCDebug(LinkedParser) << QThread::currentThread();
+    }
+
+    HTMLparser::~HTMLparser()
+    {
+        qCDebug(LinkedParser) << QThread::currentThread();
+    }
+
     void HTMLparser::processHTML(QNetworkReply *reply)
     {
-        qCDebug(LinkedParser) << "   " << reply->url();
-
         auto errorState = reply->error();
+        auto url = reply->url();
+        qCDebug(LinkedParser) << "   " << url;
         if (errorState != QNetworkReply::NoError)
         {
             qCWarning(LinkedParser) << errorState;
-            emit sendRequest(reply->url());
+            reply->deleteLater();
+            emit sendRequest(url);
             return;
         }
 
         QString replyStr = reply->readAll();
+        reply->deleteLater();
         if (replyStr.contains("description"))
             processDescr(replyStr);
         else
@@ -30,7 +43,7 @@ namespace Linked
 
     void HTMLparser::processTitle(QString str)
     {
-        qCDebug(LinkedParser);
+        qCDebug(LinkedParser) << QThread::currentThread();
 
         str.remove("</li>");
         removeSpaces(str);
@@ -50,7 +63,7 @@ namespace Linked
 
     void HTMLparser::processDescr(QString str)
     {
-        qCDebug(LinkedParser);
+        qCDebug(LinkedParser) << QThread::currentThread();
 
         removeSpaces(str);
         parseDescr(str);
@@ -58,7 +71,7 @@ namespace Linked
 
     void HTMLparser::parseTitle(QString data)
     {
-        qCDebug(LinkedParser);
+        qCDebug(LinkedParser) << QThread::currentThread();
 
         QString linkStart = "href=\"", linkEnd = ";";
         QString titleStart = "class=\"base-search-card__title\">\n", titleEnd = "\n";
@@ -97,7 +110,7 @@ namespace Linked
 
     void HTMLparser::parseDescr(QString data)
     {
-        qCDebug(LinkedParser);
+        qCDebug(LinkedParser) << QThread::currentThread();
 
         QString descriptionStart = "relative overflow-hidden\">\n", descriptionEnd = "\n";
         QString levelStart = "<span class=\"description__job-criteria-text description__job-criteria-text--criteria\">\n", levelEnd = "\n";

@@ -5,20 +5,26 @@
 #include <QFile>
 #include <QUrlQuery>
 #include <QDir>
-#include <QThread>
 
 // custom
 #include <App.h>
 
-Q_LOGGING_CATEGORY(LinkedApp, "App");
 namespace Linked
 {
+    Q_LOGGING_CATEGORY(LinkedApp, "app");
+
     App::App()
     {
-        qCInfo(LinkedApp) << "App ctr";
-
+        qCDebug(LinkedApp) << QThread::currentThread();
+        
+        networkThread.setObjectName("networkThread");
         networkManager.moveToThread(&networkThread);
+
+        parserThread.setObjectName("parserThread");
         parser.moveToThread(&parserThread);
+
+        guiThread.setObjectName("guiThread");
+        gui.moveToThread(&guiThread);
 
         QObject::connect(&networkManager, &NetworkManager::finished, &parser, &HTMLparser::processHTML, Qt::QueuedConnection);
         QObject::connect(this, &App::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
@@ -31,6 +37,21 @@ namespace Linked
 
         networkThread.start();
         parserThread.start();
+        guiThread.start();
+    }
+
+    App::~App()
+    {
+        qCDebug(LinkedApp) << QThread::currentThread();
+
+        networkThread.quit();
+        networkThread.wait();
+
+        parserThread.quit();
+        parserThread.wait();
+
+        guiThread.quit();
+        guiThread.wait();
     }
 
     void App::sendSearchRequest(QString k, QString l)

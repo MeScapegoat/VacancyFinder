@@ -9,18 +9,18 @@
 #include "Vacancy.h"
 #include "NetworkManager.h"
 #include "HTMLparser.h"
-
-Q_DECLARE_LOGGING_CATEGORY(LinkedApp);
+#include "GUI.h"
 
 namespace Linked
 {
+    Q_DECLARE_LOGGING_CATEGORY(LinkedApp);
     class App : public QObject
     {
         Q_OBJECT
 
     public:
         App();
-        ~App() = default;
+        ~App();
 
     public:
         void sendSearchRequest(QString, QString);
@@ -38,24 +38,23 @@ namespace Linked
 
     public slots:
         void titleReady(Vacancy);
-        void descrReady(const Vacancy&);
+        void descrReady(const Vacancy &);
 
         void titlesProcessed();
         void requestFinished();
-    
+
     signals:
         void sendRequest(QUrl url);
 
-        // private:
-    public:
+    private:
         NetworkManager networkManager;
         QThread networkThread;
 
         HTMLparser parser;
         QThread parserThread;
 
-        //Gui gui;
-        //QThread guiThread;
+        GUI gui;
+        QThread guiThread;
 
         QList<Vacancy> vacancies;
 

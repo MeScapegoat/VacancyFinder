@@ -8,16 +8,17 @@
 
 // custom
 
-Q_DECLARE_LOGGING_CATEGORY(LinkedLogger);
 
 namespace Linked
 {
+    Q_DECLARE_LOGGING_CATEGORY(LinkedLogger);
+    
     class Logger : public QObject
     {
         Q_OBJECT
     public:
         Logger();
-        ~Logger() = default;
+        ~Logger();
 
     public:
         void setLogRulesPath(const QString &);
@@ -28,7 +29,7 @@ namespace Linked
     private:
         QString logRulesPath;
         QFileSystemWatcher logRulesWatcher;
-        QThread thread;
+        QThread logThread;
     };
 
 } // namespace Linked

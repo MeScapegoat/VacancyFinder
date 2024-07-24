@@ -10,16 +10,15 @@
 
 // custom
 
-Q_DECLARE_LOGGING_CATEGORY(LinkedVacancy);
-
 namespace Linked
 {
+    Q_DECLARE_LOGGING_CATEGORY(LinkedVacancy);
+
     class Vacancy
     {
     public:
-        Vacancy() = default;
-        ~Vacancy() = default;
-        Vacancy(const QString &);
+        Vacancy();
+        ~Vacancy();
 
     public:
         void print(QTextStream &) const;

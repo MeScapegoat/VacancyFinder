@@ -7,20 +7,30 @@
 // Custom
 #include "Logger.h"
 
-Q_LOGGING_CATEGORY(LinkedLogger, "Logger");
-
 namespace Linked
 {
+    Q_LOGGING_CATEGORY(LinkedLogger, "logger");
+
     Logger::Logger()
     {
         const QString defaulMessagePattern = QString(
             "[%{time dd-MM-yyyy h:mm:ss.zzz}] %{if-debug}D%{endif}%{if-info}I%{endif}%{if-warning}W%{endif}%{if-critical}C%{endif}%{if-fatal}F%{endif}: %{function}:%{line} - %{message}");
         qSetMessagePattern(defaulMessagePattern);
-        
+
+        qCDebug(LinkedLogger) << QThread::currentThread();
+
         QObject::connect(&logRulesWatcher, &QFileSystemWatcher::fileChanged, this, &Logger::applyLogRules, Qt::DirectConnection);
 
-        logRulesWatcher.moveToThread(&thread);
-        thread.start();
+        logRulesWatcher.moveToThread(&logThread);
+        logThread.start();
+    }
+
+    Logger::~Logger()
+    {
+        qCDebug(LinkedLogger) << QThread::currentThread();
+
+        logThread.quit();
+        logThread.wait();
     }
 
     void Logger::setLogRulesPath(const QString &path)

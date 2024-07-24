@@ -2,12 +2,12 @@
 #include <iostream>
 
 // Qt
-#include <QCoreApplication> // TODO swap to gui
+#include <QApplication>
 #include <QDir>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QFile>
-#include <QTextStream>
+#include <QThread>
 
 // custom
 #include "App.h"
@@ -15,20 +15,15 @@
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication coreApplication(argc, argv);
+    QThread::currentThread()->setObjectName("MainThread");
+    QApplication application(argc, argv);
+    //application.setStyle("windows"); // ???
 
     QString logRulesPath("log_rules.ini");
     Linked::Logger logger;
     logger.setLogRulesPath(logRulesPath);
 
     Linked::App app;
-    QTextStream in(stdin);
-    QTextStream out(stdout);
-    QString keyword, location;
-    out << "Enter keyword: " << Qt::endl;;
-    in >> keyword;
-    out << "Enter location: " << Qt::endl;
-    in >> location;
-    app.sendSearchRequest(keyword, location);
-    return coreApplication.exec();
+
+    return application.exec();
 }

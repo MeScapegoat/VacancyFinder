@@ -1,15 +1,23 @@
 // std
 
 // Qt
+#include <QThread>
 
-//custom
+// custom
 #include "Vacancy.h"
-
-Q_LOGGING_CATEGORY(LinkedVacancy, "Vacancy");
 
 namespace Linked
 {
-    Vacancy::Vacancy(const QString &data) {}
+    Q_LOGGING_CATEGORY(LinkedVacancy, "vacancy");
+
+    Vacancy::Vacancy()
+    {
+        qCDebug(LinkedVacancy) << QThread::currentThread();
+    }
+    Vacancy::~Vacancy()
+    {
+        qCDebug(LinkedVacancy) << QThread::currentThread();
+    }
 
     void Vacancy::print(QTextStream &stream) const
     {

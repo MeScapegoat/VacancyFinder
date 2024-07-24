@@ -7,17 +7,17 @@
 
 // custom
 
-Q_DECLARE_LOGGING_CATEGORY(LinkedNetwork);
-
 namespace Linked
 {
+    Q_DECLARE_LOGGING_CATEGORY(LinkedNetwork);
+
     class NetworkManager : public QNetworkAccessManager
     {
         Q_OBJECT
 
     public:
-        NetworkManager() = default;
-        ~NetworkManager() = default;
+        NetworkManager();
+        ~NetworkManager();
 
     public slots:
         void sendRequest(QUrl);
