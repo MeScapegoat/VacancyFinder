@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 set(CMAKE_CXX_COMPILER g++)
 set(CMAKE_PREFIX_PATH "C:/Qt/6.5.0/mingw_64") # TODO use more generous approach
 set(CMAKE_AUTOMOC ON)
+set(QTWEBENGINEPROCESS_PATH "/usr/lib/qt6/libexec")
 
 add_compile_options(-O2 -Wall -Wextra -Wpedantic)         
 
@@ -30,9 +31,9 @@ target_sources(LinkedIn_search_app
                 PUBLIC source/Window.h
                 PUBLIC source/Window.cpp) # TODO change this
 
-find_package(Qt6 COMPONENTS Core Network Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Core Network Widgets WebEngineWidgets REQUIRED)
 target_link_libraries(LinkedIn_search_app 
-                      PRIVATE Qt6::Core Qt6::Network Qt6::Widgets)
+                      PRIVATE Qt6::Core Qt6::Network Qt6::Widgets Qt6::WebEngineWidgets)
 
 target_include_directories(LinkedIn_search_app 
                            PUBLIC source)

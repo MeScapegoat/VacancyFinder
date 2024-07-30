@@ -5,11 +5,13 @@
 #include <QThread>
 
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QListView>
+#include <QWebEngineView>
 
 // custom
 #include "Window.h"
@@ -33,25 +35,88 @@ namespace Linked
         QWidget *centralWidget = new QWidget(this);
         setCentralWidget(centralWidget);
 
+        QVBoxLayout *mainVLayout = new QVBoxLayout(centralWidget);
+
         QLabel *keywordsLabel = new QLabel("KeywordsLabel", centralWidget);
         QLineEdit *keywordsLineEdit = new QLineEdit("KeywordsLineEdit", centralWidget);
         QLabel *locationLabel = new QLabel("LocationLabel", centralWidget);
         QLineEdit *locationLineEdit = new QLineEdit("LocationLineEdit", centralWidget);
         QPushButton *searchButton = new QPushButton("SearchButton", centralWidget);
 
-        QHBoxLayout *searchLayout = new QHBoxLayout(centralWidget);
+        QHBoxLayout *searchLayout = new QHBoxLayout;
+        mainVLayout->addLayout(searchLayout);
         searchLayout->addWidget(keywordsLabel);
         searchLayout->addWidget(keywordsLineEdit);
         searchLayout->addWidget(locationLabel);
         searchLayout->addWidget(locationLineEdit);
         searchLayout->addWidget(searchButton);
 
+        QListView *vacanciesList = new QListView(centralWidget);
+        QWebEngineView *vacancyDesc = new QWebEngineView(centralWidget);
+        vacancyDesc->setHtml(R"(<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple HTML Site</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+        main {
+            padding: 20px;
+        }
+        footer {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+            position: fixed;
+            width: 100%;
+            bottom: 0;
+        }
+    </style>
+</head>
+<body>
 
-        QListView * vacanciesList = new QListView(centralWidget);
+<header>
+    <h1>Welcome to My Simple Site</h1>
+</header>
 
-        QHBoxLayout *searchResultLayout = new QHBoxLayout(centralWidget);
+<main>
+    <h2>About This Site</h2>
+    <p>This is a simple HTML website created to demonstrate the basic structure of an HTML document. You can add more content and styles to make it your own.</p>
+
+    <h2>Features</h2>
+    <ul>
+        <li>Simple layout</li>
+        <li>Responsive design</li>
+        <li>Easy to customize</li>
+    </ul>
+</main>
+
+<footer>
+    <p>&copy; 2024 My Simple Site</p>
+</footer>
+
+</body>
+</html>
+)");
+
+        QHBoxLayout *searchResultLayout = new QHBoxLayout;
+
+        mainVLayout->addLayout(searchResultLayout);
+
         searchResultLayout->addWidget(vacanciesList);
-
+        searchResultLayout->addWidget(vacancyDesc);
 
         show();
     }
