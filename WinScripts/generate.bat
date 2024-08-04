@@ -9,7 +9,7 @@ if not %currentFolder% == %projectFolder% (
 )
 
 rmdir /S /Q build
-cmake -G Ninja -S . -B build
+cmake -G "Visual Studio 17 2022" -A x64 -S . -B build
 if %ERRORLEVEL% NEQ 0 (
     echo Error: Generating files failed.
     exit /b %ERRORLEVEL%

@@ -14,4 +14,4 @@ set errorCode=%errorlevel%
 if not %errorCode%==0 (
     exit /b %errorCode%
 )
-build\LinkedIn_search_app.exe
+build\Debug\LinkedIn_search_app.exe

@@ -10,7 +10,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QListView>
+#include <QStringListModel>
 #include <QWebEngineView>
 
 // custom
@@ -19,6 +19,21 @@
 namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedGUIWindow, "gui.window");
+
+    void Window::test()
+    {
+        qCInfo(LinkedGUIWindow) << "Test button pressed";
+        
+        if (!vacanciesList)
+        {
+            qCCritical(LinkedGUIWindow) << "List of vacancies not created";
+            return;
+        }
+        auto model = qobject_cast<QStringListModel*>(vacanciesList->model());
+        auto data = model->stringList();
+        data.append("TEST");
+        model->setStringList(data);
+    }
 
     Window::Window()
     {
@@ -43,6 +58,9 @@ namespace Linked
         QLineEdit *locationLineEdit = new QLineEdit("LocationLineEdit", centralWidget);
         QPushButton *searchButton = new QPushButton("SearchButton", centralWidget);
 
+        QPushButton *testButton = new QPushButton("TEST", centralWidget);
+        QObject::connect(testButton, &QPushButton::pressed, this, &Window::test);
+
         QHBoxLayout *searchLayout = new QHBoxLayout;
         mainVLayout->addLayout(searchLayout);
         searchLayout->addWidget(keywordsLabel);
@@ -50,8 +68,15 @@ namespace Linked
         searchLayout->addWidget(locationLabel);
         searchLayout->addWidget(locationLineEdit);
         searchLayout->addWidget(searchButton);
+        searchLayout->addWidget(testButton);
 
-        QListView *vacanciesList = new QListView(centralWidget);
+        vacanciesList = new QListView(centralWidget);
+
+        QStringList data;
+        data << "data 1" << "data 2" << "data 3" << "data 4" << "data 5";
+        QStringListModel *model = new QStringListModel();
+        model->setStringList(data);
+        vacanciesList->setModel(model);
         QWebEngineView *vacancyDesc = new QWebEngineView(centralWidget);
         vacancyDesc->setHtml(R"(<!DOCTYPE html>
 <html lang="en">
@@ -115,8 +140,8 @@ namespace Linked
 
         mainVLayout->addLayout(searchResultLayout);
 
-        searchResultLayout->addWidget(vacanciesList);
-        searchResultLayout->addWidget(vacancyDesc);
+        searchResultLayout->addWidget(vacanciesList, 20);
+        searchResultLayout->addWidget(vacancyDesc, 80);
 
         show();
     }

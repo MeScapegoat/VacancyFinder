@@ -1,11 +1,19 @@
 cmake_minimum_required(VERSION 3.20)
-
-set(CMAKE_CXX_COMPILER g++)
-set(CMAKE_PREFIX_PATH "C:/Qt/6.5.0/mingw_64") # TODO use more generous approach
-set(CMAKE_AUTOMOC ON)
-set(QTWEBENGINEPROCESS_PATH "/usr/lib/qt6/libexec")
-
-add_compile_options(-O2 -Wall -Wextra -Wpedantic)         
+if (WIN32)
+        # TODO find Qt dir using function like C:/Qt/*
+        # TODO find compiler using function like C:/Program Files (x86)/Microsoft Visual Studio/*
+        message("Configuring for Windows...")
+        set(CMAKE_PREFIX_PATH "C:/Qt/6.7.2/msvc2019_64")
+        set(CMAKE_CXX_COMPILER "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.40.33807/bin/Hostx64/x64/cl.exe")
+        add_compile_options(/Wall /permissive-)
+elseif (LINUX)
+        message("Configuring for Linux...")
+        set(QTWEBENGINEPROCESS_PATH "/usr/lib/qt6/libexec")
+        add_compile_options(-O2 -Wall -Wextra -Wpedantic)
+else()
+        message("The app wasn't tested for ${CMAKE_SYSTEM_NAME}")
+endif()
+set(CMAKE_AUTOMOC ON)         
 
 project(LinkedIn_search_app
         VERSION 1.0
