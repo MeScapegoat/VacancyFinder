@@ -11,7 +11,6 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QStringListModel>
-#include <QWebEngineView>
 
 // custom
 #include "Window.h"
@@ -23,13 +22,13 @@ namespace Linked
     void Window::test()
     {
         qCInfo(LinkedGUIWindow) << "Test button pressed";
-        
+
         if (!vacanciesList)
         {
             qCCritical(LinkedGUIWindow) << "List of vacancies not created";
             return;
         }
-        auto model = qobject_cast<QStringListModel*>(vacanciesList->model());
+        auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
         auto data = model->stringList();
         data.append("TEST");
         model->setStringList(data);
@@ -52,11 +51,12 @@ namespace Linked
 
         QVBoxLayout *mainVLayout = new QVBoxLayout(centralWidget);
 
-        QLabel *keywordsLabel = new QLabel("KeywordsLabel", centralWidget);
-        QLineEdit *keywordsLineEdit = new QLineEdit("KeywordsLineEdit", centralWidget);
+        keywordsLineEdit = new QLineEdit("KeywordsLineEdit", centralWidget);
+        locationLineEdit = new QLineEdit("LocationLineEdit", centralWidget);
+        searchButton = new QPushButton("SearchButton", centralWidget);
+
         QLabel *locationLabel = new QLabel("LocationLabel", centralWidget);
-        QLineEdit *locationLineEdit = new QLineEdit("LocationLineEdit", centralWidget);
-        QPushButton *searchButton = new QPushButton("SearchButton", centralWidget);
+        QLabel *keywordsLabel = new QLabel("KeywordsLabel", centralWidget);
 
         QPushButton *testButton = new QPushButton("TEST", centralWidget);
         QObject::connect(testButton, &QPushButton::pressed, this, &Window::test);
@@ -77,7 +77,7 @@ namespace Linked
         QStringListModel *model = new QStringListModel();
         model->setStringList(data);
         vacanciesList->setModel(model);
-        QWebEngineView *vacancyDesc = new QWebEngineView(centralWidget);
+        vacancyDesc = new QWebEngineView(centralWidget);
         vacancyDesc->setHtml(R"(<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -142,6 +142,11 @@ namespace Linked
 
         searchResultLayout->addWidget(vacanciesList, 20);
         searchResultLayout->addWidget(vacancyDesc, 80);
+
+        QObject::connect(vacanciesList, &QListView::clicked, [this](const QModelIndex &index)
+                         { emit openVacancyDescription(index.row()); });
+        QObject::connect(searchButton, &QPushButton::released, [this]()
+                         { emit startSearch(keywordsLineEdit->text(), locationLineEdit->text()); });
 
         show();
     }
