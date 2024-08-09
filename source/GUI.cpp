@@ -8,14 +8,9 @@ namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedGUI, "gui");
 
-    GUI::GUI()
+    MainWindow *GUI::mainWindow()
     {
-        qCDebug(LinkedGUI) << QThread::currentThread();
-    }
-
-    GUI::~GUI()
-    {
-        qCDebug(LinkedGUI) << QThread::currentThread();
+        return &mainWindow_;
     }
 
 } // namespace Linked

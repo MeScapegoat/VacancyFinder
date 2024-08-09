@@ -17,8 +17,6 @@ namespace Linked
             "[%{time dd-MM-yyyy h:mm:ss.zzz}] %{if-debug}D%{endif}%{if-info}I%{endif}%{if-warning}W%{endif}%{if-critical}C%{endif}%{if-fatal}F%{endif}: %{function}:%{line} - %{message}");
         qSetMessagePattern(defaulMessagePattern);
 
-        qCDebug(LinkedLogger) << QThread::currentThread();
-
         QObject::connect(&logRulesWatcher, &QFileSystemWatcher::fileChanged, this, &Logger::applyLogRules, Qt::DirectConnection);
 
         logRulesWatcher.moveToThread(&logThread);
@@ -27,8 +25,6 @@ namespace Linked
 
     Logger::~Logger()
     {
-        qCDebug(LinkedLogger) << QThread::currentThread();
-
         logThread.quit();
         logThread.wait();
     }

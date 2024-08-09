@@ -17,8 +17,8 @@ namespace Linked
     class Vacancy
     {
     public:
-        Vacancy();
-        ~Vacancy();
+        Vacancy() = default;
+        ~Vacancy() = default;
 
     public:
         void print(QTextStream &) const;

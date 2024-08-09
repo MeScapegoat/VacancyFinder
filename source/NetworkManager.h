@@ -16,8 +16,8 @@ namespace Linked
         Q_OBJECT
 
     public:
-        NetworkManager();
-        ~NetworkManager();
+        NetworkManager() = default;
+        ~NetworkManager() = default;
 
     public slots:
         void sendRequest(QUrl);

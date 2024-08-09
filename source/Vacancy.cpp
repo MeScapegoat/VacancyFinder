@@ -10,15 +10,6 @@ namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedVacancy, "vacancy");
 
-    Vacancy::Vacancy()
-    {
-        qCDebug(LinkedVacancy) << QThread::currentThread();
-    }
-    Vacancy::~Vacancy()
-    {
-        qCDebug(LinkedVacancy) << QThread::currentThread();
-    }
-
     void Vacancy::print(QTextStream &stream) const
     {
         stream << "           title | " << title << "\n";

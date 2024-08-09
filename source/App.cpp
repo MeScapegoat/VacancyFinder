@@ -14,9 +14,7 @@ namespace Linked
     Q_LOGGING_CATEGORY(LinkedApp, "app");
 
     App::App()
-    {
-        qCDebug(LinkedApp) << QThread::currentThread();
-        
+    {   
         networkThread.setObjectName("networkThread");
         networkManager.moveToThread(&networkThread);
 
@@ -28,12 +26,16 @@ namespace Linked
 
         QObject::connect(&networkManager, &NetworkManager::finished, &parser, &HTMLparser::processHTML, Qt::QueuedConnection);
         QObject::connect(this, &App::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
-        QObject::connect(&parser, &HTMLparser::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
 
+        QObject::connect(&parser, &HTMLparser::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
         QObject::connect(&parser, &HTMLparser::titlesProcessed, this, &App::titlesProcessed, Qt::QueuedConnection);
         QObject::connect(&parser, &HTMLparser::requestFinished, this, &App::requestFinished, Qt::QueuedConnection);
         QObject::connect(&parser, &HTMLparser::titleReady, this, &App::titleReady, Qt::QueuedConnection);
         QObject::connect(&parser, &HTMLparser::descrReady, this, &App::descrReady, Qt::QueuedConnection);
+
+        QObject::connect(this, &App::toList,gui.mainWindow(), &MainWindow::appendList);
+        QObject::connect(gui.mainWindow()->list(), &QListView::clicked, this, &App::openVacancyDescription);
+        QObject::connect(gui.mainWindow()->button(), &QPushButton::released, this, &App::sendSearchRequest);
 
         networkThread.start();
         parserThread.start();
@@ -42,8 +44,6 @@ namespace Linked
 
     App::~App()
     {
-        qCDebug(LinkedApp) << QThread::currentThread();
-
         networkThread.quit();
         networkThread.wait();
 
@@ -54,15 +54,15 @@ namespace Linked
         guiThread.wait();
     }
 
-    void App::sendSearchRequest(QString k, QString l)
+    void App::sendSearchRequest()
     {
         vacancies.clear();
         descrProcessed = 0;
 
-        keyword = k;
-        location = l;
+        keyword = gui.mainWindow()->keywords()->text();
+        location = gui.mainWindow()->location()->text();
 
-        qCDebug(LinkedApp) << "keyword:" << keyword << "location:" << location;
+        qCInfo(LinkedApp) << "keyword:" << keyword << "location:" << location;
 
         QUrl url(baseUrl);
         QUrlQuery query;
@@ -73,15 +73,26 @@ namespace Linked
         emit sendRequest(url);
     }
 
-    void App::titleReady(Vacancy vacancy)
+    void App::openVacancyDescription(const QModelIndex& index)
     {
-        qCInfo(LinkedApp) << "vacancies:" << vacancies.size() + 1;
-        vacancies.push_back(std::move(vacancy));
+        auto id = index.row();
+        if (id > vacancies.size())
+        {
+            qCDebug(LinkedApp) << "Not ready yet!";
+            return;
+        }
+        gui.mainWindow()->descr()->load(vacancies[id].companyLink);
+    }
+
+    void App::titleReady(const Vacancy& vacancy)
+    {
+        vacancies.push_back(vacancy);
+        emit toList(vacancy);
     }
 
     void App::descrReady(const Vacancy &vacancy)
     {
-        qCInfo(LinkedApp) << "Processing description:" << descrProcessed + 1;
+        qCDebug(LinkedApp) << "Processing description:" << descrProcessed + 1;
         if (vacancies.size() < descrProcessed + 1)
         {
             qCCritical(LinkedApp) << "there are less vacancies than descriptions provided";
@@ -115,8 +126,7 @@ namespace Linked
 
     void App::titlesProcessed()
     {
-        qCDebug(LinkedApp);
-
+        qCInfo(LinkedApp) << "vacancies:" << vacancies.size();
         emit sendRequest(vacancies[descrProcessed].link);
     }
 

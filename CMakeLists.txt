@@ -37,8 +37,8 @@ target_sources(LinkedIn_search_app
                 PUBLIC source/Logger.cpp
                 PUBLIC source/GUI.h
                 PUBLIC source/GUI.cpp
-                PUBLIC source/Window.h
-                PUBLIC source/Window.cpp) # TODO change this
+                PUBLIC source/MainWindow.h
+                PUBLIC source/MainWindow.cpp) # TODO change this
 
 find_package(Qt6 COMPONENTS Core Network Widgets WebEngineWidgets REQUIRED)
 target_link_libraries(LinkedIn_search_app 

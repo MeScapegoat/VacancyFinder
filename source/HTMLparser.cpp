@@ -10,16 +10,6 @@ namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedParser, "parser");
 
-    HTMLparser::HTMLparser()
-    {
-        qCDebug(LinkedParser) << QThread::currentThread();
-    }
-
-    HTMLparser::~HTMLparser()
-    {
-        qCDebug(LinkedParser) << QThread::currentThread();
-    }
-
     void HTMLparser::processHTML(QNetworkReply *reply)
     {
         auto errorState = reply->error();
@@ -43,12 +33,12 @@ namespace Linked
 
     void HTMLparser::processTitle(QString str)
     {
-        qCDebug(LinkedParser) << QThread::currentThread();
-
         str.remove("</li>");
         removeSpaces(str);
 
         auto data = str.split("<li>");
+
+        qCInfo(LinkedParser) << "data size:" << data.size();
 
         if (data.size() < 2)
         {
@@ -63,16 +53,12 @@ namespace Linked
 
     void HTMLparser::processDescr(QString str)
     {
-        qCDebug(LinkedParser) << QThread::currentThread();
-
         removeSpaces(str);
         parseDescr(str);
     }
 
     void HTMLparser::parseTitle(QString data)
     {
-        qCDebug(LinkedParser) << QThread::currentThread();
-
         QString linkStart = "href=\"", linkEnd = ";";
         QString titleStart = "class=\"base-search-card__title\">\n", titleEnd = "\n";
         QString companyLinkStart = "href=\"", companyLinkEnd = "\"";
@@ -110,8 +96,6 @@ namespace Linked
 
     void HTMLparser::parseDescr(QString data)
     {
-        qCDebug(LinkedParser) << QThread::currentThread();
-
         QString descriptionStart = "relative overflow-hidden\">\n", descriptionEnd = "\n";
         QString levelStart = "<span class=\"description__job-criteria-text description__job-criteria-text--criteria\">\n", levelEnd = "\n";
         QString employmentTypeStart = "<span class=\"description__job-criteria-text description__job-criteria-text--criteria\">\n", employmentTypeEnd = "\n";

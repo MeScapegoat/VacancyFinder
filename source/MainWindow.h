@@ -10,25 +10,30 @@
 #include <QPushButton>
 
 // custom
+#include "Vacancy.h"
 
 namespace Linked
 {
-    Q_DECLARE_LOGGING_CATEGORY(LinkedGUIWindow);
+    Q_DECLARE_LOGGING_CATEGORY(LinkedGUIMainWindow);
 
-    class Window : public QMainWindow
+    class MainWindow : public QMainWindow
     {
         Q_OBJECT
 
     public:
-        Window();
-        ~Window();
+        MainWindow();
+        ~MainWindow();
+
+    public:
+        QListView *list() { return vacanciesList; }
+        QPushButton *button() { return searchButton; }
+        QWebEngineView *descr() { return vacancyDesc; }
+        QLineEdit *keywords() { return keywordsLineEdit; }
+        QLineEdit *location() { return locationLineEdit; }
 
     public slots:
         void test();
-
-    signals:
-        void startSearch(const QString &keyword, const QString &location);
-        void openVacancyDescription(const qsizetype &index);
+        void appendList(const Vacancy &vacancy);
 
     protected:
         void closeEvent(QCloseEvent *) override;

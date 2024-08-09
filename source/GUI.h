@@ -5,7 +5,7 @@
 #include <QObject>
 
 // custom
-#include "Window.h"
+#include "MainWindow.h"
 
 namespace Linked
 {
@@ -16,12 +16,14 @@ namespace Linked
         Q_OBJECT
 
     public:
-        GUI();
-        ~GUI();
+        GUI() = default;
+        ~GUI() = default;
 
     public:
+        MainWindow *mainWindow();
+
     private:
-        Window window;
+        MainWindow mainWindow_;
     };
 
 } // namespace Linked

@@ -23,8 +23,6 @@ namespace Linked
         ~App();
 
     public:
-        void sendSearchRequest(QString, QString);
-
         QString loadTitleFromFile(const QString &path);
         QString loadDescriptionFromFile(const QString &path);
 
@@ -37,14 +35,18 @@ namespace Linked
         const QList<Vacancy> &sortByRelevance(const QString &);
 
     public slots:
-        void titleReady(Vacancy);
+        void titleReady(const Vacancy &);
         void descrReady(const Vacancy &);
+
+        void sendSearchRequest();
+        void openVacancyDescription(const QModelIndex&);
 
         void titlesProcessed();
         void requestFinished();
 
     signals:
         void sendRequest(QUrl url);
+        void toList(Vacancy vacancy);
 
     private:
         NetworkManager networkManager;

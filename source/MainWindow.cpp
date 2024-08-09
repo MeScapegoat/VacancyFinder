@@ -13,19 +13,19 @@
 #include <QStringListModel>
 
 // custom
-#include "Window.h"
+#include "MainWindow.h"
 
 namespace Linked
 {
-    Q_LOGGING_CATEGORY(LinkedGUIWindow, "gui.window");
+    Q_LOGGING_CATEGORY(LinkedGUIMainWindow, "gui.main_window");
 
-    void Window::test()
+    void MainWindow::test()
     {
-        qCInfo(LinkedGUIWindow) << "Test button pressed";
+        qCInfo(LinkedGUIMainWindow) << "Test button pressed";
 
         if (!vacanciesList)
         {
-            qCCritical(LinkedGUIWindow) << "List of vacancies not created";
+            qCCritical(LinkedGUIMainWindow) << "List of vacancies not created";
             return;
         }
         auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
@@ -34,10 +34,21 @@ namespace Linked
         model->setStringList(data);
     }
 
-    Window::Window()
+    void MainWindow::appendList(const Vacancy &vacancy)
     {
-        qCDebug(LinkedGUIWindow) << QThread::currentThread();
+        if (!vacanciesList)
+        {
+            qCCritical(LinkedGUIMainWindow) << "List of vacancies not created";
+            return;
+        }
+        auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
+        auto data = model->stringList();
+        data.append(QString("%1. %2").arg(data.size() + 1).arg(vacancy.title));
+        model->setStringList(data);
+    }
 
+    MainWindow::MainWindow()
+    {
         auto screenSize = QApplication::screens()[0]->size() / 2;
         qsizetype x, y, w, h;
         w = screenSize.width();
@@ -59,7 +70,7 @@ namespace Linked
         QLabel *keywordsLabel = new QLabel("KeywordsLabel", centralWidget);
 
         QPushButton *testButton = new QPushButton("TEST", centralWidget);
-        QObject::connect(testButton, &QPushButton::pressed, this, &Window::test);
+        QObject::connect(testButton, &QPushButton::pressed, this, &MainWindow::test);
 
         QHBoxLayout *searchLayout = new QHBoxLayout;
         mainVLayout->addLayout(searchLayout);
@@ -72,10 +83,7 @@ namespace Linked
 
         vacanciesList = new QListView(centralWidget);
 
-        QStringList data;
-        data << "data 1" << "data 2" << "data 3" << "data 4" << "data 5";
         QStringListModel *model = new QStringListModel();
-        model->setStringList(data);
         vacanciesList->setModel(model);
         vacancyDesc = new QWebEngineView(centralWidget);
         vacancyDesc->setHtml(R"(<!DOCTYPE html>
@@ -143,23 +151,14 @@ namespace Linked
         searchResultLayout->addWidget(vacanciesList, 20);
         searchResultLayout->addWidget(vacancyDesc, 80);
 
-        QObject::connect(vacanciesList, &QListView::clicked, [this](const QModelIndex &index)
-                         { emit openVacancyDescription(index.row()); });
-        QObject::connect(searchButton, &QPushButton::released, [this]()
-                         { emit startSearch(keywordsLineEdit->text(), locationLineEdit->text()); });
-
         show();
     }
 
-    Window::~Window()
-    {
-        qCDebug(LinkedGUIWindow) << QThread::currentThread();
-    }
+    MainWindow::~MainWindow() {}
 
-    void Window::closeEvent(QCloseEvent *event)
+    void MainWindow::closeEvent(QCloseEvent *event)
     {
-        qCDebug(LinkedGUIWindow) << QThread::currentThread();
-        qCInfo(LinkedGUIWindow) << "closeEvent";
+        qCInfo(LinkedGUIMainWindow) << "closeEvent";
         event->accept();
     }
 

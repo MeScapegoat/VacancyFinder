@@ -18,8 +18,8 @@ namespace Linked
         Q_OBJECT
 
     public:
-        HTMLparser();
-        ~HTMLparser();
+        HTMLparser() = default;
+        ~HTMLparser() = default;
 
     public slots:
         void processHTML(QNetworkReply *reply);
