@@ -13,12 +13,12 @@ namespace Linked
 
     Logger::Logger()
     {
-        const QString defaulMessagePattern = QString(
-            "[%{time dd-MM-yyyy h:mm:ss.zzz}] %{if-debug}D%{endif}%{if-info}I%{endif}%{if-warning}W%{endif}%{if-critical}C%{endif}%{if-fatal}F%{endif}: %{function}:%{line} - %{message}");
-        qSetMessagePattern(defaulMessagePattern);
+        qInstallMessageHandler(myMessageHandler);
+        qSetMessagePattern("[%{time dd-MM-yyyy HH:mm:ss:zzz}][%{function}][%ThreadName]: %{message}");
 
         QObject::connect(&logRulesWatcher, &QFileSystemWatcher::fileChanged, this, &Logger::applyLogRules, Qt::DirectConnection);
 
+        logThread.setObjectName("LogThread");
         logRulesWatcher.moveToThread(&logThread);
         logThread.start();
     }
@@ -57,6 +57,17 @@ namespace Linked
         logRules.close();
 
         qCInfo(LinkedLogger) << "Log rules updated!";
+    }
+
+    void Logger::myMessageHandler(QtMsgType type, const QMessageLogContext & context, const QString & msg)
+    {
+        QTextStream out(stdout);
+
+        auto log_msg = qFormatLogMessage(type, context, msg);
+        auto currentThread = QThread::currentThread();
+        log_msg.replace("%ThreadName", currentThread->objectName());
+
+        out << log_msg << Qt::endl;
     }
 
 } // namespace Linked

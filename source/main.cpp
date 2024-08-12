@@ -15,7 +15,7 @@
 
 int main(int argc, char *argv[])
 {
-    QThread::currentThread()->setObjectName("MainThread");
+    QThread::currentThread()->setObjectName("AppThread");
     QApplication application(argc, argv);
     //application.setStyle("windows"); // ???
 

@@ -28,14 +28,14 @@ namespace Linked
         QObject::connect(this, &App::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
 
         QObject::connect(&parser, &HTMLparser::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
-        QObject::connect(&parser, &HTMLparser::titlesProcessed, this, &App::titlesProcessed, Qt::QueuedConnection);
-        QObject::connect(&parser, &HTMLparser::requestFinished, this, &App::requestFinished, Qt::QueuedConnection);
-        QObject::connect(&parser, &HTMLparser::titleReady, this, &App::titleReady, Qt::QueuedConnection);
-        QObject::connect(&parser, &HTMLparser::descrReady, this, &App::descrReady, Qt::QueuedConnection);
+        QObject::connect(&parser, &HTMLparser::titlesProcessed, this, &App::titlesProcessed, Qt::DirectConnection);
+        QObject::connect(&parser, &HTMLparser::requestFinished, this, &App::requestFinished, Qt::DirectConnection);
+        QObject::connect(&parser, &HTMLparser::titleReady, this, &App::titleReady, Qt::DirectConnection);
+        QObject::connect(&parser, &HTMLparser::descrReady, this, &App::descrReady, Qt::DirectConnection);
 
-        QObject::connect(this, &App::toList,gui.mainWindow(), &MainWindow::appendList);
-        QObject::connect(gui.mainWindow()->list(), &QListView::clicked, this, &App::openVacancyDescription);
-        QObject::connect(gui.mainWindow()->button(), &QPushButton::released, this, &App::sendSearchRequest);
+        QObject::connect(this, &App::toList,gui.mainWindow(), &MainWindow::appendList, Qt::DirectConnection);
+        QObject::connect(gui.mainWindow()->list(), &QListView::clicked, this, &App::openVacancyDescription, Qt::QueuedConnection);
+        QObject::connect(gui.mainWindow()->button(), &QPushButton::released, this, &App::sendSearchRequest, Qt::QueuedConnection);
 
         networkThread.start();
         parserThread.start();
