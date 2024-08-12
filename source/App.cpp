@@ -14,7 +14,7 @@ namespace Linked
     Q_LOGGING_CATEGORY(LinkedApp, "app");
 
     App::App()
-    {   
+    {
         networkThread.setObjectName("networkThread");
         networkManager.moveToThread(&networkThread);
 
@@ -33,7 +33,7 @@ namespace Linked
         QObject::connect(&parser, &HTMLparser::titleReady, this, &App::titleReady, Qt::DirectConnection);
         QObject::connect(&parser, &HTMLparser::descrReady, this, &App::descrReady, Qt::DirectConnection);
 
-        QObject::connect(this, &App::toList,gui.mainWindow(), &MainWindow::appendList, Qt::DirectConnection);
+        QObject::connect(this, &App::toList, gui.mainWindow(), &MainWindow::appendList, Qt::DirectConnection);
         QObject::connect(gui.mainWindow()->list(), &QListView::clicked, this, &App::openVacancyDescription, Qt::QueuedConnection);
         QObject::connect(gui.mainWindow()->button(), &QPushButton::released, this, &App::sendSearchRequest, Qt::QueuedConnection);
 
@@ -73,7 +73,7 @@ namespace Linked
         emit sendRequest(url);
     }
 
-    void App::openVacancyDescription(const QModelIndex& index)
+    void App::openVacancyDescription(const QModelIndex &index)
     {
         auto id = index.row();
         if (id > vacancies.size())
@@ -81,13 +81,13 @@ namespace Linked
             qCDebug(LinkedApp) << "Not ready yet!";
             return;
         }
-        gui.mainWindow()->descr()->load(vacancies[id].companyLink);
+        qCDebug(LinkedApp) << vacancies[id].HTML;
+        gui.mainWindow()->descr()->setHtml(vacancies[id].HTML);
     }
 
-    void App::titleReady(const Vacancy& vacancy)
+    void App::titleReady(const Vacancy &vacancy)
     {
         vacancies.push_back(vacancy);
-        emit toList(vacancy);
     }
 
     void App::descrReady(const Vacancy &vacancy)
@@ -102,6 +102,7 @@ namespace Linked
         vac.description = vacancy.description;
         vac.level = vacancy.level;
         vac.employmentType = vacancy.employmentType;
+        vac.HTML = vacancy.HTML;
 
         if (descrProcessed == vacancies.size())
         {
@@ -121,6 +122,7 @@ namespace Linked
             return;
         }
 
+        emit toList(vacancies[descrProcessed]);
         emit sendRequest(vacancies[descrProcessed].link);
     }
 

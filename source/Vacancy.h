@@ -27,6 +27,7 @@ namespace Linked
 
     public:
         QString title;
+        QString HTML;
         QString link;
         QString companyName;
         QString companyLink;

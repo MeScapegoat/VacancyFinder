@@ -102,6 +102,8 @@ namespace Linked
 
         Vacancy vacancy;
 
+        vacancy.HTML = data;
+
         vacancy.description = extract(data, descriptionStart, descriptionEnd);
         data = data.mid(vacancy.description.size() + data.indexOf(vacancy.description));
 
