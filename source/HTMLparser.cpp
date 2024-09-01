@@ -4,7 +4,7 @@
 #include <QThread>
 
 // custom
-#include <HTMLparser.h>
+#include "HTMLparser.h"
 
 namespace Linked
 {

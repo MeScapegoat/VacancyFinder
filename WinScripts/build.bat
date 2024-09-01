@@ -8,7 +8,7 @@ if not %currentFolder% == %projectFolder% (
     exit /b 1
 )
 
-cmake --build build
+cmake --build build --config Debug
 if %ERRORLEVEL% NEQ 0 (
     echo Error: Build failed.
     exit /b %ERRORLEVEL%

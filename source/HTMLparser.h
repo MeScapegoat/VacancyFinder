@@ -7,7 +7,7 @@
 #include <QLoggingCategory>
 
 // custom
-#include <Vacancy.h>
+#include "Vacancy.h"
 
 namespace Linked
 {

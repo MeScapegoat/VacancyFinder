@@ -7,7 +7,7 @@
 #include <QDir>
 
 // custom
-#include <App.h>
+#include "App.h"
 
 namespace Linked
 {
