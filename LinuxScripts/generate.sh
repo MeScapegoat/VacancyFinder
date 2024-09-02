@@ -8,7 +8,7 @@ if [ "$currentFolder" != "$projectFolder" ]; then
 fi
 
 rm -rv build
-cmake -G Ninja -S . -B build
+cmake -G Ninja -S source -B build
 errorCode=$?
 if [[ $errorCode -ne 0 ]]; then
     echo Error: Generating files failed.

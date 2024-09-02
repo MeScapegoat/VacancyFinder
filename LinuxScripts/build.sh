@@ -7,7 +7,7 @@ if [ "$currentFolder" != "$projectFolder" ]; then
     exit 1
 fi
 
-cmake --build build
+cmake --build build --config Debug
 errorCode=$?
 if [[ $errorCode -ne 0 ]]; then
     exit $errorCode
