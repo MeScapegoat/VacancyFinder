@@ -119,28 +119,28 @@ namespace Linked
             data = data.mid(vacancy.employmentType.size() + data.indexOf(vacancy.employmentType));
         }
 
-        vacancy.description.replace("<br>", "\n");
-        vacancy.description.replace("<p>", "\n");
-        vacancy.description.replace("<ol>", "\n");
-        vacancy.description.replace("<ul>", "\n");
-        vacancy.description.replace("<li>", "\n");
-        vacancy.description.replace("&nbsp;", " ");
+        // vacancy.description.replace("<br>", "\n");
+        // vacancy.description.replace("<p>", "\n");
+        // vacancy.description.replace("<ol>", "\n");
+        // vacancy.description.replace("<ul>", "\n");
+        // vacancy.description.replace("<li>", "\n");
+        // vacancy.description.replace("&nbsp;", " ");
 
-        vacancy.description.remove("</p>");
-        vacancy.description.remove("<strong>");
-        vacancy.description.remove("</strong>");
-        vacancy.description.remove("<span>");
-        vacancy.description.remove("</span>");
-        vacancy.description.remove("</li>");
-        vacancy.description.remove("</ul>");
-        vacancy.description.remove("</ol>");
-        vacancy.description.remove("<em>");
-        vacancy.description.remove("</em>");
-        vacancy.description.remove("<u>");
-        vacancy.description.remove("</u>");
+        // vacancy.description.remove("</p>");
+        // vacancy.description.remove("<strong>");
+        // vacancy.description.remove("</strong>");
+        // vacancy.description.remove("<span>");
+        // vacancy.description.remove("</span>");
+        // vacancy.description.remove("</li>");
+        // vacancy.description.remove("</ul>");
+        // vacancy.description.remove("</ol>");
+        // vacancy.description.remove("<em>");
+        // vacancy.description.remove("</em>");
+        // vacancy.description.remove("<u>");
+        // vacancy.description.remove("</u>");
 
-        removeSpaces(vacancy.description);
-        vacancy.description.replace("\n", "\n" + QString(17, ' ') + "| ");
+        // removeSpaces(vacancy.description);
+        // vacancy.description.replace("\n", "\n" + QString(17, ' ') + "| ");
 
         emit descrReady(vacancy);
     }

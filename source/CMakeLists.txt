@@ -36,9 +36,9 @@ target_sources(LinkedIn_search_app
                 PUBLIC MainWindow.h
                 PUBLIC MainWindow.cpp) # TODO change this
 
-find_package(Qt6 COMPONENTS Core Network Widgets WebEngineWidgets REQUIRED)
+find_package(Qt6 COMPONENTS Core Network Widgets REQUIRED)
 target_link_libraries(LinkedIn_search_app 
-                      PRIVATE Qt6::Core Qt6::Network Qt6::Widgets Qt6::WebEngineWidgets)
+                      PRIVATE Qt6::Core Qt6::Network Qt6::Widgets)
 
 target_include_directories(LinkedIn_search_app 
                            PUBLIC source)

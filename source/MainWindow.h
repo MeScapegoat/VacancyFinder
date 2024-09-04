@@ -5,7 +5,7 @@
 #include <QMainWindow>
 #include <QLoggingCategory>
 #include <QListView>
-#include <QWebEngineView>
+#include <QTextBrowser>
 #include <QLineEdit>
 #include <QPushButton>
 
@@ -27,7 +27,7 @@ namespace Linked
     public:
         QListView *list() { return vacanciesList; }
         QPushButton *button() { return searchButton; }
-        QWebEngineView *descr() { return vacancyDesc; }
+        QTextBrowser *descr() { return vacancyDesc; }
         QLineEdit *keywords() { return keywordsLineEdit; }
         QLineEdit *location() { return locationLineEdit; }
 
@@ -43,7 +43,7 @@ namespace Linked
         QPushButton *searchButton = nullptr;
 
         QListView *vacanciesList = nullptr;
-        QWebEngineView *vacancyDesc = nullptr;
+        QTextBrowser *vacancyDesc = nullptr;
     };
 
 } // namespace Linked

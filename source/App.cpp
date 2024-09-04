@@ -81,8 +81,7 @@ namespace Linked
             qCDebug(LinkedApp) << "Not ready yet!";
             return;
         }
-        qCDebug(LinkedApp) << vacancies[id].HTML;
-        gui.mainWindow()->descr()->setHtml(vacancies[id].HTML);
+        gui.mainWindow()->descr()->setText("Description:\n" + vacancies[id].description + "\nLevel:\n" + vacancies[id].level + "\nemploymentType:\n" + vacancies[id].employmentType);
     }
 
     void App::titleReady(const Vacancy &vacancy)
