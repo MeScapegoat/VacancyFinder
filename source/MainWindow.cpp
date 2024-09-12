@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QStringListModel>
 
 // custom
@@ -18,21 +19,6 @@
 namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedGUIMainWindow, "gui.main_window");
-
-    void MainWindow::test()
-    {
-        qCInfo(LinkedGUIMainWindow) << "Test button pressed";
-
-        if (!vacanciesList)
-        {
-            qCCritical(LinkedGUIMainWindow) << "List of vacancies not created";
-            return;
-        }
-        auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
-        auto data = model->stringList();
-        data.append("TEST");
-        model->setStringList(data);
-    }
 
     void MainWindow::appendList(const Vacancy &vacancy)
     {
@@ -45,6 +31,17 @@ namespace Linked
         auto data = model->stringList();
         data.append(QString("%1. %2").arg(data.size() + 1).arg(vacancy.title));
         model->setStringList(data);
+    }
+
+    void MainWindow::clearList()
+    {
+        if (!vacanciesList)
+        {
+            qCCritical(LinkedGUIMainWindow) << "List of vacancies not created";
+            return;
+        }
+        auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
+        model->setStringList(QStringList());
     }
 
     MainWindow::MainWindow()
@@ -62,30 +59,69 @@ namespace Linked
 
         QVBoxLayout *mainVLayout = new QVBoxLayout(centralWidget);
 
-        keywordsLineEdit = new QLineEdit("KeywordsLineEdit", centralWidget);
-        locationLineEdit = new QLineEdit("LocationLineEdit", centralWidget);
-        searchButton = new QPushButton("SearchButton", centralWidget);
-
-        QLabel *locationLabel = new QLabel("LocationLabel", centralWidget);
-        QLabel *keywordsLabel = new QLabel("KeywordsLabel", centralWidget);
-
-        QPushButton *testButton = new QPushButton("TEST", centralWidget);
-        QObject::connect(testButton, &QPushButton::pressed, this, &MainWindow::test);
+        /*
+         * searchLayout
+         */
 
         QHBoxLayout *searchLayout = new QHBoxLayout;
         mainVLayout->addLayout(searchLayout);
+
+        QLabel *keywordsLabel = new QLabel("Keywords:");
+        keywordsLineEdit = new QLineEdit("C++");
+        QLabel *locationLabel = new QLabel("Location:");
+        locationLineEdit = new QLineEdit("Serbia");
+        searchButton = new QPushButton("Search");
+
         searchLayout->addWidget(keywordsLabel);
         searchLayout->addWidget(keywordsLineEdit);
         searchLayout->addWidget(locationLabel);
         searchLayout->addWidget(locationLineEdit);
         searchLayout->addWidget(searchButton);
-        searchLayout->addWidget(testButton);
 
-        vacanciesList = new QListView(centralWidget);
+        /*
+         * searchLayout
+         */
 
-        QStringListModel *model = new QStringListModel();
+        /*
+         * sortLayout
+         */
+        QHBoxLayout *sortLayout = new QHBoxLayout;
+        sortLayout->setAlignment(Qt::AlignLeft);
+        mainVLayout->addLayout(sortLayout);
+
+        QLabel *sortLabel = new QLabel("Sort by:");
+        QRadioButton *relevanceOption = new QRadioButton("Relevance");
+        QRadioButton *timeOption = new QRadioButton("Time");
+        QRadioButton *titleOption = new QRadioButton("Title");
+        QRadioButton *companyOption = new QRadioButton("Company");
+
+        sortLayout->addWidget(sortLabel);
+        sortLayout->addWidget(relevanceOption);
+        sortLayout->addWidget(timeOption);
+        sortLayout->addWidget(titleOption);
+        sortLayout->addWidget(companyOption);
+
+        sortMode_ = new QButtonGroup;
+        sortMode_->addButton(relevanceOption, 1);
+        sortMode_->addButton(timeOption, 2);
+        sortMode_->addButton(titleOption, 3);
+        sortMode_->addButton(companyOption, 4);
+
+        relevanceOption->setChecked(true);
+        /*
+         * sortLayout
+         */
+
+        /*
+         * searchResultLayout
+         */
+        QHBoxLayout *searchResultLayout = new QHBoxLayout;
+        mainVLayout->addLayout(searchResultLayout);
+
+        vacanciesList = new QListView;
+        QStringListModel *model = new QStringListModel;
         vacanciesList->setModel(model);
-        vacancyDesc = new QTextBrowser(centralWidget);
+        vacancyDesc = new QTextBrowser;
         vacancyDesc->setHtml(R"(
         <!DOCTYPE html>
         <html lang="en">
@@ -96,12 +132,12 @@ namespace Linked
         </body>
         </html>)");
 
-        QHBoxLayout *searchResultLayout = new QHBoxLayout;
-
-        mainVLayout->addLayout(searchResultLayout);
-
         searchResultLayout->addWidget(vacanciesList, 20);
         searchResultLayout->addWidget(vacancyDesc, 80);
+
+        /*
+         * searchResultLayout
+         */
 
         show();
     }

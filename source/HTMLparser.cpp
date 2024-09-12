@@ -2,9 +2,42 @@
 
 // Qt
 #include <QThread>
+#include <QRegularExpression>
 
 // custom
 #include "HTMLparser.h"
+
+// this is development code
+#include <QDir>
+#include <QFile>
+quint64 titleAmount = 0;
+quint64 descrAmount = 0;
+const QString TitleFolder = "DEBUG_TITLES";
+const QString DescriptionFolder = "DEBUG_DESCRIPTIONS";
+void saveToFile(QString str, QString folder)
+{
+    QDir dir;
+    dir.mkdir(folder);
+    QFile file;
+    if (folder == TitleFolder)
+        file.setFileName(dir.absolutePath() + "/" + folder + "/" + QString::number(titleAmount++) + ".html");
+    else if (folder == DescriptionFolder)
+        file.setFileName(dir.absolutePath() + "/" + folder + "/" + QString::number(descrAmount++) + ".html");
+    else
+    {
+        qInfo() << "Unexpected folder!" << folder;
+        return;
+    }
+
+    if (file.open(QFile::WriteOnly))
+        file.write(str.toUtf8());
+    else
+    {
+        qInfo() << "couldnt open file!" << file.fileName();
+        return;
+    }
+    file.close();
+}
 
 namespace Linked
 {
@@ -14,7 +47,7 @@ namespace Linked
     {
         auto errorState = reply->error();
         auto url = reply->url();
-        qCDebug(LinkedParser) << "   " << url;
+        qCDebug(LinkedParser) << url;
         if (errorState != QNetworkReply::NoError)
         {
             qCWarning(LinkedParser) << errorState;
@@ -33,12 +66,13 @@ namespace Linked
 
     void HTMLparser::processTitle(QString str)
     {
+        saveToFile(str, TitleFolder);
         str.remove("</li>");
         removeSpaces(str);
 
         auto data = str.split("<li>");
 
-        qCInfo(LinkedParser) << "data size:" << data.size();
+        qCInfo(LinkedParser) << "Titles to be processed:" << data.size() - 1;
 
         if (data.size() < 2)
         {
@@ -53,7 +87,8 @@ namespace Linked
 
     void HTMLparser::processDescr(QString str)
     {
-        removeSpaces(str);
+        saveToFile(str, DescriptionFolder);
+        // removeSpaces(str);
         parseDescr(str);
     }
 
@@ -119,28 +154,30 @@ namespace Linked
             data = data.mid(vacancy.employmentType.size() + data.indexOf(vacancy.employmentType));
         }
 
-        // vacancy.description.replace("<br>", "\n");
-        // vacancy.description.replace("<p>", "\n");
-        // vacancy.description.replace("<ol>", "\n");
-        // vacancy.description.replace("<ul>", "\n");
-        // vacancy.description.replace("<li>", "\n");
-        // vacancy.description.replace("&nbsp;", " ");
-
+        // vacancy.description.replace("<p>", "\n"); // paragrath
         // vacancy.description.remove("</p>");
-        // vacancy.description.remove("<strong>");
-        // vacancy.description.remove("</strong>");
-        // vacancy.description.remove("<span>");
-        // vacancy.description.remove("</span>");
-        // vacancy.description.remove("</li>");
-        // vacancy.description.remove("</ul>");
+
+        // vacancy.description.replace("<ol>", "\n");  // lists
         // vacancy.description.remove("</ol>");
-        // vacancy.description.remove("<em>");
+        // vacancy.description.replace("<ul>", "\n");
+        // vacancy.description.remove("</ul>");
+        // vacancy.description.replace("<li>", "\n");
+        // vacancy.description.remove("</li>");
+
+        // vacancy.description.remove("<strong>"); // bold
+        // vacancy.description.remove("</strong>");
+
+        // vacancy.description.remove("<span>");  // not important
+        // vacancy.description.remove("</span>");
+
+        // vacancy.description.remove("<em>"); // italian
         // vacancy.description.remove("</em>");
-        // vacancy.description.remove("<u>");
+
+        // vacancy.description.remove("<u>"); // underline
         // vacancy.description.remove("</u>");
 
-        // removeSpaces(vacancy.description);
-        // vacancy.description.replace("\n", "\n" + QString(17, ' ') + "| ");
+        removeSpaces(vacancy.description);
+        //  vacancy.description.replace("\n", "\n" + QString(17, ' ') + "| ");
 
         emit descrReady(vacancy);
     }
@@ -150,12 +187,17 @@ namespace Linked
         if (str.size() < 2)
             return;
 
+        QRegularExpression re("<br>(?:<br>)+");
+        str.replace(re, "<br>");
+        str.remove("<p><br></p>");
+        str.replace("&nbsp;", " ");
+
         qsizetype index = 1;
         while (str.size() > index)
         {
-            if ((str[index] == ' ' && str[index - 1] == ' ') ||
-                (str[index] == '\n' && str[index - 1] == '\n') ||
-                (str[index] == ' ' && str[index - 1] == '\n'))
+            if ((str[index] == ' ' && str[index - 1] == ' ') ||   // double spaces     -> remove space
+                (str[index] == '\n' && str[index - 1] == '\n') || // double new lines  -> remove new line
+                (str[index] == ' ' && str[index - 1] == '\n'))    // space at new line -> remove space
             {
                 str.remove(index, 1);
                 continue;

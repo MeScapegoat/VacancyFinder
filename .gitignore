@@ -1,3 +1,7 @@
-build
-.vscode
-*.html
+*
+!source
+!.gitignore
+!log_rules.ini
+!WinScripts/*
+!LinuxScripts/*
+!README.md

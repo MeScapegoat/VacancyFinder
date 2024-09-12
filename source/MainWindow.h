@@ -8,6 +8,7 @@
 #include <QTextBrowser>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QButtonGroup>
 
 // custom
 #include "Vacancy.h"
@@ -30,10 +31,11 @@ namespace Linked
         QTextBrowser *descr() { return vacancyDesc; }
         QLineEdit *keywords() { return keywordsLineEdit; }
         QLineEdit *location() { return locationLineEdit; }
+        QButtonGroup *sortMode() { return sortMode_; }
 
     public slots:
-        void test();
         void appendList(const Vacancy &vacancy);
+        void clearList();
 
     protected:
         void closeEvent(QCloseEvent *) override;
@@ -41,6 +43,8 @@ namespace Linked
         QLineEdit *keywordsLineEdit = nullptr;
         QLineEdit *locationLineEdit = nullptr;
         QPushButton *searchButton = nullptr;
+
+        QButtonGroup *sortMode_ = nullptr;
 
         QListView *vacanciesList = nullptr;
         QTextBrowser *vacancyDesc = nullptr;

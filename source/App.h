@@ -4,6 +4,7 @@
 // Qt
 #include <QThread>
 #include <QLoggingCategory>
+#include <QTime>
 
 // custom
 #include "Vacancy.h"
@@ -39,7 +40,7 @@ namespace Linked
         void descrReady(const Vacancy &);
 
         void sendSearchRequest();
-        void openVacancyDescription(const QModelIndex&);
+        void openVacancyDescription(const QModelIndex &);
 
         void titlesProcessed();
         void requestFinished();
@@ -47,6 +48,9 @@ namespace Linked
     signals:
         void sendRequest(QUrl url);
         void toList(Vacancy vacancy);
+        
+        void openSearchMessage();
+        void closeSearchMessage();
 
     private:
         NetworkManager networkManager;
@@ -63,8 +67,10 @@ namespace Linked
         qsizetype descrProcessed = 0;
 
         QString baseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
-        QString keyword = "";
+        QString keywords = "";
         QString location = "";
+
+        QTime searchStartTime;
     };
 
 } // namespace Linked
