@@ -31,13 +31,16 @@ namespace Linked
 
     void Vacancy::clear()
     {
-        title = QString();
-        link = QString();
-        companyName = QString();
-        companyLink = QString();
-        location = QString();
+        title = "Not Given";
+        link = "Not Given";
+        companyName = "Not Given";
+        companyLink = "Not Given";
+        description = "Not Given";
+        location = "Not Given";
+        level = "Not Given";
+        employmentType = "Not Given";
+
         date = QDate();
-        description = QString();
     }
 
 } // namespace Linked

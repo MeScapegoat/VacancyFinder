@@ -28,12 +28,13 @@ namespace Linked
         QString loadDescriptionFromFile(const QString &path);
 
         const QList<Vacancy> &getVacancies();
+        const QList<const Vacancy *> &getVacanciestoShow();
 
-        const QList<Vacancy> &sortByTime();
-        const QList<Vacancy> &sortByTitle();
-        const QList<Vacancy> &sortByCompany();
-        const QList<Vacancy> &sortByLevel();
-        const QList<Vacancy> &sortByRelevance(const QString &);
+        void sortByTime();
+        void sortByTitle();
+        void sortByCompany();
+        void sortByLevel();
+        void sortByRelevance(const QString &);
 
     public slots:
         void titleReady(const Vacancy &);
@@ -45,10 +46,12 @@ namespace Linked
         void titlesProcessed();
         void requestFinished();
 
+        void updateDescriptionList(int temp = 0);
+
     signals:
         void sendRequest(QUrl url);
         void toList(Vacancy vacancy);
-        
+
         void openSearchMessage();
         void closeSearchMessage();
 
@@ -63,6 +66,7 @@ namespace Linked
         QThread guiThread;
 
         QList<Vacancy> vacancies;
+        QList<const Vacancy *> vacanciesToShow;
 
         qsizetype descrProcessed = 0;
 

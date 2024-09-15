@@ -26,16 +26,15 @@ namespace Linked
         void clear();
 
     public:
-        QString title;
-        QString HTML;
-        QString link;
-        QString companyName;
-        QString companyLink;
-        QString description;
+        QString title = "Not Given";
+        QString link = "Not Given";
+        QString companyName = "Not Given";
+        QString companyLink = "Not Given";
+        QString description = "Not Given";
+        QString location = "Not Given";
+        QString level = "Not Given";
+        QString employmentType = "Not Given";
         QDate date;
-        QString location;
-        QString level;
-        QString employmentType;
     };
 
 } // namespace Linked

@@ -9,6 +9,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QButtonGroup>
+#include <QLabel>
 
 // custom
 #include "Vacancy.h"
@@ -32,6 +33,11 @@ namespace Linked
         QLineEdit *keywords() { return keywordsLineEdit; }
         QLineEdit *location() { return locationLineEdit; }
         QButtonGroup *sortMode() { return sortMode_; }
+        QButtonGroup *filterMode() { return filterMode_; }
+        QLineEdit *filterLineEdit() { return filterLineEdit_; }
+        QLabel *titleLabel() { return titleLabel_; }
+        QLabel *companyNameLabel() { return companyNameLabel_; }
+        QLabel *levelLabel() { return levelLabel_; }
 
     public slots:
         void appendList(const Vacancy &vacancy);
@@ -46,7 +52,14 @@ namespace Linked
 
         QButtonGroup *sortMode_ = nullptr;
 
+        QButtonGroup *filterMode_ = nullptr;
+        QLineEdit *filterLineEdit_ = nullptr;
+
         QListView *vacanciesList = nullptr;
+
+        QLabel *titleLabel_ = nullptr;
+        QLabel *companyNameLabel_ = nullptr;
+        QLabel *levelLabel_ = nullptr;
         QTextBrowser *vacancyDesc = nullptr;
     };
 

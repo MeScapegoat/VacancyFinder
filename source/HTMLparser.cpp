@@ -137,20 +137,21 @@ namespace Linked
 
         Vacancy vacancy;
 
-        vacancy.HTML = data;
-
         vacancy.description = extract(data, descriptionStart, descriptionEnd);
+        vacancy.description = vacancy.description.trimmed();
         data = data.mid(vacancy.description.size() + data.indexOf(vacancy.description));
 
         if (data.contains("Seniority level"))
         {
             vacancy.level = extract(data, levelStart, levelEnd);
+            vacancy.level = vacancy.level.trimmed();
             data = data.mid(vacancy.level.size() + data.indexOf(vacancy.level));
         }
 
         if (data.contains("Employment type"))
         {
             vacancy.employmentType = extract(data, employmentTypeStart, employmentTypeEnd);
+            vacancy.employmentType = vacancy.employmentType.trimmed();
             data = data.mid(vacancy.employmentType.size() + data.indexOf(vacancy.employmentType));
         }
 

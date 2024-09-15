@@ -42,6 +42,9 @@ namespace Linked
 
         QObject::connect(this, &App::openSearchMessage, gui.mainWindow(), &MainWindow::clearList, Qt::QueuedConnection);
 
+        QObject::connect(gui.mainWindow()->sortMode(), &QButtonGroup::idClicked, this, &App::updateDescriptionList, Qt::QueuedConnection);
+        QObject::connect(gui.mainWindow()->filterMode(), &QButtonGroup::idClicked, this, &App::updateDescriptionList, Qt::QueuedConnection);
+
         networkThread.start();
         parserThread.start();
         guiThread.start();
@@ -62,6 +65,7 @@ namespace Linked
     void App::sendSearchRequest()
     {
         vacancies.clear();
+        vacanciesToShow.clear();
         descrProcessed = 0;
 
         keywords = gui.mainWindow()->keywords()->text();
@@ -83,26 +87,34 @@ namespace Linked
     void App::openVacancyDescription(const QModelIndex &index)
     {
         auto id = index.row();
-        if (id > vacancies.size())
+        if (id > vacanciesToShow.size())
         {
             qCDebug(LinkedApp) << "Not ready yet!";
             return;
         }
-        qCInfo(LinkedApp) << "Loading descrption:" << id << "." << vacancies[id].title;
-        QString HTMLformated = "<h1>Description:</h1>" + vacancies[id].description +
-                               "<h1>Level:</h1>" + vacancies[id].level +
-                               "<h1>employmentType:</h1>" + vacancies[id].employmentType;
+        const Vacancy &vacancy = *vacanciesToShow[id];
+        qCInfo(LinkedApp) << "Loading descrption:" << id << "." << vacancy.title;
+        QString HTMLformated = "<h1>Description:</h1>" + vacancy.description +
+                               "<h1>Level:</h1>" + vacancy.level +
+                               "<h1>employmentType:</h1>" + vacancy.employmentType;
 
-        QString HTMLdebug = "<h1>description</h1>" + vacancies[id].description +
-                            "<h1>title</h1>" + vacancies[id].title +
-                            "<h1>link</h1>" + vacancies[id].link +
-                            "<h1>companyName</h1>" + vacancies[id].companyName +
-                            "<h1>companyLink</h1>" + vacancies[id].companyLink +
-                            "<h1>date</h1>" + vacancies[id].date.toString() +
-                            "<h1>location</h1>" + vacancies[id].location +
-                            "<h1>level</h1>" + vacancies[id].level +
-                            "<h1>employmentType</h1>" + vacancies[id].employmentType;
-        gui.mainWindow()->descr()->setText(HTMLdebug); // vacancies[id].description
+        QString HTMLdebug = "<h1>description</h1>" + vacancy.description +
+                            "<h1>title</h1>" + vacancy.title +
+                            "<h1>link</h1>" + vacancy.link +
+                            "<h1>companyName</h1>" + vacancy.companyName +
+                            "<h1>companyLink</h1>" + vacancy.companyLink +
+                            "<h1>date</h1>" + vacancy.date.toString() +
+                            "<h1>location</h1>" + vacancy.location +
+                            "<h1>level</h1>" + vacancy.level +
+                            "<h1>employmentType</h1>" + vacancy.employmentType;
+
+        QString linkPattern = "<a href='%1'>%2</a>";
+
+        gui.mainWindow()->titleLabel()->setText(linkPattern.arg(vacancy.link).arg(vacancy.title));
+        gui.mainWindow()->companyNameLabel()->setText(linkPattern.arg(vacancy.companyLink).arg(vacancy.companyName));
+        gui.mainWindow()->levelLabel()->setText(vacancy.level);
+
+        gui.mainWindow()->descr()->setText(vacancy.description); // vacancy.description
     }
 
     void App::titleReady(const Vacancy &vacancy)
@@ -134,7 +146,6 @@ namespace Linked
         vac.description = vacancy.description;
         vac.level = vacancy.level;
         vac.employmentType = vacancy.employmentType;
-        vac.HTML = vacancy.HTML;
 
         descrProcessed++;
         // emit toList(vacancies[descrProcessed]);
@@ -171,30 +182,7 @@ namespace Linked
     {
         qCInfo(LinkedApp) << "Time spent for" << vacancies.size() << "vacancies is" << searchStartTime.secsTo(QTime::currentTime()) << "seconds";
 
-        switch (gui.mainWindow()->sortMode()->checkedId())
-        {
-        case 1:
-            sortByRelevance(keywords);
-            break;
-        case 2:
-            sortByTime();
-            break;
-        case 3:
-            sortByTitle();
-            break;
-        case 4:
-            sortByCompany();
-            break;
-        case -1:
-            qCCritical(LinkedApp) << "No sort mode is checked!";
-            break;
-        default:
-            qCCritical(LinkedApp) << "Checked sort mode is incorrect! Sort mode:" << gui.mainWindow()->sortMode()->checkedId();
-            break;
-        }
-
-        for (const auto &vacancy : vacancies)
-            toList(vacancy);
+        updateDescriptionList();
 
         // QDir sortedDir("sorted");
         // if (!sortedDir.exists())
@@ -272,6 +260,97 @@ namespace Linked
         emit closeSearchMessage();
     }
 
+    void App::updateDescriptionList(int temp)
+    {
+        gui.mainWindow()->clearList();
+
+        auto sortMode = gui.mainWindow()->sortMode()->checkedId();
+        qCDebug(LinkedApp) << "processing sort mode:" << sortMode;
+
+        switch (sortMode)
+        {
+        case 1:
+            sortByRelevance(keywords);
+            break;
+        case 2:
+            sortByTime();
+            break;
+        case 3:
+            sortByTitle();
+            break;
+        case 4:
+            sortByCompany();
+            break;
+        case 5:
+            sortByLevel();
+            break;
+        default:
+            qCCritical(LinkedApp) << "Checked sort mode is incorrect! Sort mode:" << sortMode;
+            break;
+        }
+
+        auto filterMode = gui.mainWindow()->filterMode()->checkedId();
+        qCDebug(LinkedApp) << "processing filter mode:" << filterMode;
+
+        const QString &filterText = gui.mainWindow()->filterLineEdit()->text();
+        auto filterWords = filterText.split(',');
+        for (auto &word : filterWords)
+            word = word.trimmed();
+        qCDebug(LinkedApp) << "filter words:" << filterWords;
+
+        switch (filterMode)
+        {
+        case 0:
+            break;
+        case 1: // MUST include
+            for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end();)
+            {
+                const auto &vacancy = **it;
+                bool isFilterOk = true;
+                for (const auto &word : filterWords)
+                {
+                    if (!vacancy.title.contains(word) && !vacancy.description.contains(word))
+                    {
+                        isFilterOk = false;
+                        break;
+                    }
+                }
+
+                if (!isFilterOk)
+                    it = vacanciesToShow.erase(it);
+                else
+                    ++it;
+            }
+            break;
+        case 2: // MUST NOT include
+            for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end();)
+            {
+                const auto &vacancy = **it;
+                bool isFilterOk = true;
+                for (const auto &word : filterWords)
+                {
+                    if (vacancy.title.contains(word) || vacancy.description.contains(word))
+                    {
+                        isFilterOk = false;
+                        break;
+                    }
+                }
+
+                if (!isFilterOk)
+                    it = vacanciesToShow.erase(it);
+                else
+                    ++it;
+            }
+            break;
+        default:
+            qCCritical(LinkedApp) << "Checked filter mode is incorrect! Filter mode:" << filterMode;
+            break;
+        }
+
+        for (const auto &vacancy : vacanciesToShow)
+            toList(*vacancy);
+    }
+
     QString App::loadTitleFromFile(const QString &path)
     {
         QFile file(path);
@@ -300,62 +379,84 @@ namespace Linked
         return ret;
     }
 
-    const QList<Vacancy> &App::sortByTime()
+    void App::sortByTime()
     {
         auto compareByTime = [](const auto &left, const auto &right)
         {
-            return left.date > right.date;
+            return left->date > right->date;
         };
-        std::sort(vacancies.begin(), vacancies.end(), compareByTime);
-        return vacancies;
+
+        vacanciesToShow.clear();
+        for (int n = 0; n < vacancies.size(); ++n)
+            vacanciesToShow.push_back(&vacancies[n]);
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTime);
     }
 
-    const QList<Vacancy> &App::sortByTitle()
+    void App::sortByTitle()
     {
         auto compareByTitle = [](const auto &left, const auto &right)
         {
-            return left.title < right.title;
+            return left->title < right->title;
         };
-        std::sort(vacancies.begin(), vacancies.end(), compareByTitle);
-        return vacancies;
+
+        vacanciesToShow.clear();
+        for (int n = 0; n < vacancies.size(); ++n)
+            vacanciesToShow.push_back(&vacancies[n]);
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTitle);
     }
 
-    const QList<Vacancy> &App::sortByCompany()
+    void App::sortByCompany()
     {
         auto compareByCompany = [](const auto &left, const auto &right)
         {
-            return left.companyName < right.companyName;
+            return left->companyName < right->companyName;
         };
 
-        std::sort(vacancies.begin(), vacancies.end(), compareByCompany);
-        return vacancies;
+        vacanciesToShow.clear();
+        for (int n = 0; n < vacancies.size(); ++n)
+            vacanciesToShow.push_back(&vacancies[n]);
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByCompany);
     }
 
-    const QList<Vacancy> &App::sortByRelevance(const QString &str)
+    void App::sortByRelevance(const QString &str)
     {
         auto compareByRelevance = [&](const auto &left, const auto &right)
         {
-            return left.count(str) > right.count(str);
+            return left->count(str) > right->count(str);
         };
 
-        std::sort(vacancies.begin(), vacancies.end(), compareByRelevance);
-        return vacancies;
+        vacanciesToShow.clear();
+        for (int n = 0; n < vacancies.size(); ++n)
+            vacanciesToShow.push_back(&vacancies[n]);
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByRelevance);
     }
 
-    const QList<Vacancy> &App::sortByLevel()
+    void App::sortByLevel()
     {
-        auto compareByRelevance = [&](const auto &left, const auto &right)
+        auto compareByLevel = [&](const auto &left, const auto &right)
         {
-            return left.level < right.level;
+            return left->level < right->level;
         };
 
-        std::sort(vacancies.begin(), vacancies.end(), compareByRelevance);
-        return vacancies;
+        vacanciesToShow.clear();
+        for (int n = 0; n < vacancies.size(); ++n)
+            vacanciesToShow.push_back(&vacancies[n]);
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByLevel);
     }
 
     const QList<Vacancy> &App::getVacancies()
     {
         return vacancies;
+    }
+
+    const QList<const Vacancy *> &App::getVacanciestoShow()
+    {
+        return vacanciesToShow;
     }
 
 } // namespace Linked
