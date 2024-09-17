@@ -10,6 +10,8 @@ namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedNetwork, "network");
 
+    NetworkManager::NetworkManager(SharedContext *sharedContext) : context(sharedContext) {}
+
     void NetworkManager::sendRequest(QUrl link)
     {
         qCDebug(LinkedNetwork) << link;

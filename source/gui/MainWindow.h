@@ -12,19 +12,25 @@
 #include <QLabel>
 
 // custom
-#include "Vacancy.h"
+#include "../core/SharedContext.h"
+#include "../core/Vacancy.h"
 
 namespace Linked
 {
     Q_DECLARE_LOGGING_CATEGORY(LinkedGUIMainWindow);
+
+    class SharedContext;
 
     class MainWindow : public QMainWindow
     {
         Q_OBJECT
 
     public:
-        MainWindow();
+        MainWindow(SharedContext *context);
         ~MainWindow();
+
+    public:
+        int maxVacancies() const { return limitLineEdit->text().toInt(); }
 
     public:
         QListView *list() { return vacanciesList; }
@@ -40,8 +46,11 @@ namespace Linked
         QLabel *levelLabel() { return levelLabel_; }
 
     public slots:
-        void appendList(const Vacancy &vacancy);
+        void updateVacanciesList();
         void clearList();
+
+    private:
+        SharedContext *context = nullptr;
 
     protected:
         void closeEvent(QCloseEvent *) override;
@@ -49,6 +58,8 @@ namespace Linked
         QLineEdit *keywordsLineEdit = nullptr;
         QLineEdit *locationLineEdit = nullptr;
         QPushButton *searchButton = nullptr;
+
+        QLineEdit *limitLineEdit = nullptr;
 
         QButtonGroup *sortMode_ = nullptr;
 

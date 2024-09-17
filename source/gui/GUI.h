@@ -6,27 +6,37 @@
 #include <QMessageBox>
 
 // custom
+#include "../core/SharedContext.h"
 #include "MainWindow.h"
+#include "ProgressDialog.h"
 
 namespace Linked
 {
     Q_DECLARE_LOGGING_CATEGORY(LinkedGUI);
+
+    class ProgressDialog;
+    class MainWindow;
 
     class GUI : public QObject
     {
         Q_OBJECT
 
     public:
-        GUI();
+        GUI(SharedContext *context);
         ~GUI() = default;
 
     public:
         MainWindow *mainWindow();
-        QMessageBox* inSearchMessage();
+
+        ProgressDialog *progressDialog();
 
     private:
-        MainWindow mainWindow_;
-        QMessageBox *inSearchMessage_;
+        SharedContext *context;
+
+    private:
+        MainWindow* mainWindow_;
+
+        ProgressDialog* progressDialog_;
     };
 
 } // namespace Linked

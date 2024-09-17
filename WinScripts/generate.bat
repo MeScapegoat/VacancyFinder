@@ -9,7 +9,7 @@ if not %currentFolder% == %projectFolder% (
 )
 
 rmdir /S /Q build
-cmake -S source -B build -G "Visual Studio 16 2019" -A x64
+cmake -S source -B build --log-level=DEBUG -G "Visual Studio 16 2019" -A x64
 if %ERRORLEVEL% NEQ 0 (
     echo Error: Generating files failed.
     exit /b %ERRORLEVEL%

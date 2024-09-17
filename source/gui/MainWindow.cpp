@@ -19,7 +19,7 @@ namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedGUIMainWindow, "gui.main_window");
 
-    void MainWindow::appendList(const Vacancy &vacancy)
+    void MainWindow::updateVacanciesList()
     {
         if (!vacanciesList)
         {
@@ -27,8 +27,9 @@ namespace Linked
             return;
         }
         auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
-        auto data = model->stringList();
-        data.append(QString("%1. %2\n%3").arg(data.size() + 1, 3).arg(vacancy.title).arg(vacancy.companyName, vacancy.companyName.size() + 8));
+        QStringList data;
+        for (const auto &vacancy : App::getVacanciestoShow())
+            data.append(QString("%1. %2\n%3").arg(data.size() + 1, 3).arg(vacancy->title).arg(vacancy->companyName, vacancy->companyName.size() + 8));
         model->setStringList(data);
     }
 
@@ -43,7 +44,7 @@ namespace Linked
         model->setStringList(QStringList());
     }
 
-    MainWindow::MainWindow()
+    MainWindow::MainWindow(SharedContext *sharedContext) : context(sharedContext)
     {
         // Maybe all incredible code below must be refactored into many initSMTH(QWidget* parent) functions for the sake of redability
 
@@ -95,6 +96,34 @@ namespace Linked
 
         QVBoxLayout *vacanciesListLayout = new QVBoxLayout;
         searchResultLayout->addLayout(vacanciesListLayout, 20);
+
+        /*
+         * limitLayout
+         */
+        QVBoxLayout *limitLayout = new QVBoxLayout;
+        vacanciesListLayout->addLayout(limitLayout);
+
+        QLabel *limitLabel = new QLabel("Max amount of processed vacancies:");
+        limitLineEdit = new QLineEdit("999");
+
+        limitLayout->addWidget(limitLabel);
+        limitLayout->addWidget(limitLineEdit);
+
+        auto customLimitValidation = [&]()
+        {
+            qCDebug(LinkedGUIMainWindow) << "editingFinished, text:" << limitLineEdit->text() << "UInt:" << limitLineEdit->text().toUInt();
+
+            if (!limitLineEdit->text().toUInt())
+                limitLineEdit->setText("1");
+
+            if (limitLineEdit->text().toInt() > 999)
+                limitLineEdit->setText("999");
+        };
+
+        connect(limitLineEdit, &QLineEdit::editingFinished, customLimitValidation);
+        /*
+         * limitLayout
+         */
 
         /*
          * filterLayout

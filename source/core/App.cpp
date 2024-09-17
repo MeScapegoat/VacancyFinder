@@ -13,53 +13,61 @@ namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedApp, "app");
 
-    App::App()
+    QList<Vacancy> App::vacancies;
+    QList<const Vacancy *> App::vacanciesToShow;
+
+    App::App() : context(new SharedContext),
+                 networkManager(new NetworkManager(context)), networkThread(new QThread(this)),
+                 parser(new HTMLparser(context)), parserThread(new QThread(this)),
+                 gui(new GUI(context))
     {
-        networkThread.setObjectName("networkThread");
-        networkManager.moveToThread(&networkThread);
+        networkThread->setObjectName("networkThread");
+        networkManager->moveToThread(networkThread);
 
-        parserThread.setObjectName("parserThread");
-        parser.moveToThread(&parserThread);
+        parserThread->setObjectName("parserThread");
+        parser->moveToThread(parserThread);
 
-        guiThread.setObjectName("guiThread");
-        gui.moveToThread(&guiThread);
+        QObject::connect(networkManager, &NetworkManager::finished, parser, &HTMLparser::processHTML, Qt::QueuedConnection);
+        QObject::connect(this, &App::sendRequest, networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
 
-        QObject::connect(&networkManager, &NetworkManager::finished, &parser, &HTMLparser::processHTML, Qt::QueuedConnection);
-        QObject::connect(this, &App::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
+        QObject::connect(parser, &HTMLparser::sendRequest, networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
+        QObject::connect(parser, &HTMLparser::titlesProcessed, this, &App::titlesProcessed, Qt::DirectConnection);
+        QObject::connect(parser, &HTMLparser::requestFinished, this, &App::requestFinished, Qt::DirectConnection);
+        QObject::connect(parser, &HTMLparser::titleReady, this, &App::titleReady, Qt::DirectConnection);
+        QObject::connect(parser, &HTMLparser::descrReady, this, &App::descrReady, Qt::DirectConnection);
 
-        QObject::connect(&parser, &HTMLparser::sendRequest, &networkManager, &NetworkManager::sendRequest, Qt::QueuedConnection);
-        QObject::connect(&parser, &HTMLparser::titlesProcessed, this, &App::titlesProcessed, Qt::DirectConnection);
-        QObject::connect(&parser, &HTMLparser::requestFinished, this, &App::requestFinished, Qt::DirectConnection);
-        QObject::connect(&parser, &HTMLparser::titleReady, this, &App::titleReady, Qt::DirectConnection);
-        QObject::connect(&parser, &HTMLparser::descrReady, this, &App::descrReady, Qt::DirectConnection);
+        QObject::connect(this, &App::updateVacanciesList, gui->mainWindow(), &MainWindow::updateVacanciesList, Qt::DirectConnection);
+        QObject::connect(gui->mainWindow()->list(), &QListView::clicked, this, &App::openVacancyDescription, Qt::QueuedConnection);
+        QObject::connect(gui->mainWindow()->button(), &QPushButton::released, this, &App::sendSearchRequest, Qt::QueuedConnection);
 
-        QObject::connect(this, &App::toList, gui.mainWindow(), &MainWindow::appendList, Qt::DirectConnection);
-        QObject::connect(gui.mainWindow()->list(), &QListView::clicked, this, &App::openVacancyDescription, Qt::QueuedConnection);
-        QObject::connect(gui.mainWindow()->button(), &QPushButton::released, this, &App::sendSearchRequest, Qt::QueuedConnection);
+        QObject::connect(this, &App::openProgressDialog, gui->progressDialog(), &ProgressDialog::start, Qt::QueuedConnection);
+        QObject::connect(this, &App::closeSearchMessage, gui->progressDialog(), &ProgressDialog::accept, Qt::QueuedConnection);
 
-        QObject::connect(this, &App::openSearchMessage, gui.inSearchMessage(), &QMessageBox::exec, Qt::QueuedConnection);
-        QObject::connect(this, &App::closeSearchMessage, gui.inSearchMessage(), &QMessageBox::accept, Qt::QueuedConnection);
+        QObject::connect(this, &App::openProgressDialog, gui->mainWindow(), &MainWindow::clearList, Qt::QueuedConnection);
 
-        QObject::connect(this, &App::openSearchMessage, gui.mainWindow(), &MainWindow::clearList, Qt::QueuedConnection);
+        QObject::connect(gui->mainWindow()->sortMode(), &QButtonGroup::idClicked, this, &App::updateDescriptionList, Qt::QueuedConnection);
+        QObject::connect(gui->mainWindow()->filterMode(), &QButtonGroup::idClicked, this, &App::updateDescriptionList, Qt::QueuedConnection);
 
-        QObject::connect(gui.mainWindow()->sortMode(), &QButtonGroup::idClicked, this, &App::updateDescriptionList, Qt::QueuedConnection);
-        QObject::connect(gui.mainWindow()->filterMode(), &QButtonGroup::idClicked, this, &App::updateDescriptionList, Qt::QueuedConnection);
+        QObject::connect(parser, &HTMLparser::descrStart, gui->progressDialog(), &ProgressDialog::updateInfo, Qt::QueuedConnection);
+        QObject::connect(parser, &HTMLparser::replyError, gui->progressDialog(), &ProgressDialog::updateError, Qt::QueuedConnection);
+        QObject::connect(gui->progressDialog()->stopButton(), &QPushButton::released, this, &App::requestFinished, Qt::DirectConnection);
 
-        networkThread.start();
-        parserThread.start();
-        guiThread.start();
+        networkThread->start();
+        parserThread->start();
+
+        context->app = this;
+        context->mainWindow = gui->mainWindow();
     }
 
     App::~App()
     {
-        networkThread.quit();
-        networkThread.wait();
+        networkThread->quit();
+        networkThread->wait();
 
-        parserThread.quit();
-        parserThread.wait();
+        parserThread->quit();
+        parserThread->wait();
 
-        guiThread.quit();
-        guiThread.wait();
+        delete context;
     }
 
     void App::sendSearchRequest()
@@ -67,9 +75,11 @@ namespace Linked
         vacancies.clear();
         vacanciesToShow.clear();
         descrProcessed = 0;
+        parser->descriptionID = 0;
+        isRequestFinished = false;
 
-        keywords = gui.mainWindow()->keywords()->text();
-        location = gui.mainWindow()->location()->text();
+        keywords = gui->mainWindow()->keywords()->text();
+        location = gui->mainWindow()->location()->text();
 
         qCInfo(LinkedApp) << "keywords:" << keywords << "location:" << location;
 
@@ -80,7 +90,7 @@ namespace Linked
         query.addQueryItem("start", QUrl::toPercentEncoding("0"));
         url.setQuery(query);
         searchStartTime = QTime::currentTime();
-        emit openSearchMessage();
+        emit openProgressDialog();
         emit sendRequest(url);
     }
 
@@ -110,15 +120,17 @@ namespace Linked
 
         QString linkPattern = "<a href='%1'>%2</a>";
 
-        gui.mainWindow()->titleLabel()->setText(linkPattern.arg(vacancy.link).arg(vacancy.title));
-        gui.mainWindow()->companyNameLabel()->setText(linkPattern.arg(vacancy.companyLink).arg(vacancy.companyName));
-        gui.mainWindow()->levelLabel()->setText(vacancy.level);
+        gui->mainWindow()->titleLabel()->setText(linkPattern.arg(vacancy.link).arg(vacancy.title));
+        gui->mainWindow()->companyNameLabel()->setText(linkPattern.arg(vacancy.companyLink).arg(vacancy.companyName));
+        gui->mainWindow()->levelLabel()->setText(vacancy.level);
 
-        gui.mainWindow()->descr()->setText(vacancy.description); // vacancy.description
+        gui->mainWindow()->descr()->setText(vacancy.description);
     }
 
     void App::titleReady(const Vacancy &vacancy)
     {
+        if (vacancies.size() >= context->mainWindow->maxVacancies())
+            return;
         qCInfo(LinkedApp) << vacancies.size() << "titleReady:";
         qCDebug(LinkedApp) << "title:" << vacancy.title;
         qCDebug(LinkedApp) << "companyName:" << vacancy.companyName;
@@ -150,7 +162,7 @@ namespace Linked
         descrProcessed++;
         // emit toList(vacancies[descrProcessed]);
 
-        if (descrProcessed >= 999)
+        if (descrProcessed >= context->mainWindow->maxVacancies())
         {
             requestFinished();
             return;
@@ -180,6 +192,7 @@ namespace Linked
 
     void App::requestFinished()
     {
+        // how to reset search safely???
         qCInfo(LinkedApp) << "Time spent for" << vacancies.size() << "vacancies is" << searchStartTime.secsTo(QTime::currentTime()) << "seconds";
 
         updateDescriptionList();
@@ -262,9 +275,9 @@ namespace Linked
 
     void App::updateDescriptionList(int temp)
     {
-        gui.mainWindow()->clearList();
+        gui->mainWindow()->clearList();
 
-        auto sortMode = gui.mainWindow()->sortMode()->checkedId();
+        auto sortMode = gui->mainWindow()->sortMode()->checkedId();
         qCDebug(LinkedApp) << "processing sort mode:" << sortMode;
 
         switch (sortMode)
@@ -289,10 +302,10 @@ namespace Linked
             break;
         }
 
-        auto filterMode = gui.mainWindow()->filterMode()->checkedId();
+        auto filterMode = gui->mainWindow()->filterMode()->checkedId();
         qCDebug(LinkedApp) << "processing filter mode:" << filterMode;
 
-        const QString &filterText = gui.mainWindow()->filterLineEdit()->text();
+        const QString &filterText = gui->mainWindow()->filterLineEdit()->text();
         auto filterWords = filterText.split(',');
         for (auto &word : filterWords)
             word = word.trimmed();
@@ -347,8 +360,7 @@ namespace Linked
             break;
         }
 
-        for (const auto &vacancy : vacanciesToShow)
-            toList(*vacancy);
+        updateVacanciesList();
     }
 
     QString App::loadTitleFromFile(const QString &path)
@@ -449,7 +461,7 @@ namespace Linked
         std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByLevel);
     }
 
-    const QList<Vacancy> &App::getVacancies()
+    QList<Vacancy> &App::getVacancies()
     {
         return vacancies;
     }

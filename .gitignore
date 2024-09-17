@@ -1,5 +1,6 @@
 *
-!source
+!source/
+!source/**
 !.gitignore
 !log_rules.ini
 !WinScripts/*

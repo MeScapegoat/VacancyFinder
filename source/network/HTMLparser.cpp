@@ -43,11 +43,14 @@ namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedParser, "parser");
 
+    HTMLparser::HTMLparser(SharedContext *SharedContext) : context(SharedContext) {}
+
     void HTMLparser::processHTML(QNetworkReply *reply)
     {
         auto errorState = reply->error();
         auto url = reply->url();
         qCDebug(LinkedParser) << url;
+        emit replyError(errorState);
         if (errorState != QNetworkReply::NoError)
         {
             qCWarning(LinkedParser) << errorState;
@@ -87,6 +90,7 @@ namespace Linked
 
     void HTMLparser::processDescr(QString str)
     {
+        emit descrStart(descriptionID++);
         saveToFile(str, DescriptionFolder);
         // removeSpaces(str);
         parseDescr(str);

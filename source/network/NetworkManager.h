@@ -6,17 +6,20 @@
 #include <QLoggingCategory>
 
 // custom
+#include "../core/SharedContext.h"
 
 namespace Linked
 {
     Q_DECLARE_LOGGING_CATEGORY(LinkedNetwork);
+
+    class SharedContext;
 
     class NetworkManager : public QNetworkAccessManager
     {
         Q_OBJECT
 
     public:
-        NetworkManager() = default;
+        NetworkManager(Linked::SharedContext *);
         ~NetworkManager() = default;
 
     public slots:
@@ -24,6 +27,9 @@ namespace Linked
 
     signals:
         void titleFinished();
+
+    private:
+        Linked::SharedContext *context = nullptr;
 
     private:
         QNetworkRequest request;

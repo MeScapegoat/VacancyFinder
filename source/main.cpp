@@ -10,8 +10,8 @@
 #include <QThread>
 
 // custom
-#include "App.h"
-#include "Logger.h"
+#include "core/App.h"
+#include "core/Logger.h"
 
 int main(int argc, char *argv[])
 {

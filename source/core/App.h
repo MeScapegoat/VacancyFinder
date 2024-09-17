@@ -8,13 +8,19 @@
 
 // custom
 #include "Vacancy.h"
-#include "NetworkManager.h"
-#include "HTMLparser.h"
-#include "GUI.h"
+#include "SharedContext.h"
+#include "../network/NetworkManager.h"
+#include "../network/HTMLparser.h"
+#include "../gui/GUI.h"
 
 namespace Linked
 {
     Q_DECLARE_LOGGING_CATEGORY(LinkedApp);
+
+    class NetworkManager;
+    class GUI;
+    class HTMLparser;
+
     class App : public QObject
     {
         Q_OBJECT
@@ -24,11 +30,12 @@ namespace Linked
         ~App();
 
     public:
+        static QList<Vacancy> &getVacancies();
+        static const QList<const Vacancy *> &getVacanciestoShow();
+
+    public:
         QString loadTitleFromFile(const QString &path);
         QString loadDescriptionFromFile(const QString &path);
-
-        const QList<Vacancy> &getVacancies();
-        const QList<const Vacancy *> &getVacanciestoShow();
 
         void sortByTime();
         void sortByTitle();
@@ -50,23 +57,25 @@ namespace Linked
 
     signals:
         void sendRequest(QUrl url);
-        void toList(Vacancy vacancy);
+        void updateVacanciesList();
 
-        void openSearchMessage();
+        void openProgressDialog();
         void closeSearchMessage();
 
     private:
-        NetworkManager networkManager;
-        QThread networkThread;
+        SharedContext *context;
 
-        HTMLparser parser;
-        QThread parserThread;
+    private:
+        NetworkManager *networkManager = nullptr;
+        QThread *networkThread = nullptr;
 
-        GUI gui;
-        QThread guiThread;
+        HTMLparser *parser = nullptr;
+        QThread *parserThread = nullptr;
 
-        QList<Vacancy> vacancies;
-        QList<const Vacancy *> vacanciesToShow;
+        GUI *gui = nullptr;
+
+        static QList<Vacancy> vacancies;
+        static QList<const Vacancy *> vacanciesToShow;
 
         qsizetype descrProcessed = 0;
 
@@ -75,6 +84,7 @@ namespace Linked
         QString location = "";
 
         QTime searchStartTime;
+        bool isRequestFinished = false;
     };
 
 } // namespace Linked
