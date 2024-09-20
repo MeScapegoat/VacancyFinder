@@ -129,6 +129,12 @@ namespace Linked
 
     void App::titleReady(const Vacancy &vacancy)
     {
+        if (isRequestFinished)
+        {
+            qCDebug(LinkedApp) << "request finished: quit titleReady";
+            return;
+        }
+
         if (vacancies.size() >= context->mainWindow->maxVacancies())
             return;
         qCInfo(LinkedApp) << vacancies.size() << "titleReady:";
@@ -143,6 +149,11 @@ namespace Linked
 
     void App::descrReady(const Vacancy &vacancy)
     {
+        if (isRequestFinished)
+        {
+            qCDebug(LinkedApp) << "request finished: quit descrReady";
+            return;
+        }
         qCInfo(LinkedApp) << descrProcessed << "Description Ready";
         qCDebug(LinkedApp) << "description[0, 50]:" << vacancy.description.mid(0, 50);
         qCDebug(LinkedApp) << "level:" << vacancy.level;
@@ -160,7 +171,6 @@ namespace Linked
         vac.employmentType = vacancy.employmentType;
 
         descrProcessed++;
-        // emit toList(vacancies[descrProcessed]);
 
         if (descrProcessed >= context->mainWindow->maxVacancies())
         {
@@ -187,12 +197,14 @@ namespace Linked
     void App::titlesProcessed()
     {
         qCInfo(LinkedApp) << "vacancies:" << vacancies.size();
-        emit sendRequest(vacancies[descrProcessed].link);
+        emit sendRequest(vacancies.at(descrProcessed).link);
     }
 
     void App::requestFinished()
     {
-        // how to reset search safely???
+        qCDebug(LinkedApp) << "request finished";
+        isRequestFinished = true;
+        vacancies.resize(descrProcessed);
         qCInfo(LinkedApp) << "Time spent for" << vacancies.size() << "vacancies is" << searchStartTime.secsTo(QTime::currentTime()) << "seconds";
 
         updateDescriptionList();

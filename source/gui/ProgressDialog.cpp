@@ -18,10 +18,15 @@ namespace Linked
         progressBar_ = new QProgressBar;
         stopButton_ = new QPushButton("Stop Search");
 
+        infoLabel_->setAlignment(Qt::AlignCenter);
+        errorLabel_->setAlignment(Qt::AlignCenter);
+
         layout->addWidget(infoLabel_);
         layout->addWidget(errorLabel_);
         layout->addWidget(progressBar_);
         layout->addWidget(stopButton_);
+        
+        setFixedSize(500, 200);
 
         setLayout(layout);
     }
@@ -38,6 +43,8 @@ namespace Linked
 
     void ProgressDialog::updateError(QNetworkReply::NetworkError err)
     {
+        qCDebug(LinkedGUI) << "update error:" << err;
+
         QString errorText;
         QString errorTime = "\nTime of error: " + QTime::currentTime().toString();
         switch (err)
@@ -62,6 +69,7 @@ namespace Linked
     void ProgressDialog::start()
     {
         progressBar_->setRange(0, context->mainWindow->maxVacancies());
+        progressBar_->setValue(0);
         infoLabel_->setText("Processing vacancies...");
         errorLabel_->setText("");
 

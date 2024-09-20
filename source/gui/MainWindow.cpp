@@ -35,6 +35,8 @@ namespace Linked
 
     void MainWindow::clearList()
     {
+        qCDebug(LinkedGUIMainWindow) << "Clear list";
+
         if (!vacanciesList)
         {
             qCCritical(LinkedGUIMainWindow) << "List of vacancies not created";
