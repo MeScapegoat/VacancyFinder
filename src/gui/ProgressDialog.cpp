@@ -31,11 +31,11 @@ namespace Linked
         setLayout(layout);
     }
 
-    void ProgressDialog::updateInfo(qsizetype id)
+    void ProgressDialog::updateInfo(const QUrl& link)
     {
-        auto vacancy = context->app->getVacancies().at(id);
+        const Vacancy& vacancy = context->app->getVacancies().value(link);
         infoLabel_->setText(infoPattern
-                                .arg(id)
+                                .arg(0)
                                 .arg(vacancy.title)
                                 .arg(vacancy.companyName));
         progressBar_->setValue(progressBar_->value() + 1);

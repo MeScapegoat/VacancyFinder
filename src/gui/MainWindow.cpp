@@ -28,7 +28,7 @@ namespace Linked
         }
         auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
         QStringList data;
-        for (const auto &vacancy : App::getVacanciestoShow())
+        for (const Vacancy* vacancy : context->app->getVacanciestoShow())
             data.append(QString("%1. %2\n%3").arg(data.size() + 1, 3).arg(vacancy->title).arg(vacancy->companyName, vacancy->companyName.size() + 8));
         model->setStringList(data);
     }

@@ -1,3 +1,6 @@
+
+#include <windows.h>
+
 // std
 #include <iostream>
 
@@ -15,6 +18,8 @@
 
 int main(int argc, char *argv[])
 {
+    SetConsoleOutputCP(CP_UTF8);
+
     QThread::currentThread()->setObjectName("AppThread");
     QApplication application(argc, argv);
     //application.setStyle("windows"); // ???

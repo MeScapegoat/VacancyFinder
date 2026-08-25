@@ -26,29 +26,30 @@ namespace Linked
         Q_OBJECT
 
     public:
-        App();
+        App(QObject* parent = nullptr);
         ~App();
 
     public:
-        static QList<Vacancy> &getVacancies();
-        static const QList<const Vacancy *> &getVacanciestoShow();
+        QHash<QUrl, Vacancy>& getVacancies();
+        const QHash<QUrl, Vacancy>& getVacancies() const;
+        const QList<const Vacancy*>& getVacanciestoShow() const;
 
     public:
-        QString loadTitleFromFile(const QString &path);
-        QString loadDescriptionFromFile(const QString &path);
+        QString loadTitleFromFile(const QString& path);
+        QString loadDescriptionFromFile(const QString& path);
 
         void sortByTime();
         void sortByTitle();
         void sortByCompany();
         void sortByLevel();
-        void sortByRelevance(const QString &);
+        void sortByRelevance(const QString&);
 
     public slots:
-        void titleReady(const Vacancy &);
-        void descrReady(const Vacancy &);
+        void titleReady(const Vacancy&);
+        void descrReady(const Vacancy&);
 
         void sendSearchRequest();
-        void openVacancyDescription(const QModelIndex &);
+        void openVacancyDescription(const QModelIndex&);
 
         void titlesProcessed();
         void requestFinished();
@@ -62,20 +63,24 @@ namespace Linked
         void openProgressDialog();
         void closeSearchMessage();
 
-    private:
-        SharedContext *context;
+    protected:
+        void updateVacancies(const Vacancy& vacancy);
+        void syncVacanciesToShow();
 
     private:
-        NetworkManager *networkManager = nullptr;
-        QThread *networkThread = nullptr;
+        SharedContext* context;
 
-        HTMLparser *parser = nullptr;
-        QThread *parserThread = nullptr;
+    private:
+        NetworkManager* networkManager = nullptr;
+        QThread* networkThread = nullptr;
 
-        GUI *gui = nullptr;
+        HTMLparser* parser = nullptr;
+        QThread* parserThread = nullptr;
 
-        static QList<Vacancy> vacancies;
-        static QList<const Vacancy *> vacanciesToShow;
+        GUI* gui = nullptr;
+
+        QHash<QUrl, Vacancy> vacancies;
+        QVector<const Vacancy*> vacanciesToShow;
 
         qsizetype descrProcessed = 0;
 

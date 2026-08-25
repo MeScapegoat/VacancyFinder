@@ -1,8 +1,5 @@
-*
-!source/
-!source/**
-!.gitignore
-!log_rules.ini
-!WinScripts/*
-!LinuxScripts/*
-!README.md
+.vs
+
+build
+
+CMakeUserPresets.json

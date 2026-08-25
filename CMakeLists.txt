@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
+
+project(LinkedIn_search_app
+        VERSION 1.0
+        LANGUAGES CXX
+        )
+
 if (WIN32)
         message("Configuring for Windows...")
         
@@ -12,33 +18,28 @@ else()
 endif()
 set(CMAKE_AUTOMOC ON)         
 
-project(LinkedIn_search_app
-        VERSION 1.0
-        LANGUAGES CXX
-        )
-
 add_executable(LinkedIn_search_app)
 
 target_sources(LinkedIn_search_app 
-                PUBLIC main.cpp 
-                PUBLIC core/App.cpp 
-                PUBLIC core/App.h
-                PUBLIC core/Vacancy.cpp
-                PUBLIC core/Vacancy.h
-                PUBLIC core/Logger.h
-                PUBLIC core/Logger.cpp
+                PUBLIC src/main.cpp 
+                PUBLIC src/core/App.cpp 
+                PUBLIC src/core/App.h
+                PUBLIC src/core/Vacancy.cpp
+                PUBLIC src/core/Vacancy.h
+                PUBLIC src/core/Logger.h
+                PUBLIC src/core/Logger.cpp
 
-                PUBLIC network/NetworkManager.h
-                PUBLIC network/NetworkManager.cpp
-                PUBLIC network/HTMLparser.h
-                PUBLIC network/HTMLparser.cpp
+                PUBLIC src/network/NetworkManager.h
+                PUBLIC src/network/NetworkManager.cpp
+                PUBLIC src/network/HTMLparser.h
+                PUBLIC src/network/HTMLparser.cpp
                 
-                PUBLIC gui/GUI.h
-                PUBLIC gui/GUI.cpp
-                PUBLIC gui/MainWindow.h
-                PUBLIC gui/MainWindow.cpp
-                PUBLIC gui/ProgressDialog.h
-                PUBLIC gui/ProgressDialog.cpp) # TODO change this
+                PUBLIC src/gui/GUI.h
+                PUBLIC src/gui/GUI.cpp
+                PUBLIC src/gui/MainWindow.h
+                PUBLIC src/gui/MainWindow.cpp
+                PUBLIC src/gui/ProgressDialog.h
+                PUBLIC src/gui/ProgressDialog.cpp) # TODO change this
 
 find_package(Qt6 COMPONENTS Core Network Widgets REQUIRED)
 target_link_libraries(LinkedIn_search_app 

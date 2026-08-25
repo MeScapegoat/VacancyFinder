@@ -25,7 +25,7 @@ namespace Linked
         QPushButton *stopButton() { return stopButton_; }
 
     public slots:
-        void updateInfo(qsizetype id);
+        void updateInfo(const QUrl& link);
         void updateError(QNetworkReply::NetworkError);
         void start();
 
