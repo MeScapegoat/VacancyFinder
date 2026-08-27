@@ -1,59 +1,113 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 4.4)
 
-project(LinkedIn_search_app
-        VERSION 1.0
-        LANGUAGES CXX
-        )
 
-if (WIN32)
-        message("Configuring for Windows...")
-        
-        add_compile_options(/Wall /permissive-)
-elseif (UNIX AND NOT APPLE)
-        message("Configuring for Linux...")
-        
-        add_compile_options(-O2 -Wall -Wextra -Wpedantic -fdiagnostics-color=always)
-else()
-        message("The app wasn't tested for ${CMAKE_HOST_SYSTEM_NAME}")
-endif()
-set(CMAKE_AUTOMOC ON)         
+# Project configuration
 
-add_executable(LinkedIn_search_app)
+set(PROJECT_NAME "LinkedIn_Job_Finder")
+set(PROJECT_VERSION "0.0.1")
 
-target_sources(LinkedIn_search_app 
-                PUBLIC src/main.cpp 
-                PUBLIC src/core/App.cpp 
-                PUBLIC src/core/App.h
-                PUBLIC src/core/Vacancy.cpp
-                PUBLIC src/core/Vacancy.h
-                PUBLIC src/core/Logger.h
-                PUBLIC src/core/Logger.cpp
+set(SOURCES_DIR_FOLDER "src")
+set(SOURCES_DIR_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${SOURCES_DIR_FOLDER}")
 
-                PUBLIC src/network/NetworkManager.h
-                PUBLIC src/network/NetworkManager.cpp
-                PUBLIC src/network/HTMLparser.h
-                PUBLIC src/network/HTMLparser.cpp
-                
-                PUBLIC src/gui/GUI.h
-                PUBLIC src/gui/GUI.cpp
-                PUBLIC src/gui/MainWindow.h
-                PUBLIC src/gui/MainWindow.cpp
-                PUBLIC src/gui/ProgressDialog.h
-                PUBLIC src/gui/ProgressDialog.cpp) # TODO change this
+set(CORE_SOURCES_DIR_FOLDER "core")
+set(CORE_SOURCES "")
 
-find_package(Qt6 COMPONENTS Core Network Widgets REQUIRED)
-target_link_libraries(LinkedIn_search_app 
-                      PRIVATE Qt6::Core Qt6::Network Qt6::Widgets)
+set(NETWORK_SOURCES_DIR_FOLDER "network")
+set(NETWORK_SOURCES "")
 
-target_include_directories(LinkedIn_search_app 
-                           PUBLIC source)
+set(PARSER_SOURCES_DIR_FOLDER "parser")
+set(PARSER_SOURCES "")
 
-target_compile_definitions(LinkedIn_search_app
-                           PUBLIC -DQT_MESSAGELOGCONTEXT)
+set(GUI_SOURCES_DIR_FOLDER "gui")
+set(GUI_SOURCES "")
 
-message(DEBUG "Generator: ${CMAKE_GENERATOR}")
-message(DEBUG "C++ Compiler: ${CMAKE_CXX_COMPILER}")
-message(DEBUG "C++ Compiler ID: ${CMAKE_CXX_COMPILER_ID}")
-message(DEBUG "C++ Compiler Version: ${CMAKE_CXX_COMPILER_VERSION}")
-get_target_property(TARGET_FLAGS LinkedIn_search_app COMPILE_OPTIONS)
-message(DEBUG "C++ Compiler Flags: ${TARGET_FLAGS}")
+set(SOURCES_SUPPORTED_EXTENSIONS
+    "*.cpp"
+    "*.h"
+)
+
+configure_file(
+    ${CMAKE_SOURCE_DIR}/log_rules.ini
+    ${CMAKE_BINARY_DIR}/log_rules.ini
+    COPYONLY
+)
+
+# Project
+
+project(${PROJECT_NAME}
+    VERSION ${PROJECT_VERSION}
+    LANGUAGES CXX
+)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+
+# Qt
+
+find_package(Qt6 REQUIRED COMPONENTS 
+            Core
+            Network
+            Widgets)
+
+set(CMAKE_AUTOMOC ON)
+
+
+# Collect sources files
+
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${CORE_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND CORE_SOURCES ${FILES})
+endforeach()
+
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${NETWORK_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND NETWORK_SOURCES ${FILES})
+endforeach()
+
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${PARSER_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND PARSER_SOURCES ${FILES})
+endforeach()
+
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${GUI_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND GUI_SOURCES ${FILES})
+endforeach()
+
+
+# Target
+
+add_executable(${PROJECT_NAME} 
+${CORE_SOURCES}
+${NETWORK_SOURCES}
+${PARSER_SOURCES}
+${GUI_SOURCES}
+${SOURCES_DIR_PATH}/main.cpp
+)
+
+target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+        Qt6::Core
+        Qt6::Network
+        Qt6::Widgets
+)
+
+add_subdirectory(tests)
