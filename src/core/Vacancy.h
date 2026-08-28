@@ -1,57 +1,67 @@
 #pragma once
+#include <optional>
 
-// std
-
-// Qt
-#include <QString>
 #include <QDate>
-#include <QTextStream>
+#include <QDebug>
 #include <QLoggingCategory>
+#include <QString>
 #include <QUrl>
 
-// custom
+Q_DECLARE_LOGGING_CATEGORY(VacancyLog);
 
-namespace Linked
+using Months = unsigned;
+
+// TODO: split it into title and description classes
+
+class Vacancy
 {
-    Q_DECLARE_LOGGING_CATEGORY(LinkedVacancy);
+public:
+    Vacancy();
+    ~Vacancy();
 
-    using Months = unsigned;
+public:
+    qsizetype count(const QString& str, Qt::CaseSensitivity cs = Qt::CaseInsensitive) const;
+    void reset();
 
-    class Vacancy
-    {
-    public:
-        Vacancy();
-        ~Vacancy() = default;
+    void mergeFrom(const Vacancy& vacancy);
 
-    public:
-        qsizetype count(const QString &str, Qt::CaseSensitivity cs = Qt::CaseInsensitive) const;
-        void clear();
+public:
+    unsigned id;
 
-        void mergeFrom(const Vacancy& vacancy);
+    QUrl link;
 
-        // make many variables optional since they might be missing
-    public:
-        QString title;
-        QUrl link;
+    std::optional<QString> title;
 
-        QString companyName;
-        QString industry;
-        QUrl companyLink;
+    std::optional<QString> companyName;
+    std::optional<QString> industry;
+    std::optional<QUrl> companyLink;
 
-        QString location;
-        QDate date;
-        QDate expirationDate;
+    std::optional<QString> location;
+    std::optional<QDate> date;
+    std::optional<QDate> expirationDate;
 
-        Months experience;
-        QString education;
-        QString skills;
+    std::optional<Months> experience;
+    std::optional<QString> education;
+    std::optional<QString> skills;
 
-        QString level;
-        QString employmentType;
+    std::optional<QString> level;
+    std::optional<QString> employmentType;
 
-        QString description;
-    };
+    std::optional<QString> description;
+};
 
-    QDebug operator<<(QDebug debug, const Vacancy& vacancy);
+QDebug operator<<(QDebug debug, const Vacancy& vacancy);
 
-} // namespace Linked
+template <typename T>
+void printVacancyItem(QDebug& debug, const char* name, const T& value)
+{
+    debug << qSetFieldWidth(16) << name << qSetFieldWidth(0) << ": " << value << '\n';
+}
+
+template <typename T>
+void printVacancyItem(QDebug& debug, const char* name, const std::optional<T>& opt)
+{
+    if (opt)
+        printVacancyItem(debug, name, opt.value());
+}
+

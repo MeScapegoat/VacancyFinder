@@ -1,122 +1,129 @@
-// std
-
-// Qt
-#include <QThread>
-
-// custom
 #include "Vacancy.h"
 
-namespace Linked
+Q_LOGGING_CATEGORY(VacancyLog, "vacancy");
+
+Vacancy::Vacancy()
 {
-    Q_LOGGING_CATEGORY(LinkedVacancy, "vacancy");
+    qCInfo(VacancyLog) << __FUNCTION__;
 
-    Vacancy::Vacancy()
+    reset();
+}
+
+Vacancy::~Vacancy()
+{
+    qCInfo(VacancyLog) << __FUNCTION__;
+}
+
+qsizetype Vacancy::count(const QString& str, Qt::CaseSensitivity cs) const
+{
+    qsizetype counted = 0;
+
+    if (title)
     {
-        clear();
+        counted += title.value().count(str, cs);
     }
 
-    qsizetype Vacancy::count(const QString &str, Qt::CaseSensitivity cs) const
+    if (description)
     {
-        return title.count(str, cs) + description.count(str, cs);
+        counted += description.value().count(str, cs);
     }
 
-    inline static constexpr const char* defaultStringValue = "NOT GIVEN";
-    inline static constexpr Months defaultMonthsValue = 0;
+    return counted;
+}
 
-    inline static const QUrl defaultUrlValue = QUrl();
-    inline static const QDate defaultDateValue = QDate();
+void Vacancy::reset()
+{
+    id = 0;
 
-    void Vacancy::clear()
-    {
-        title = defaultStringValue;
-        link = defaultUrlValue;
+    link = QUrl();
 
-        companyName = defaultStringValue;
-        industry = defaultStringValue;
-        companyLink = defaultUrlValue;
+    title.reset();
 
-        location = defaultStringValue;
-        date = defaultDateValue;
-        expirationDate = defaultDateValue;
+    companyName.reset();
+    industry.reset();
+    companyLink.reset();
 
-        experience = defaultMonthsValue;
-        education = defaultStringValue;
-        skills = defaultStringValue;
+    location.reset();
+    date.reset();
+    expirationDate.reset();
 
-        level = defaultStringValue;
-        employmentType = defaultStringValue;
+    experience.reset();
+    education.reset();
+    skills.reset();
 
-        description = defaultStringValue;
-    }
+    level.reset();
+    employmentType.reset();
 
-    void Vacancy::mergeFrom(const Vacancy& vacancy)
-    {
-        if (title == defaultStringValue)
-            title = vacancy.title;
+    description.reset();
+}
 
-        if (link == defaultUrlValue)
-            link = vacancy.link;
+void Vacancy::mergeFrom(const Vacancy& vacancy)
+{
+    if (link.isEmpty())
+        link = vacancy.link;
 
-        if (companyName == defaultStringValue)
-            companyName = vacancy.companyName;
+    if (!title)
+        title = vacancy.title;
 
-        if (industry == defaultStringValue)
-            industry = vacancy.industry;
+    if (!companyName)
+        companyName = vacancy.companyName;
 
-        if (companyLink == defaultUrlValue)
-            companyLink = vacancy.companyLink;
+    if (!industry)
+        industry = vacancy.industry;
 
-        if (location == defaultStringValue)
-            location = vacancy.location;
+    if (!companyLink)
+        companyLink = vacancy.companyLink;
 
-        if (date == defaultDateValue)
-            date = vacancy.date;
+    if (!location)
+        location = vacancy.location;
 
-        if (expirationDate == defaultDateValue)
-            expirationDate = vacancy.expirationDate;
+    if (!date)
+        date = vacancy.date;
 
-        if (experience == defaultMonthsValue)
-            experience = vacancy.experience;
+    if (!expirationDate)
+        expirationDate = vacancy.expirationDate;
 
-        if (education == defaultStringValue)
-            education = vacancy.education;
+    if (!experience)
+        experience = vacancy.experience;
 
-        if (skills == defaultStringValue)
-            skills = vacancy.skills;
+    if (!education)
+        education = vacancy.education;
 
-        if (level == defaultStringValue)
-            level = vacancy.level;
+    if (!skills)
+        skills = vacancy.skills;
 
-        if (employmentType == defaultStringValue)
-            employmentType = vacancy.employmentType;
+    if (!level)
+        level = vacancy.level;
 
-        if (description == defaultStringValue)
-            description = vacancy.description;
-    }
+    if (!employmentType)
+        employmentType = vacancy.employmentType;
 
-    QDebug operator<<(QDebug debug, const Vacancy& vacancy)
-    {
-        QDebugStateSaver saver(debug);
+    if (!description)
+        description = vacancy.description;
+}
 
-        debug.nospace()
-            << "Vacancy(" << "\n"
-            << "title:         " << vacancy.title << "\n"
-            << "link:          " << vacancy.link << "\n"
-            << "companyName:   " << vacancy.companyName << "\n"
-            << "industry:      " << vacancy.industry << "\n"
-            << "companyLink:   " << vacancy.companyLink << "\n"
-            << "location:      " << vacancy.location << "\n"
-            << "date:          " << vacancy.date << "\n"
-            << "expirationDate:" << vacancy.expirationDate << "\n"
-            << "experience:    " << vacancy.experience << "\n"
-            << "level:         " << vacancy.level << "\n"
-            << "education:     " << vacancy.education << "\n"
-            << "skills:        " << vacancy.skills << "\n"
-            << "employmentType:" << vacancy.employmentType << "\n"
-            << "description:   " << vacancy.description << "\n"
-            << ')';
+QDebug operator<<(QDebug debug, const Vacancy& vacancy)
+{
 
-        return debug;
-    }
+    QDebugStateSaver saver(debug);
 
-} // namespace Linked
+    debug.nospace() << "Vacancy:\n";
+
+    printVacancyItem(debug, "id", vacancy.id);
+    printVacancyItem(debug, "link", vacancy.link);
+    printVacancyItem(debug, "title", vacancy.title);
+    printVacancyItem(debug, "companyName", vacancy.companyName);
+    printVacancyItem(debug, "industry", vacancy.industry);
+    printVacancyItem(debug, "companyLink", vacancy.companyLink);
+    printVacancyItem(debug, "location", vacancy.location);
+    printVacancyItem(debug, "date", vacancy.date);
+    printVacancyItem(debug, "expirationDate", vacancy.expirationDate);
+    printVacancyItem(debug, "experience", vacancy.experience);
+    printVacancyItem(debug, "level", vacancy.level);
+    printVacancyItem(debug, "education", vacancy.education);
+    printVacancyItem(debug, "skills", vacancy.skills);
+    printVacancyItem(debug, "employmentType", vacancy.employmentType);
+    printVacancyItem(debug, "description", vacancy.description);
+
+    return debug;
+}
