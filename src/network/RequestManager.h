@@ -8,7 +8,7 @@
 #include <QTimer>
 #include <QNetworkReply>
 
-Q_DECLARE_LOGGING_CATEGORY(LinkedNetwork);
+Q_DECLARE_LOGGING_CATEGORY(NetworkLog);
 
 class SharedContext;
 
@@ -36,7 +36,7 @@ public slots:
     void onInterrupt();
 
 signals:
-    void receivedReply(QUrl url, QString html);
+    void receivedReply(const QString& html, const QUrl& url);
     void replyError(const QNetworkReply::NetworkError& error);
     void requestsFinished();
 

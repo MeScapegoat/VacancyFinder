@@ -5,7 +5,7 @@
 #include <QNetworkCookie>
 
 
-Q_LOGGING_CATEGORY(LinkedNetwork, "network");
+Q_LOGGING_CATEGORY(NetworkLog, "network");
 
 RequestManager::RequestManager(QObject* parent) :
     QObject(parent),
@@ -15,11 +15,11 @@ RequestManager::RequestManager(QObject* parent) :
     cookiesInitialized(false),
     isInterrupted(false),
     requestTimer(this),
-    requestsPerSecond(2),
+    requestsPerSecond(8),
     requestIntervalMs(1000 / requestsPerSecond),
     requestCooldownTimer(this),
-    requestCooldown(2000),
-    maxConcurrent(2)
+    requestCooldown(3000),
+    maxConcurrent(8)
 {
     QObject::connect(&networkManager, &QNetworkAccessManager::finished, this, &RequestManager::onFinished);
 
@@ -89,7 +89,7 @@ void RequestManager::addUrl(const QUrl& url)
 
 void RequestManager::onInterrupt()
 {
-    qCDebug(LinkedNetwork) << "Interrupted";
+    qCDebug(NetworkLog) << "Interrupted";
 
     isInterrupted = true;
 
@@ -100,7 +100,7 @@ void RequestManager::onFinished(QNetworkReply* reply)
 {
     if (isInterrupted)
     {
-        qCDebug(LinkedNetwork) << "Interrupted";
+        qCDebug(NetworkLog) << "Interrupted";
 
         reply->deleteLater();
         return;
@@ -116,7 +116,7 @@ void RequestManager::onFinished(QNetworkReply* reply)
     {
         const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
-        qCWarning(LinkedNetwork) << "statusCode:" << statusCode;
+        qCWarning(NetworkLog) << "statusCode:" << statusCode;
 
         reply->deleteLater();
 
@@ -131,7 +131,7 @@ void RequestManager::onFinished(QNetworkReply* reply)
             }
             default:
             {
-                qCWarning(LinkedNetwork) << "something to do with other codes..."; // TODO
+                qCWarning(NetworkLog) << "something to do with other codes..."; // TODO
             }
         }
 
@@ -146,34 +146,34 @@ void RequestManager::onFinished(QNetworkReply* reply)
         if (!cookies.isEmpty())
         {
             cookiesInitialized = true;
-            qCInfo(LinkedNetwork) << "Cookies initialized:" << cookies.size();
+            qCInfo(NetworkLog) << "Cookies initialized:" << cookies.size();
         }
         else
         {
-            qCInfo(LinkedNetwork) << "No cookies received.";
+            qCInfo(NetworkLog) << "No cookies received.";
         }
     }
 
-    emit receivedReply(url, reply->readAll());
+    emit receivedReply(reply->readAll(), url);
 
     reply->deleteLater();
+}
 
+void RequestManager::startNext()
+{
     if (urlsQueue.isEmpty() && activeReplies.isEmpty())
     {
-        qCDebug(LinkedNetwork) << "Job is done!";
+        qCDebug(NetworkLog) << "Requesting is done!";
 
         stopTimers();
 
         emit requestsFinished();
         return;
     }
-}
 
-void RequestManager::startNext()
-{
     if (isInterrupted)
     {
-        qCDebug(LinkedNetwork) << "Interrupted";
+        qCDebug(NetworkLog) << "Interrupted";
         return;
     }
 
@@ -185,7 +185,7 @@ void RequestManager::startNext()
     if (!urlsQueue.isEmpty() && activeReplies.size() < _maxConcurrent)
     {
         const QUrl url = urlsQueue.dequeue();
-        qCDebug(LinkedNetwork) << url;
+        qCDebug(NetworkLog) << url;
 
         QNetworkRequest request(url);
         request.setRawHeader("Accept-Language", "en-US,en;q=0.9");
