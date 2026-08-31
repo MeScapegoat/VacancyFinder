@@ -1,8 +1,5 @@
 #pragma once
 
-#include "App.h"
-#include "../gui/MainWindow.h"
-
 namespace Linked
 {
     class App;
