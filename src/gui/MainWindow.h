@@ -13,7 +13,8 @@
 
 // custom
 #include "../core/SharedContext.h"
-#include "../core/Vacancy.h"
+
+class QSpinBox;
 
 namespace Linked
 {
@@ -30,9 +31,8 @@ namespace Linked
         ~MainWindow();
 
     public:
-        int maxVacancies() const { return limitLineEdit->text().toInt(); }
+        QSpinBox& limitVacanciesInput;
 
-    public:
         QListView *list() { return vacanciesList; }
         QPushButton *button() { return searchButton; }
         QTextBrowser *descr() { return vacancyDesc; }
@@ -58,8 +58,6 @@ namespace Linked
         QLineEdit *keywordsLineEdit = nullptr;
         QLineEdit *locationLineEdit = nullptr;
         QPushButton *searchButton = nullptr;
-
-        QLineEdit *limitLineEdit = nullptr;
 
         QButtonGroup *sortMode_ = nullptr;
 

@@ -8,54 +8,73 @@
 
 namespace Linked
 {
-    ProgressDialog::ProgressDialog(QWidget *parent, SharedContext *sharedContext) : QDialog(parent), context(sharedContext)
+    ProgressDialog::ProgressDialog(QWidget* parent, SharedContext* sharedContext) :
+        QDialog(parent),
+        context(sharedContext),
+        briefLabel(*new QLabel),
+        briefsProgressBar(*new QProgressBar),
+        detailsLabel(*new QLabel),
+        allDetailsProgressBar(*new QProgressBar),
+        errorLabel(*new QLabel),
+        stopButton(*new QPushButton)
     {
         setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint);
 
-        QVBoxLayout *layout = new QVBoxLayout();
-        infoLabel_ = new QLabel();
-        errorLabel_ = new QLabel();
-        progressBar_ = new QProgressBar;
-        stopButton_ = new QPushButton("Stop Search");
+        QVBoxLayout& layout = *new QVBoxLayout();
 
-        infoLabel_->setAlignment(Qt::AlignCenter);
-        errorLabel_->setAlignment(Qt::AlignCenter);
+        stopButton.setText("Stop Search");
 
-        layout->addWidget(infoLabel_);
-        layout->addWidget(errorLabel_);
-        layout->addWidget(progressBar_);
-        layout->addWidget(stopButton_);
+        layout.addWidget(&briefLabel);
+        layout.addWidget(&briefsProgressBar);
+
+        layout.addWidget(&detailsLabel);
+        layout.addWidget(&allDetailsProgressBar);
+
+        layout.addWidget(&errorLabel);
+
+        layout.addWidget(&stopButton);
         
-        setFixedSize(500, 200);
+        setMinimumSize(500, 200);
 
-        setLayout(layout);
+        setLayout(&layout);
+
+        QObject::connect(&stopButton, &QPushButton::released, this, &ProgressDialog::accept);
     }
 
-    void ProgressDialog::updateInfo(const QUrl& link)
+    void ProgressDialog::updateBrief(const VacancyBrief& brief)
     {
-        const Vacancy& vacancy = context->app->getVacancies().value(link);
-        infoLabel_->setText(infoPattern
-                                .arg(0)
-                                .arg(vacancy.title)
-                                .arg(vacancy.companyName));
-        progressBar_->setValue(progressBar_->value() + 1);
+        static constexpr const char* briefPattern = "Processed brief: #%1, %2 by %3";
+
+        briefLabel.setText(QString(briefPattern)
+                               .arg(brief.id)
+                               .arg(brief.title)
+                               .arg(brief.companyName));
+
+        briefsProgressBar.setValue(brief.id);
+    }
+
+    void ProgressDialog::updateDetails(const VacancyDetails& details)
+    {
+        static constexpr const char* detailsPattern = "Processed details: #%1";
+
+        detailsLabel.setText(QString(detailsPattern).arg(details.id));
+
+        allDetailsProgressBar.setValue(details.id);
     }
 
     void ProgressDialog::updateError(QNetworkReply::NetworkError err)
     {
-        qCDebug(LinkedGUI) << "update error:" << err;
-
         QString errorText;
-        QString errorTime = "\nTime of error: " + QTime::currentTime().toString();
+        const QString errorTime = "\nTime of error: " + QTime::currentTime().toString();
         switch (err)
         {
-        case 0:
+        case QNetworkReply::NetworkError::NoError:
             errorText = "No error occurred";
             break;
-        case 1:
+        case QNetworkReply::NetworkError::ConnectionRefusedError:
             errorText = "Error: Connection Refused" + errorTime;
             break;
-        case 299:
+        case QNetworkReply::NetworkError::UnknownContentError:
             errorText = "Error: Unknown Content" + errorTime;
             break;
         default:
@@ -63,15 +82,21 @@ namespace Linked
             break;
         }
 
-        errorLabel_->setText(errorText);
+        errorLabel.setText(errorText);
     }
 
-    void ProgressDialog::start()
+    void ProgressDialog::start(const unsigned& maxVacancies)
     {
-        progressBar_->setRange(0, context->mainWindow->maxVacancies());
-        progressBar_->setValue(0);
-        infoLabel_->setText("Processing vacancies...");
-        errorLabel_->setText("");
+        briefsProgressBar.setRange(0, maxVacancies);
+        briefsProgressBar.setValue(0);
+
+        allDetailsProgressBar.setRange(0, maxVacancies);
+        allDetailsProgressBar.setValue(0);
+
+        briefLabel.setText("Processing briefs...");
+        detailsLabel.setText("Processing details...");
+
+        errorLabel.setText("");
 
         exec();
     }

@@ -11,7 +11,8 @@
 
 // custom
 #include "../core/SharedContext.h"
-#include "../core/Vacancy.h"
+#include "../model/VacancyBrief.h"
+#include "../model/VacancyDetails.h"
 
 namespace Linked
 {
@@ -21,23 +22,26 @@ namespace Linked
         ProgressDialog(QWidget *parent, SharedContext *context);
         ~ProgressDialog() = default;
 
-    public:
-        QPushButton *stopButton() { return stopButton_; }
-
     public slots:
-        void updateInfo(const QUrl& link);
+        void updateBrief(const VacancyBrief& brief);
+        void updateDetails(const VacancyDetails& details);
         void updateError(QNetworkReply::NetworkError);
-        void start();
+        void start(const unsigned& maxVacancies);
+
+    public:
+        QPushButton& stopButton;
 
     private:
         SharedContext *context = nullptr;
 
     private:
-        QLabel *infoLabel_ = nullptr;
-        QLabel *errorLabel_ = nullptr;
-        QPushButton *stopButton_ = nullptr;
-        QProgressBar *progressBar_ = nullptr;
+        QLabel& briefLabel;
+        QProgressBar& briefsProgressBar;
 
-        QString infoPattern = "Processing vacancy #%1\n\n%2\n%3";
+
+        QLabel& detailsLabel;
+        QProgressBar& allDetailsProgressBar;
+
+        QLabel& errorLabel;
     };
 } // namespace Linked

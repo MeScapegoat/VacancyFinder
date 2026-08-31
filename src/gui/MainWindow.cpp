@@ -11,9 +11,12 @@
 #include <QPushButton>
 #include <QRadioButton>
 #include <QStringListModel>
+#include <QSpinBox>
 
 // custom
 #include "MainWindow.h"
+#include "../core/App.h"
+#include "../model/Vacancy.h"
 
 namespace Linked
 {
@@ -29,7 +32,16 @@ namespace Linked
         auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
         QStringList data;
         for (const Vacancy* vacancy : context->app->getVacanciestoShow())
-            data.append(QString("%1. %2\n%3").arg(data.size() + 1, 3).arg(vacancy->title).arg(vacancy->companyName, vacancy->companyName.size() + 8));
+        {
+            const quint64& id = data.size() + 1;
+            const QString& title = vacancy->brief.title;
+            const QString& companyName = vacancy->brief.companyName;
+            const quint64& companyNameWidth = companyName.size() + 8;
+
+            data.append(QString("%1. %2\n%3").arg(id, 3)
+                                             .arg(title)
+                                             .arg(companyName, companyNameWidth));
+        }
         model->setStringList(data);
     }
 
@@ -46,7 +58,9 @@ namespace Linked
         model->setStringList(QStringList());
     }
 
-    MainWindow::MainWindow(SharedContext *sharedContext) : context(sharedContext)
+    MainWindow::MainWindow(SharedContext *sharedContext) : 
+        context(sharedContext),
+        limitVacanciesInput(*new QSpinBox)
     {
         // Maybe all incredible code below must be refactored into many initSMTH(QWidget* parent) functions for the sake of redability
 
@@ -106,23 +120,13 @@ namespace Linked
         vacanciesListLayout->addLayout(limitLayout);
 
         QLabel *limitLabel = new QLabel("Max amount of processed vacancies:");
-        limitLineEdit = new QLineEdit("999");
+        
+        limitVacanciesInput.setRange(1, 999);
+        limitVacanciesInput.setValue(999);
 
         limitLayout->addWidget(limitLabel);
-        limitLayout->addWidget(limitLineEdit);
+        limitLayout->addWidget(&limitVacanciesInput);
 
-        auto customLimitValidation = [&]()
-        {
-            qCDebug(LinkedGUIMainWindow) << "editingFinished, text:" << limitLineEdit->text() << "UInt:" << limitLineEdit->text().toUInt();
-
-            if (!limitLineEdit->text().toUInt())
-                limitLineEdit->setText("1");
-
-            if (limitLineEdit->text().toInt() > 999)
-                limitLineEdit->setText("999");
-        };
-
-        connect(limitLineEdit, &QLineEdit::editingFinished, customLimitValidation);
         /*
          * limitLayout
          */
