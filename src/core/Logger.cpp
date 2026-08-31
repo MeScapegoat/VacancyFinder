@@ -33,9 +33,10 @@ namespace Linked
     {
         if (!logRulesWatcher.files().empty())
             logRulesWatcher.removePaths(logRulesWatcher.files());
-        if (!QFile::exists(path))
+
+        if (!QFile(path).exists())
         {
-            qCCritical(LinkedLogger) << path << "doesnt exists";
+            qCCritical(LinkedLogger) << QFileInfo(path).absoluteFilePath() << "doesnt exists";
             return;
         }
         logRulesPath = path;
