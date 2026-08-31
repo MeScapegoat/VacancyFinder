@@ -21,6 +21,12 @@ set(PARSER_SOURCES "")
 set(GUI_SOURCES_DIR_FOLDER "gui")
 set(GUI_SOURCES "")
 
+set(MODEL_SOURCES_DIR_FOLDER "model")
+set(MODEL_SOURCES "")
+
+set(UTILS_SOURCES_DIR_FOLDER "utils")
+set(UTILS_SOURCES "")
+
 set(SOURCES_SUPPORTED_EXTENSIONS
     "*.cpp"
     "*.h"
@@ -92,15 +98,35 @@ foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
     list(APPEND GUI_SOURCES ${FILES})
 endforeach()
 
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${MODEL_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND MODEL_SOURCES ${FILES})
+endforeach()
+
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${UTILS_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND UTILS_SOURCES ${FILES})
+endforeach()
+
 
 # Target
 
 add_executable(${PROJECT_NAME} 
-${CORE_SOURCES}
-${NETWORK_SOURCES}
-${PARSER_SOURCES}
-${GUI_SOURCES}
-${SOURCES_DIR_PATH}/main.cpp
+               ${CORE_SOURCES}
+               ${NETWORK_SOURCES}
+               ${PARSER_SOURCES}
+               ${GUI_SOURCES}
+               ${MODEL_SOURCES}
+               ${UTILS_SOURCES}
+               ${SOURCES_DIR_PATH}/main.cpp       
 )
 
 target_link_libraries(${PROJECT_NAME}
