@@ -1,27 +1,23 @@
-#include <QCoreApplication>
-#include <QElapsedTimer>
-#include <QList>
-#include <QTimer>
-#include <QDebug>
-
+#include "BenchmarkCommonData.h"
 #include "network/RequestManager.h"
 
-static constexpr unsigned waitBetweenTestsMs = 120 * 1000;
-static constexpr unsigned linksAmount = 100;
+#include <QCoreApplication>
+#include <QDebug>
+#include <QElapsedTimer>
+#include <QFile>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonValue>
+#include <QList>
+#include <QString>
+#include <QTimer>
 
-struct BenchmarkConfig
-{
-    unsigned maxConcurrent;
-    unsigned requestsPerSecond;
-    unsigned requestCooldownMs;
-};
+static constexpr qint64 waitBetweenTestsMs = 60 * 1000;
+static constexpr qint64 linksAmount = 100;
+static constexpr qint64 totalRuns = 5;
 
-struct BenchmarkResult
-{
-    BenchmarkConfig config;
-    qint64 elapsedMs;
-    quint64 errorCount;
-};
+
 
 class BenchmarkRunner : public QObject
 {
@@ -31,34 +27,47 @@ public:
     {
         configurations =
         {
-            {1, 1, 0},
-            {8, 1, 0},
-            {1, 8, 0},
-            
-            {2, 2, 0},
-            {4, 4, 0},
-            {8, 8, 0},
-            {16, 16, 0},
+            //{1, 1, 0},
 
             {2, 2, 2000},
+            {2, 2, 3000},
+
+            {3, 3, 2000},
+
             {4, 4, 2000},
-            {8, 8, 2000},
-            {16, 16, 2000},
+            {4, 4, 3000},
 
-            {2, 2, 4000},
-            {4, 4, 4000},
-            {8, 8, 4000},
-            {16, 16, 4000},
+            {4, 6, 2000},
 
-            {2, 2, 8000},
-            {4, 4, 8000},
-            {8, 8, 8000},
-            {16, 16, 8000},
+            {5, 5, 1500},
+            {5, 5, 2000},
+            {5, 5, 2500},
+            {5, 5, 3000},
+            {5, 5, 5000},
 
-            {2, 2, 16000},
-            {4, 4, 16000},
-            {8, 8, 16000},
-            {16, 16, 16000},
+            {5, 6, 2000},
+
+            {6, 5, 2000},
+
+            {6, 6, 1500},
+            {6, 6, 2000},
+            {6, 6, 2500},
+            {6, 6, 3000},
+            {6, 6, 5000},
+
+            {6, 7, 2000},
+
+            {7, 6, 2000},
+
+            {7, 7, 1500},
+            {7, 7, 2500},
+            {7, 7, 3000},
+            {7, 7, 5000},
+
+            {8, 6, 2000},
+
+            {8, 8, 3000},
+            {8, 8, 5000},
         };
     }
 
@@ -67,12 +76,17 @@ public:
         runNext();
     }
 
+    void setFileName(const QString& _fileName)
+    {
+        fileName = _fileName;
+    }
+
 private:
     void runNext()
     {
         if (configurationIndex >= configurations.size())
         {
-            printResults();
+            printResults(results, SortColumn::ElapsedMs);
             QCoreApplication::quit();
             return;
         }
@@ -82,10 +96,14 @@ private:
         qInfo() << "";
         qInfo() << "========================================";
         qInfo() << "Starting benchmark";
-        qInfo() << "MaxConcurrent:" << config.maxConcurrent;
-        qInfo() << "RequestsPerSecond:" << config.requestsPerSecond;
-        qInfo() << "RequestCooldownMs:" << config.requestCooldownMs;
+        qInfo() << "Run:               " << (runIndex + 1) << "/" << totalRuns;
+        qInfo() << "MaxConcurrent:     " << config.maxConcurrent;
+        qInfo() << "RequestsPerSecond: " << config.requestsPerSecond;
+        qInfo() << "RequestCooldownMs: " << config.requestCooldownMs;
         qInfo() << "========================================";
+
+        if (runIndex == 0)
+            results.append({config, {}});
 
         requestManager = new RequestManager(this);
 
@@ -108,43 +126,38 @@ private:
     void finishCurrentBenchmark()
     {
         const qint64 elapsedMs = timer.elapsed();
-        const quint64 errorCount = requestManager->getErrorCount();
+        const qint64 errorCount = requestManager->getErrorCount();
         const BenchmarkConfig config = configurations[configurationIndex];
 
-        qInfo() << "Finished:";
+        ++runIndex;
+
+        qInfo() << "Finished run:";
+        qInfo() << "  Run:               " << runIndex << "/" << totalRuns;
         qInfo() << "  MaxConcurrent:     " << config.maxConcurrent;
         qInfo() << "  RequestsPerSecond: " << config.requestsPerSecond;
         qInfo() << "  RequestCooldownMs: " << config.requestCooldownMs;
         qInfo() << "  errorCount:        " << errorCount;
-        qInfo() << "  Elapsed:           " << elapsedMs << "ms";
-        
+        qInfo() << "  Elapsed:           " << elapsedMs / 1000 << "secs";
 
-        results.append({config, elapsedMs, errorCount});
+        const BenchmarkRun currentRun{runIndex, elapsedMs, errorCount};
+
+        results.last().runs.append(currentRun);
+
+        saveResults(results, fileName);
 
         requestManager->deleteLater();
         requestManager = nullptr;
 
+        if (runIndex < totalRuns)
+        {
+            QTimer::singleShot(waitBetweenTestsMs, this, &BenchmarkRunner::runNext);
+            return;
+        }
+
+        runIndex = 0;
         ++configurationIndex;
 
         QTimer::singleShot(waitBetweenTestsMs, this, &BenchmarkRunner::runNext);
-    }
-
-    void printResults()
-    {
-        qInfo() << "";
-        qInfo() << "========================================";
-        qInfo() << "BENCHMARK RESULTS";
-        qInfo() << "========================================";
-
-        for (const BenchmarkResult& result : results)
-        {
-            qInfo()
-                << "MaxConcurrent: " << result.config.maxConcurrent
-                << "RPS:           " << result.config.requestsPerSecond
-                << "Cooldown:      " << result.config.requestCooldownMs
-                << "ErrorCount:    " << result.errorCount
-                << "Elapsed:       " << result.elapsedMs << "ms";
-        }
     }
 
     QList<QUrl> testUrls()
@@ -168,6 +181,9 @@ private:
     RequestManager* requestManager = nullptr;
     QElapsedTimer timer;
     qsizetype configurationIndex = 0;
+    qsizetype runIndex = 0;
+
+    QString fileName;
 };
 
 int main(int argc, char* argv[])
@@ -175,6 +191,11 @@ int main(int argc, char* argv[])
     QCoreApplication app(argc, argv);
 
     BenchmarkRunner runner;
+
+    const QString fileName = QString("benchmark_%1.json").arg(QDateTime::currentDateTime().toString("dd-MM-yyyy_HH-mm-ss"));
+
+    runner.setFileName(fileName);
+
     runner.start();
 
     return app.exec();
