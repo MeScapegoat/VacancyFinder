@@ -10,12 +10,14 @@
 #include "MainWindow.h"
 #include "ProgressDialog.h"
 
+class MainWindow;
+
 namespace Linked
 {
     Q_DECLARE_LOGGING_CATEGORY(LinkedGUI);
 
     class ProgressDialog;
-    class MainWindow;
+    
 
     class GUI : public QObject
     {

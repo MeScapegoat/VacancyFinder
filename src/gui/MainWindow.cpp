@@ -1,229 +1,197 @@
 // std
 // Qt
-#include <QCloseEvent>
 #include <QApplication>
-#include <QThread>
-
+#include <QButtonGroup>
+#include <QCloseEvent>
 #include <QHBoxLayout>
-#include <QVBoxLayout>
-
 #include <QLineEdit>
+#include <QListView>
 #include <QPushButton>
 #include <QRadioButton>
-#include <QStringListModel>
 #include <QSpinBox>
+#include <QStringListModel>
+#include <QTextBrowser>
+#include <QThread>
+#include <QVBoxLayout>
 
 // custom
-#include "MainWindow.h"
+#include "../core/SharedContext.h"
 #include "../core/App.h"
 #include "../model/Vacancy.h"
+#include "MainWindow.h"
 
-namespace Linked
+
+
+Q_LOGGING_CATEGORY(MainWindowLog, "gui.main_window");
+
+MainWindow::MainWindow(SharedContext* sharedContext) :
+    context(sharedContext),
+    limitVacanciesInput(*new QSpinBox),
+    keywordsLineEdit(*new QLineEdit),
+    locationLineEdit(*new QLineEdit),
+    searchButton(*new QPushButton),
+    sortMode(*new QButtonGroup),
+    filterMode(*new QButtonGroup),
+    filterLineEdit(*new QLineEdit),
+    vacanciesList(*new QListView),
+    titleLabel(*new QLabel),
+    companyNameLabel(*new QLabel),
+    levelLabel(*new QLabel),
+    vacancyDesc(*new QTextBrowser)
+
 {
-    Q_LOGGING_CATEGORY(LinkedGUIMainWindow, "gui.main_window");
+    qCDebug(MainWindowLog) << __FUNCTION__;
+    // Maybe all incredible code below must be refactored into many initSMTH(QWidget* parent) functions for the sake of redability
 
-    void MainWindow::updateVacanciesList()
-    {
-        if (!vacanciesList)
-        {
-            qCCritical(LinkedGUIMainWindow) << "List of vacancies not created";
-            return;
-        }
-        auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
-        QStringList data;
-        for (const Vacancy* vacancy : context->app->getVacanciestoShow())
-        {
-            const quint64& id = data.size() + 1;
-            const QString& title = vacancy->brief.title;
-            const QString& companyName = vacancy->brief.companyName;
-            const quint64& companyNameWidth = companyName.size() + 8;
+    setMinimumSize(1024, 768);
 
-            data.append(QString("%1. %2\n%3").arg(id, 3)
-                                             .arg(title)
-                                             .arg(companyName, companyNameWidth));
-        }
-        model->setStringList(data);
-    }
+    QWidget& centralWidget = *new QWidget(this);
+    setCentralWidget(&centralWidget);
 
-    void MainWindow::clearList()
-    {
-        qCDebug(LinkedGUIMainWindow) << "Clear list";
+    QVBoxLayout& mainVLayout = *new QVBoxLayout(&centralWidget);
 
-        if (!vacanciesList)
-        {
-            qCCritical(LinkedGUIMainWindow) << "List of vacancies not created";
-            return;
-        }
-        auto model = qobject_cast<QStringListModel *>(vacanciesList->model());
-        model->setStringList(QStringList());
-    }
+    /*
+     * searchLayout
+     */
 
-    MainWindow::MainWindow(SharedContext *sharedContext) : 
-        context(sharedContext),
-        limitVacanciesInput(*new QSpinBox)
-    {
-        // Maybe all incredible code below must be refactored into many initSMTH(QWidget* parent) functions for the sake of redability
+    QHBoxLayout& searchLayout = *new QHBoxLayout;
+    mainVLayout.addLayout(&searchLayout);
 
-        auto screenSize = QApplication::screens()[0]->size() / 2;
-        qsizetype x, y, w, h;
-        w = screenSize.width();
-        h = screenSize.height();
-        x = w / 2;
-        y = h / 2;
-        setGeometry(x, y, w, h);
+    QLabel& keywordsLabel = *new QLabel("Keywords:");
+    QLabel& locationLabel = *new QLabel("Location:");
+    keywordsLineEdit.setText("C++");
+    locationLineEdit.setText("Serbia");
+    searchButton.setText("Search");
 
-        QWidget *centralWidget = new QWidget(this);
-        setCentralWidget(centralWidget);
+    searchLayout.addWidget(&keywordsLabel);
+    searchLayout.addWidget(&keywordsLineEdit);
+    searchLayout.addWidget(&locationLabel);
+    searchLayout.addWidget(&locationLineEdit);
+    searchLayout.addWidget(&searchButton);
 
-        QVBoxLayout *mainVLayout = new QVBoxLayout(centralWidget);
+    /*
+     * searchLayout
+     */
 
-        /*
-         * searchLayout
-         */
+     /*
+      * searchResultLayout
+      */
+    QHBoxLayout& searchResultLayout = *new QHBoxLayout;
+    mainVLayout.addLayout(&searchResultLayout);
 
-        QHBoxLayout *searchLayout = new QHBoxLayout;
-        mainVLayout->addLayout(searchLayout);
+    /*
+     * vacanciesListLayout
+     */
 
-        QLabel *keywordsLabel = new QLabel("Keywords:");
-        keywordsLineEdit = new QLineEdit("C++");
-        QLabel *locationLabel = new QLabel("Location:");
-        locationLineEdit = new QLineEdit("Serbia");
-        searchButton = new QPushButton("Search");
+    QVBoxLayout& vacanciesListLayout = *new QVBoxLayout;
+    searchResultLayout.addLayout(&vacanciesListLayout, 20);
 
-        searchLayout->addWidget(keywordsLabel);
-        searchLayout->addWidget(keywordsLineEdit);
-        searchLayout->addWidget(locationLabel);
-        searchLayout->addWidget(locationLineEdit);
-        searchLayout->addWidget(searchButton);
+    /*
+     * limitLayout
+     */
+    QVBoxLayout& limitLayout = *new QVBoxLayout;
+    vacanciesListLayout.addLayout(&limitLayout);
 
-        /*
-         * searchLayout
-         */
+    QLabel& limitLabel = *new QLabel("Max amount of processed vacancies:");
 
-        /*
-         * searchResultLayout
-         */
-        QHBoxLayout *searchResultLayout = new QHBoxLayout;
-        mainVLayout->addLayout(searchResultLayout);
+    limitVacanciesInput.setRange(1, 999);
+    limitVacanciesInput.setValue(999);
 
-        /*
-         * vacanciesListLayout
-         */
+    limitLayout.addWidget(&limitLabel);
+    limitLayout.addWidget(&limitVacanciesInput);
 
-        QVBoxLayout *vacanciesListLayout = new QVBoxLayout;
-        searchResultLayout->addLayout(vacanciesListLayout, 20);
+    /*
+     * limitLayout
+     */
 
-        /*
-         * limitLayout
-         */
-        QVBoxLayout *limitLayout = new QVBoxLayout;
-        vacanciesListLayout->addLayout(limitLayout);
+     /*
+      * filterLayout
+      */
+    QLabel& filterLabel = *new QLabel("filter (separate with \",\"):");
+    vacanciesListLayout.addWidget(&filterLabel);
 
-        QLabel *limitLabel = new QLabel("Max amount of processed vacancies:");
-        
-        limitVacanciesInput.setRange(1, 999);
-        limitVacanciesInput.setValue(999);
+    QHBoxLayout& filterLayout = *new QHBoxLayout;
+    filterLayout.setAlignment(Qt::AlignLeft);
+    vacanciesListLayout.addLayout(&filterLayout);
 
-        limitLayout->addWidget(limitLabel);
-        limitLayout->addWidget(&limitVacanciesInput);
+    QRadioButton& noFilterOption = *new QRadioButton("off");
+    QRadioButton& includeFilterOption = *new QRadioButton("MUST include");
+    QRadioButton& excludeFilterOption = *new QRadioButton("MUST NOT include");
 
-        /*
-         * limitLayout
-         */
+    filterLayout.addWidget(&noFilterOption);
+    filterLayout.addWidget(&includeFilterOption);
+    filterLayout.addWidget(&excludeFilterOption);
 
-        /*
-         * filterLayout
-         */
-        QLabel *filterLabel = new QLabel("filter (separate with \",\"):");
-        vacanciesListLayout->addWidget(filterLabel);
+    vacanciesListLayout.addWidget(&filterLineEdit);
 
-        QHBoxLayout *filterLayout = new QHBoxLayout;
-        filterLayout->setAlignment(Qt::AlignLeft);
-        vacanciesListLayout->addLayout(filterLayout);
+    filterMode.addButton(&noFilterOption, 0);
+    filterMode.addButton(&includeFilterOption, 1);
+    filterMode.addButton(&excludeFilterOption, 2);
 
-        QRadioButton *noFilterOption = new QRadioButton("off");
-        QRadioButton *includeFilterOption = new QRadioButton("MUST include");
-        QRadioButton *excludeFilterOption = new QRadioButton("MUST NOT include");
+    noFilterOption.setChecked(true);
+    /*
+     * filterLayout
+     */
 
-        filterLayout->addWidget(noFilterOption);
-        filterLayout->addWidget(includeFilterOption);
-        filterLayout->addWidget(excludeFilterOption);
+     /*
+      * sortLayout
+      */
+    QHBoxLayout& sortLayout = *new QHBoxLayout;
+    sortLayout.setAlignment(Qt::AlignLeft);
+    vacanciesListLayout.addLayout(&sortLayout);
 
-        filterLineEdit_ = new QLineEdit;
-        vacanciesListLayout->addWidget(filterLineEdit_);
+    QLabel& sortLabel = *new QLabel("Sort by:");
+    QRadioButton& relevanceOption = *new QRadioButton("Relevance");
+    QRadioButton& timeOption = *new QRadioButton("Time");
+    QRadioButton& titleOption = *new QRadioButton("Title");
+    QRadioButton& companyOption = *new QRadioButton("Company");
+    QRadioButton& levelOption = *new QRadioButton("Level");
 
-        filterMode_ = new QButtonGroup;
-        filterMode_->addButton(noFilterOption, 0);
-        filterMode_->addButton(includeFilterOption, 1);
-        filterMode_->addButton(excludeFilterOption, 2);
+    sortLayout.addWidget(&sortLabel);
+    sortLayout.addWidget(&relevanceOption);
+    sortLayout.addWidget(&timeOption);
+    sortLayout.addWidget(&titleOption);
+    sortLayout.addWidget(&companyOption);
+    sortLayout.addWidget(&levelOption);
 
-        noFilterOption->setChecked(true);
-        /*
-         * filterLayout
-         */
+    sortMode.addButton(&relevanceOption, 1);
+    sortMode.addButton(&timeOption, 2);
+    sortMode.addButton(&titleOption, 3);
+    sortMode.addButton(&companyOption, 4);
+    sortMode.addButton(&levelOption, 5);
 
-        /*
-         * sortLayout
-         */
-        QHBoxLayout *sortLayout = new QHBoxLayout;
-        sortLayout->setAlignment(Qt::AlignLeft);
-        vacanciesListLayout->addLayout(sortLayout);
+    relevanceOption.setChecked(true);
+    /*
+     * sortLayout
+     */
 
-        QLabel *sortLabel = new QLabel("Sort by:");
-        QRadioButton *relevanceOption = new QRadioButton("Relevance");
-        QRadioButton *timeOption = new QRadioButton("Time");
-        QRadioButton *titleOption = new QRadioButton("Title");
-        QRadioButton *companyOption = new QRadioButton("Company");
-        QRadioButton *levelOption = new QRadioButton("Level");
+    QStringListModel& model = *new QStringListModel;
+    vacanciesList.setModel(&model);
+    vacanciesListLayout.addWidget(&vacanciesList);
 
-        sortLayout->addWidget(sortLabel);
-        sortLayout->addWidget(relevanceOption);
-        sortLayout->addWidget(timeOption);
-        sortLayout->addWidget(titleOption);
-        sortLayout->addWidget(companyOption);
-        sortLayout->addWidget(levelOption);
+    /*
+     * vacanciesDescriptionLayout
+     */
+    QVBoxLayout& vacanciesDescriptionLayout = *new QVBoxLayout;
+    searchResultLayout.addLayout(&vacanciesDescriptionLayout, 80);
 
-        sortMode_ = new QButtonGroup;
-        sortMode_->addButton(relevanceOption, 1);
-        sortMode_->addButton(timeOption, 2);
-        sortMode_->addButton(titleOption, 3);
-        sortMode_->addButton(companyOption, 4);
-        sortMode_->addButton(levelOption, 5);
+    titleLabel.setText("Vacancy Title");
+    titleLabel.setStyleSheet("QLabel { font-size: 22px; }");
+    titleLabel.setOpenExternalLinks(true);
+    vacanciesDescriptionLayout.addWidget(&titleLabel);
 
-        relevanceOption->setChecked(true);
-        /*
-         * sortLayout
-         */
+    companyNameLabel.setText("Vacancy Company");
+    companyNameLabel.setStyleSheet("QLabel { font-size: 22px; }");
+    companyNameLabel.setOpenExternalLinks(true);
+    vacanciesDescriptionLayout.addWidget(&companyNameLabel);
 
-        vacanciesList = new QListView;
-        QStringListModel *model = new QStringListModel;
-        vacanciesList->setModel(model);
-        vacanciesListLayout->addWidget(vacanciesList);
+    levelLabel.setText("Vacancy level");
+    levelLabel.setStyleSheet("QLabel { font-size: 18px; }");
+    levelLabel.setOpenExternalLinks(true);
+    vacanciesDescriptionLayout.addWidget(&levelLabel);
 
-        /*
-         * vacanciesDescriptionLayout
-         */
-        QVBoxLayout *vacanciesDescriptionLayout = new QVBoxLayout;
-        searchResultLayout->addLayout(vacanciesDescriptionLayout, 80);
-
-        titleLabel_ = new QLabel("Vacancy Title");
-        titleLabel_->setStyleSheet("QLabel { font-size: 22px; }");
-        titleLabel_->setOpenExternalLinks(true);
-        vacanciesDescriptionLayout->addWidget(titleLabel_);
-
-        companyNameLabel_ = new QLabel("Vacancy Company");
-        companyNameLabel_->setStyleSheet("QLabel { font-size: 22px; }");
-        companyNameLabel_->setOpenExternalLinks(true);
-        vacanciesDescriptionLayout->addWidget(companyNameLabel_);
-
-        levelLabel_ = new QLabel("Vacancy level");
-        levelLabel_->setStyleSheet("QLabel { font-size: 18px; }");
-        levelLabel_->setOpenExternalLinks(true);
-        vacanciesDescriptionLayout->addWidget(levelLabel_);
-
-        vacancyDesc = new QTextBrowser;
-        vacancyDesc->setStyleSheet("QTextBrowser { font-size: 16px; }");
-        vacancyDesc->setHtml(R"(
+    vacancyDesc.setStyleSheet("QTextBrowser { font-size: 16px; }");
+    vacancyDesc.setHtml(R"(
         <!DOCTYPE html>
         <html lang="en">
         <body>
@@ -233,25 +201,51 @@ namespace Linked
         </body>
         </html>)");
 
-        vacanciesDescriptionLayout->addWidget(vacancyDesc);
+    vacanciesDescriptionLayout.addWidget(&vacancyDesc);
 
-        /*
-         * vacanciesDescriptionLayout
-         */
+    /*
+     * vacanciesDescriptionLayout
+     */
 
-        /*
-         * searchResultLayout
-         */
+     /*
+      * searchResultLayout
+      */
 
-        show();
-    }
+    show();
+}
 
-    MainWindow::~MainWindow() {}
+MainWindow::~MainWindow()
+{
+    qCDebug(MainWindowLog) << __FUNCTION__;
+}
 
-    void MainWindow::closeEvent(QCloseEvent *event)
+void MainWindow::updateVacanciesList()
+{
+    auto model = qobject_cast<QStringListModel*>(vacanciesList.model());
+    QStringList data;
+    for (const Vacancy* vacancy : context->app->getVacanciestoShow())
     {
-        qCInfo(LinkedGUIMainWindow) << "closeEvent";
-        event->accept();
-    }
+        const quint64& id = data.size() + 1;
+        const QString& title = vacancy->brief.title;
+        const QString& companyName = vacancy->brief.companyName;
+        const quint64& companyNameWidth = companyName.size() + 8;
 
-} // namespace Linked
+        data.append(QString("%1. %2\n%3\n%4\n%5")
+                    .arg(id, 3)
+                    .arg(title)
+                    .arg(companyName, companyNameWidth));
+    }
+    model->setStringList(data);
+}
+
+void MainWindow::clearList()
+{
+    auto model = qobject_cast<QStringListModel*>(vacanciesList.model());
+    model->setStringList(QStringList());
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    qCInfo(MainWindowLog) << "closeEvent";
+    event->accept();
+}

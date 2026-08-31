@@ -6,6 +6,10 @@
 #include <QUrlQuery>
 #include <QDir>
 #include <QSpinBox>
+#include <QListView>
+#include <QButtonGroup>
+#include <QLineEdit>
+#include <QTextBrowser>
 
 // custom
 #include "App.h"
@@ -53,14 +57,14 @@ namespace Linked
         QObject::connect(parser, &HTMLparser::detailsReady, gui->progressDialog(), &ProgressDialog::updateDetails);
 
         QObject::connect(this, &App::updateVacanciesList, gui->mainWindow(), &MainWindow::updateVacanciesList);
-        QObject::connect(gui->mainWindow()->list(), &QListView::clicked, this, &App::openVacancyDescription);
-        QObject::connect(gui->mainWindow()->button(), &QPushButton::released, this, &App::sendSearchRequest);
+        QObject::connect(&gui->mainWindow()->vacanciesList, &QListView::clicked, this, &App::openVacancyDescription);
+        QObject::connect(&gui->mainWindow()->searchButton, &QPushButton::released, this, &App::sendSearchRequest);
 
         QObject::connect(this, &App::openProgressDialog,  gui->progressDialog(), &ProgressDialog::start);
         QObject::connect(this, &App::closeProgressDialog, gui->progressDialog(), &ProgressDialog::accept);
 
-        QObject::connect(gui->mainWindow()->sortMode(), &QButtonGroup::idClicked, this, &App::updateDescriptionList);
-        QObject::connect(gui->mainWindow()->filterMode(), &QButtonGroup::idClicked, this, &App::updateDescriptionList);
+        QObject::connect(&gui->mainWindow()->sortMode, &QButtonGroup::idClicked, this, &App::updateDescriptionList);
+        QObject::connect(&gui->mainWindow()->filterMode, &QButtonGroup::idClicked, this, &App::updateDescriptionList);
 
         QObject::connect(&requestManager, &RequestManager::replyError, gui->progressDialog(), &ProgressDialog::updateError);
 
@@ -98,8 +102,8 @@ namespace Linked
         isBriefsFinished = false;
         isAllDetailsFinished = false;
 
-        keywords = gui->mainWindow()->keywords()->text();
-        location = gui->mainWindow()->location()->text();
+        keywords = gui->mainWindow()->keywordsLineEdit.text();
+        location = gui->mainWindow()->locationLineEdit.text();
 
         qCInfo(LinkedApp) << "keywords:" << keywords << "location:" << location;
 
@@ -199,18 +203,18 @@ namespace Linked
 
         QString linkPattern = "<a href='%1'>%2</a>";
 
-        gui->mainWindow()->titleLabel()->setText(linkPattern.arg(vacancy.brief.link.toString()).arg(title));
-        gui->mainWindow()->companyNameLabel()->setText(linkPattern.arg(companyLink).arg(companyName));
-        gui->mainWindow()->levelLabel()->setText(level);
+        gui->mainWindow()->titleLabel.setText(linkPattern.arg(vacancy.brief.link.toString()).arg(title));
+        gui->mainWindow()->companyNameLabel.setText(linkPattern.arg(companyLink).arg(companyName));
+        gui->mainWindow()->levelLabel.setText(level);
 
-        gui->mainWindow()->descr()->setText(description);
+        gui->mainWindow()->vacancyDesc.setText(description);
     }
 
     void App::updateDescriptionList(int temp)
     {
         gui->mainWindow()->clearList();
 
-        auto sortMode = gui->mainWindow()->sortMode()->checkedId();
+        auto sortMode = gui->mainWindow()->sortMode.checkedId();
         qCDebug(LinkedApp) << "processing sort mode:" << sortMode;
 
         switch (sortMode)
@@ -235,10 +239,10 @@ namespace Linked
             break;
         }
 
-        auto filterMode = gui->mainWindow()->filterMode()->checkedId();
+        auto filterMode = gui->mainWindow()->filterMode.checkedId();
         qCDebug(LinkedApp) << "processing filter mode:" << filterMode;
 
-        const QString& filterText = gui->mainWindow()->filterLineEdit()->text();
+        const QString& filterText = gui->mainWindow()->filterLineEdit.text();
         auto filterWords = filterText.split(',');
         for (auto& word : filterWords)
             word = word.trimmed();
