@@ -7,19 +7,23 @@
 #include <QTime>
 
 // custom
-#include "Vacancy.h"
+#include "../model/Vacancy.h"
+#include "../model/VacancyBrief.h"
+#include "../model/VacancyDetails.h"
 #include "SharedContext.h"
-#include "../network/NetworkManager.h"
-#include "../network/HTMLparser.h"
+#include "../parser/HTMLparser.h"
 #include "../gui/GUI.h"
+
+class RequestManager;
+class HTMLparser;
 
 namespace Linked
 {
     Q_DECLARE_LOGGING_CATEGORY(LinkedApp);
 
-    class NetworkManager;
     class GUI;
-    class HTMLparser;
+
+    // TODO: current App workflow is a mess, need to create AppController or smth
 
     class App : public QObject
     {
@@ -33,6 +37,7 @@ namespace Linked
         QHash<QUrl, Vacancy>& getVacancies();
         const QHash<QUrl, Vacancy>& getVacancies() const;
         const QList<const Vacancy*>& getVacanciestoShow() const;
+        const unsigned& getMaxVacancies() const;
 
     public:
         QString loadTitleFromFile(const QString& path);
@@ -45,33 +50,37 @@ namespace Linked
         void sortByRelevance(const QString&);
 
     public slots:
-        void titleReady(const Vacancy&);
-        void descrReady(const Vacancy&);
-
         void sendSearchRequest();
         void openVacancyDescription(const QModelIndex&);
 
-        void titlesProcessed();
-        void requestFinished();
-
         void updateDescriptionList(int temp = 0);
 
+        void updateMaxVacancies(const unsigned newMaxVacancies);
+
+        void onBriefReady(const VacancyBrief& brief);
+        void onDetailsReady(const VacancyDetails& details);
+
+        void onBriefsFinished();
+        void onAllDetailsFinished();
+        void onRequestsFinished();
+
     signals:
-        void sendRequest(QUrl url);
+        void initSearch(const QVector<QUrl>& urls);
         void updateVacanciesList();
 
-        void openProgressDialog();
-        void closeSearchMessage();
+        void openProgressDialog(const unsigned& maxVacancies);
+        void closeProgressDialog();
 
     protected:
-        void updateVacancies(const Vacancy& vacancy);
         void syncVacanciesToShow();
+
+        void updateIsAllFinished();
 
     private:
         SharedContext* context;
 
     private:
-        NetworkManager* networkManager = nullptr;
+        RequestManager& requestManager;
         QThread* networkThread = nullptr;
 
         HTMLparser* parser = nullptr;
@@ -82,14 +91,19 @@ namespace Linked
         QHash<QUrl, Vacancy> vacancies;
         QVector<const Vacancy*> vacanciesToShow;
 
-        qsizetype descrProcessed = 0;
-
         QString baseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
         QString keywords = "";
         QString location = "";
 
+        unsigned maxVacancies;
+
         QTime searchStartTime;
-        bool isRequestFinished = false;
+
+        bool isRequestsFinished;
+        bool isBriefsFinished;
+        bool isAllDetailsFinished;
+
+        bool isAllFinished;
     };
 
 } // namespace Linked
