@@ -43,12 +43,6 @@ namespace Linked
         QString loadTitleFromFile(const QString& path);
         QString loadDescriptionFromFile(const QString& path);
 
-        void sortByTime();
-        void sortByTitle();
-        void sortByCompany();
-        void sortByLevel();
-        void sortByRelevance(const QString&);
-
     public slots:
         void sendSearchRequest();
         void openVacancyDescription(const QModelIndex&);
@@ -75,6 +69,23 @@ namespace Linked
         void syncVacanciesToShow();
 
         void updateIsAllFinished();
+
+        void applyFiltering();
+        void applySorting();
+
+
+        void sortByRelevance();
+        void sortByTitle();
+        void sortByCompany();
+        void sortByTime();
+        void sortByEmploymentType();
+        void sortByLevel();
+        void sortByExperience();
+        void sortByEducation();
+        void sortBySkills();
+        void sortByIndustry();
+        void sortByExpirationDate();
+        
 
     private:
         SharedContext* context;

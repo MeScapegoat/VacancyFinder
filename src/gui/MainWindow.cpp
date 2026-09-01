@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QButtonGroup>
 #include <QCloseEvent>
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QLineEdit>
 #include <QListView>
@@ -15,8 +16,8 @@
 #include <QVBoxLayout>
 
 // custom
-#include "../core/SharedContext.h"
 #include "../core/App.h"
+#include "../core/SharedContext.h"
 #include "../model/Vacancy.h"
 #include "MainWindow.h"
 
@@ -30,8 +31,8 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     keywordsLineEdit(*new QLineEdit),
     locationLineEdit(*new QLineEdit),
     searchButton(*new QPushButton),
-    sortMode(*new QButtonGroup),
-    filterMode(*new QButtonGroup),
+    sortMode(*new QComboBox),
+    filterMode(*new QComboBox),
     filterLineEdit(*new QLineEdit),
     vacanciesList(*new QListView),
     titleLabel(*new QLabel),
@@ -89,7 +90,7 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
      */
 
     QVBoxLayout& vacanciesListLayout = *new QVBoxLayout;
-    searchResultLayout.addLayout(&vacanciesListLayout, 20);
+    searchResultLayout.addLayout(&vacanciesListLayout);
 
     /*
      * limitLayout
@@ -119,21 +120,16 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     filterLayout.setAlignment(Qt::AlignLeft);
     vacanciesListLayout.addLayout(&filterLayout);
 
-    QRadioButton& noFilterOption = *new QRadioButton("off");
-    QRadioButton& includeFilterOption = *new QRadioButton("MUST include");
-    QRadioButton& excludeFilterOption = *new QRadioButton("MUST NOT include");
 
-    filterLayout.addWidget(&noFilterOption);
-    filterLayout.addWidget(&includeFilterOption);
-    filterLayout.addWidget(&excludeFilterOption);
+    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Off), "Off");
+    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Include), "Include");
+    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Exclude), "Exclude");
+
+    filterMode.setCurrentIndex(static_cast<qsizetype>(FilterMode::Off));
+
+    filterLayout.addWidget(&filterMode);
 
     vacanciesListLayout.addWidget(&filterLineEdit);
-
-    filterMode.addButton(&noFilterOption, 0);
-    filterMode.addButton(&includeFilterOption, 1);
-    filterMode.addButton(&excludeFilterOption, 2);
-
-    noFilterOption.setChecked(true);
     /*
      * filterLayout
      */
@@ -146,26 +142,25 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     vacanciesListLayout.addLayout(&sortLayout);
 
     QLabel& sortLabel = *new QLabel("Sort by:");
-    QRadioButton& relevanceOption = *new QRadioButton("Relevance");
-    QRadioButton& timeOption = *new QRadioButton("Time");
-    QRadioButton& titleOption = *new QRadioButton("Title");
-    QRadioButton& companyOption = *new QRadioButton("Company");
-    QRadioButton& levelOption = *new QRadioButton("Level");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Off),            "Off");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Relevance),      "Relevance");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Title),          "Title");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Company),        "Company");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Time),           "Time");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::EmploymentType), "EmploymentType");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Level),          "Level");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Experience),     "Experience");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Education),      "Education");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Skills),         "Skills");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::Industry),       "Industry");
+    sortMode.insertItem(static_cast<qsizetype>(SortMode::ExpirationDate), "ExpirationDate");
+
+    sortMode.setCurrentIndex(static_cast<qsizetype>(SortMode::Off));
 
     sortLayout.addWidget(&sortLabel);
-    sortLayout.addWidget(&relevanceOption);
-    sortLayout.addWidget(&timeOption);
-    sortLayout.addWidget(&titleOption);
-    sortLayout.addWidget(&companyOption);
-    sortLayout.addWidget(&levelOption);
+    sortLayout.addWidget(&sortMode);
 
-    sortMode.addButton(&relevanceOption, 1);
-    sortMode.addButton(&timeOption, 2);
-    sortMode.addButton(&titleOption, 3);
-    sortMode.addButton(&companyOption, 4);
-    sortMode.addButton(&levelOption, 5);
-
-    relevanceOption.setChecked(true);
+    
     /*
      * sortLayout
      */
@@ -178,7 +173,7 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
      * vacanciesDescriptionLayout
      */
     QVBoxLayout& vacanciesDescriptionLayout = *new QVBoxLayout;
-    searchResultLayout.addLayout(&vacanciesDescriptionLayout, 80);
+    searchResultLayout.addLayout(&vacanciesDescriptionLayout);
 
     titleLabel.setText("Title");
     titleLabel.setStyleSheet("QLabel { font-size: 22px; }");

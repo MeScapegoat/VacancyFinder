@@ -6,11 +6,48 @@
 Q_DECLARE_LOGGING_CATEGORY(MainWindowLog);
 
 
+enum class SortMode
+{
+    Off = 0,
+    Relevance,
+
+    Title,
+    Company,
+
+    Time,
+
+    EmploymentType,
+
+    Level,
+    Experience,
+
+    Education,
+    Skills,
+
+    Industry,
+
+    ExpirationDate,
+
+
+    COUNT
+};
+
+enum class FilterMode
+{
+    Off = 0,
+
+    Include,
+    Exclude,
+
+
+    COUNT
+};
+
 class SharedContext;
 class QSpinBox;
 class QLineEdit;
 class QPushButton;
-class QButtonGroup;
+class QComboBox;
 class QListView;
 class QLabel;
 class QTextBrowser;
@@ -30,9 +67,9 @@ public:
     QLineEdit& locationLineEdit;
     QPushButton& searchButton;
 
-    QButtonGroup& sortMode;
+    QComboBox& sortMode;
 
-    QButtonGroup& filterMode;
+    QComboBox& filterMode;
     QLineEdit& filterLineEdit;
 
     QListView& vacanciesList;

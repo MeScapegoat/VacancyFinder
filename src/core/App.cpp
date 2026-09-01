@@ -10,6 +10,7 @@
 #include <QButtonGroup>
 #include <QLineEdit>
 #include <QTextBrowser>
+#include <QComboBox>
 
 // custom
 #include "App.h"
@@ -63,8 +64,12 @@ namespace Linked
         QObject::connect(this, &App::openProgressDialog,  gui->progressDialog(), &ProgressDialog::start);
         QObject::connect(this, &App::closeProgressDialog, gui->progressDialog(), &ProgressDialog::accept);
 
-        QObject::connect(&gui->mainWindow()->sortMode, &QButtonGroup::idClicked, this, &App::updateDescriptionList);
-        QObject::connect(&gui->mainWindow()->filterMode, &QButtonGroup::idClicked, this, &App::updateDescriptionList);
+        QObject::connect(&gui->mainWindow()->sortMode,       &QComboBox::currentIndexChanged, this, &App::updateDescriptionList);
+        QObject::connect(&gui->mainWindow()->filterMode,     &QComboBox::currentIndexChanged, this, &App::updateDescriptionList);
+        QObject::connect(&gui->mainWindow()->filterLineEdit, &QLineEdit::editingFinished, [&]()
+        {
+            updateDescriptionList(0);
+        });
 
         QObject::connect(&requestManager, &RequestManager::replyError, gui->progressDialog(), &ProgressDialog::updateError);
 
@@ -241,88 +246,13 @@ namespace Linked
     {
         gui->mainWindow()->clearList();
 
-        auto sortMode = gui->mainWindow()->sortMode.checkedId();
-        qCDebug(LinkedApp) << "processing sort mode:" << sortMode;
 
-        switch (sortMode)
-        {
-            case 1:
-            sortByRelevance(keywords);
-            break;
-            case 2:
-            sortByTime();
-            break;
-            case 3:
-            sortByTitle();
-            break;
-            case 4:
-            sortByCompany();
-            break;
-            case 5:
-            sortByLevel();
-            break;
-            default:
-            qCCritical(LinkedApp) << "Checked sort mode is incorrect! Sort mode:" << sortMode;
-            break;
-        }
+        syncVacanciesToShow();
 
-        auto filterMode = gui->mainWindow()->filterMode.checkedId();
-        qCDebug(LinkedApp) << "processing filter mode:" << filterMode;
+        applyFiltering();
 
-        const QString& filterText = gui->mainWindow()->filterLineEdit.text();
-        auto filterWords = filterText.split(',');
-        for (auto& word : filterWords)
-            word = word.trimmed();
-        qCDebug(LinkedApp) << "filter words:" << filterWords;
-
-        switch (filterMode)
-        {
-            case 0:
-            break;
-            case 1: // MUST include
-            for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end();)
-            {
-                const auto& vacancy = **it;
-                bool isFilterOk = true;
-                for (const auto& word : filterWords)
-                {
-                    if (!vacancy.brief.title.contains(word) && !vacancy.details.description.contains(word))
-                    {
-                        isFilterOk = false;
-                        break;
-                    }
-                }
-
-                if (!isFilterOk)
-                    it = vacanciesToShow.erase(it);
-                else
-                    ++it;
-            }
-            break;
-            case 2: // MUST NOT include
-            for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end();)
-            {
-                const auto& vacancy = **it;
-                bool isFilterOk = true;
-                for (const auto& word : filterWords)
-                {
-                    if (vacancy.brief.title.contains(word) || vacancy.details.description.contains(word))
-                    {
-                        isFilterOk = false;
-                        break;
-                    }
-                }
-
-                if (!isFilterOk)
-                    it = vacanciesToShow.erase(it);
-                else
-                    ++it;
-            }
-            break;
-            default:
-            qCCritical(LinkedApp) << "Checked filter mode is incorrect! Filter mode:" << filterMode;
-            break;
-        }
+        applySorting();
+        
 
         emit updateVacanciesList();
     }
@@ -411,66 +341,6 @@ namespace Linked
         return ret;
     }
 
-    void App::sortByTime()
-    {
-        auto compareByTime = [](const auto& left, const auto& right)
-        {
-            return left->brief.date > right->brief.date;
-        };
-
-        syncVacanciesToShow();
-
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTime);
-    }
-
-    void App::sortByTitle()
-    {
-        auto compareByTitle = [](const auto& left, const auto& right)
-        {
-            return left->brief.title < right->brief.title;
-        };
-
-        syncVacanciesToShow();
-
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTitle);
-    }
-
-    void App::sortByCompany()
-    {
-        auto compareByCompany = [](const auto& left, const auto& right)
-        {
-            return left->brief.companyName < right->brief.companyName;
-        };
-
-        syncVacanciesToShow();
-
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByCompany);
-    }
-
-    void App::sortByRelevance(const QString& str)
-    {
-        auto compareByRelevance = [&](const auto& left, const auto& right)
-        {
-            return left->count(str) > right->count(str);
-        };
-
-        syncVacanciesToShow();
-
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByRelevance);
-    }
-
-    void App::sortByLevel()
-    {
-        auto compareByLevel = [&](const auto& left, const auto& right)
-        {
-            return left->details.level < right->details.level;
-        };
-
-        syncVacanciesToShow();
-
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByLevel);
-    }
-
     QHash<QUrl, Vacancy>& App::getVacancies()
     {
         return vacancies;
@@ -511,9 +381,295 @@ namespace Linked
         emit closeProgressDialog();
     }
 
+    void App::applyFiltering()
+    {
+        const MainWindow&  mainWindow = *gui->mainWindow();
+
+        const FilterMode filterMode = static_cast<FilterMode>(mainWindow.filterMode.currentIndex());
+
+        const QString& filterText = gui->mainWindow()->filterLineEdit.text();
+
+        QStringList filterWords = filterText.split(',');
+        if (filterWords.isEmpty()) return;
+
+        for (QString& word : filterWords)
+            word = word.trimmed();
+
+        switch (filterMode)
+        {
+            case FilterMode::Off:
+            {
+                return;
+            }
+            case FilterMode::Include:
+            {
+                qCDebug(LinkedApp) << "Include filter mode, filter words:" << filterWords;
+                for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end();)
+                {
+                    const Vacancy& vacancy = **it;
+                    bool isFilterOk = true;
+                    for (const QString& word : filterWords)
+                    {
+                        if (vacancy.count(word) == 0)
+                        {
+                            isFilterOk = false;
+                            break;
+                        }
+                    }
+
+                    if (!isFilterOk)
+                        it = vacanciesToShow.erase(it);
+                    else
+                        ++it;
+                }
+                break;
+            }
+            case FilterMode::Exclude:
+            {
+                qCDebug(LinkedApp) << "Exclude filter mode, filter words:" << filterWords;
+                for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end();)
+                {
+                    const Vacancy& vacancy = **it;
+                    bool isFilterOk = true;
+                    for (const QString& word : filterWords)
+                    {
+                        if (vacancy.count(word) != 0)
+                        {
+                            isFilterOk = false;
+                            break;
+                        }
+                    }
+
+                    if (!isFilterOk)
+                        it = vacanciesToShow.erase(it);
+                    else
+                        ++it;
+                }
+                break;
+            }
+        }
+    }
+
+    void App::applySorting()
+    {
+        const SortMode& sortMode = static_cast<SortMode>(gui->mainWindow()->sortMode.currentIndex());
+
+        switch (sortMode)
+        {
+            case SortMode::Off:
+            {
+                return;
+            }
+            case SortMode::Relevance:
+            {
+                sortByRelevance();
+                break;
+            }
+            case SortMode::Title:
+            {
+                sortByTitle();
+                break;
+            }
+            case SortMode::Company:
+            {
+                sortByCompany();
+                break;
+            }
+            case SortMode::Time:
+            {
+                sortByTime();
+                break;
+            }
+            case SortMode::EmploymentType:
+            {
+                sortByEmploymentType();
+                break;
+            }
+            case SortMode::Level:
+            {
+                sortByLevel();
+                break;
+            }
+            case SortMode::Experience:
+            {
+                sortByExperience();
+                break;
+            }
+            case SortMode::Education:
+            {
+                sortByEducation();
+                break;
+            }
+            case SortMode::Skills:
+            {
+                sortBySkills();
+                break;
+            }
+            case SortMode::Industry:
+            {
+                sortByIndustry();
+                break;
+            }
+            case SortMode::ExpirationDate:
+            {
+                sortByExpirationDate();
+                break;
+            }
+        }
+    }
+
     const unsigned& App::getMaxVacancies() const
     {
         return maxVacancies;
+    }
+
+    void App::sortByRelevance()
+    {
+        qCDebug(LinkedApp) << "Sorting by relevance";
+
+        auto compareByRelevance = [&](const Vacancy* left, const Vacancy* right)
+        {
+            return left->count(keywords) > right->count(keywords);
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByRelevance);
+    }
+
+    void App::sortByTitle()
+    {
+        qCDebug(LinkedApp) << "Sorting by title";
+
+        auto compareByTitle = [](const Vacancy* left, const Vacancy* right)
+        {
+            return left->brief.title < right->brief.title;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTitle);
+    }
+
+    void App::sortByCompany()
+    {
+        qCDebug(LinkedApp) << "Sorting by company";
+
+        auto compareByCompany = [](const Vacancy* left, const Vacancy* right)
+        {
+            return left->brief.companyName < right->brief.companyName;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByCompany);
+    }
+
+    void App::sortByTime()
+    {
+        qCDebug(LinkedApp) << "Sorting by time";
+
+        auto compareByTime = [](const Vacancy* left, const Vacancy* right)
+        {
+            return left->brief.date > right->brief.date;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTime);
+    }
+
+    void App::sortByEmploymentType()
+    {
+        qCDebug(LinkedApp) << "sorting by Relevance";
+        auto compareByEmploymentType = [](const Vacancy* left, const Vacancy* right)
+        {
+            return left->details.employmentType > right->details.employmentType;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByEmploymentType);
+    }
+
+    void App::sortByLevel()
+    {
+        qCDebug(LinkedApp) << "Sorting by level";
+
+        auto compareByLevel = [&](const Vacancy* left, const Vacancy* right)
+        {
+            if (!left->details.level.has_value()) return false;
+            if (!right->details.level.has_value()) return true;
+
+            return left->details.level < right->details.level;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByLevel);
+    }
+
+    void App::sortByExperience()
+    {
+        qCDebug(LinkedApp) << "Sorting by experience";
+
+        auto compareByExperience = [&](const Vacancy* left, const Vacancy* right)
+        {
+            if (!left->details.experience.has_value()) return false;
+            if (!right->details.experience.has_value()) return true;
+
+            return left->details.experience < right->details.experience;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByExperience);
+    }
+
+    void App::sortByEducation()
+    {
+        qCDebug(LinkedApp) << "Sorting by education";
+
+        auto compareByEducation = [&](const Vacancy* left, const Vacancy* right)
+        {
+            if (!left->details.education.has_value()) return false;
+            if (!right->details.education.has_value()) return true;
+
+            return left->details.education < right->details.education;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByEducation);
+    }
+
+    void App::sortBySkills()
+    {
+        qCDebug(LinkedApp) << "Sorting by skills";
+
+        auto compareBySkills = [&](const Vacancy* left, const Vacancy* right)
+        {
+            if (left->details.skills.isEmpty()) return false;
+            if (right->details.skills.isEmpty()) return true;
+
+            return left->details.skills < right->details.skills;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareBySkills);
+    }
+
+    void App::sortByIndustry()
+    {
+        qCDebug(LinkedApp) << "sorting by industry";
+
+        auto compareByIndustry = [&](const Vacancy* left, const Vacancy* right)
+        {
+            if (!left->details.industry.has_value()) return false;
+            if (!right->details.industry.has_value()) return true;
+
+            return left->details.industry < right->details.industry;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByIndustry);
+    }
+
+    void App::sortByExpirationDate()
+    {
+        qCDebug(LinkedApp) << "sorting by Relevance";
+
+        auto compareByExpirationDate = [&](const Vacancy* left, const Vacancy* right)
+        {
+            if (!left->details.expirationDate.has_value()) return false;
+            if (!right->details.expirationDate.has_value()) return true;
+
+            return left->details.expirationDate < right->details.expirationDate;
+        };
+
+        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByExpirationDate);
     }
 
 } // namespace Linked
