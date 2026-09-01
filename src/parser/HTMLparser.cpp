@@ -135,11 +135,11 @@ QStringList HTMLparser::extractAll(const QString& data, const QString& pattern)
 QString HTMLparser::decodeHtml(QString text)
 {
     text.replace("&amp;", "&");
-    //text.replace("&quot;", "\"");
-    //text.replace("&#39;", "'");
-    //text.replace("&lt;", "<");
-    //text.replace("&gt;", ">");
-    //text.replace("&nbsp;", " ");
+    text.replace("&quot;", "\"");
+    text.replace("&#39;", "'");
+    text.replace("&lt;", "<");
+    text.replace("&gt;", ">");
+    text.replace("&nbsp;", " ");
 
     return text;
 }

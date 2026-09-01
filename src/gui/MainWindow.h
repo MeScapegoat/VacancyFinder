@@ -39,7 +39,13 @@ public:
 
     QLabel& titleLabel;
     QLabel& companyNameLabel;
+    QLabel& employmentTypeLabel;
     QLabel& levelLabel;
+    QLabel& experienceLabel;
+    QLabel& educationLabel;
+    QLabel& skillsLabel;
+    QLabel& industryLabel;
+    QLabel& expirationDateLabel;
     QTextBrowser& vacancyDesc;
 
 public slots:

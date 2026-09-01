@@ -180,16 +180,21 @@ namespace Linked
 
         const QString& title = vacancy.brief.title;
         const QString& description = vacancy.details.description;
-        const QString& level = vacancy.details.level.value_or("No data");
+        const std::optional<QString>& level = vacancy.details.level;
+        const std::optional<Months>& experience = vacancy.details.experience;
+        const std::optional<QString>& industry = vacancy.details.industry;
+        const std::optional<QString>& education = vacancy.details.education;
+        const std::optional<QDate>& expirationDate = vacancy.details.expirationDate;
+        const QString& skills = vacancy.details.skills;
         const QString& employmentType = vacancy.details.employmentType;
         const QString& companyName = vacancy.brief.companyName;
         const QString& companyLink = vacancy.brief.companyLink.toString();
 
         qCInfo(LinkedApp) << "Loading descrption:" << id << "." << title;
 
-        const QString HTMLformated =  "<h1>Description:</h1>" + description +
-                                "<h1>Level:</h1>" + level +
-                                "<h1>employmentType:</h1>" + employmentType;
+        //const QString HTMLformated =  "<h1>Description:</h1>" + description +
+        //                        "<h1>Level:</h1>" + level +
+        //                        "<h1>employmentType:</h1>" + employmentType;
 
         //QString HTMLdebug = "<h1>description</h1>" + vacancy.description +
         //    "<h1>title</h1>" + vacancy.title +
@@ -201,13 +206,35 @@ namespace Linked
         //    "<h1>level</h1>" + vacancy.level +
         //    "<h1>employmentType</h1>" + vacancy.employmentType;
 
-        QString linkPattern = "<a href='%1'>%2</a>";
+        const MainWindow& mainWindow = *gui->mainWindow();
 
-        gui->mainWindow()->titleLabel.setText(linkPattern.arg(vacancy.brief.link.toString()).arg(title));
-        gui->mainWindow()->companyNameLabel.setText(linkPattern.arg(companyLink).arg(companyName));
-        gui->mainWindow()->levelLabel.setText(level);
+        const QString linkPattern = "<a href='%1'>%2</a>";
 
-        gui->mainWindow()->vacancyDesc.setText(description);
+        mainWindow.titleLabel.setText(linkPattern.arg(vacancy.brief.link.toString()).arg(title));
+        mainWindow.companyNameLabel.setText(linkPattern.arg(companyLink).arg(companyName));
+
+        mainWindow.employmentTypeLabel.setText("Employment type: " + employmentType);
+
+
+        mainWindow.levelLabel.setVisible(level.has_value());
+        if (level) mainWindow.levelLabel.setText("Level: " + *level);
+
+        mainWindow.experienceLabel.setVisible(experience.has_value());
+        if (experience) mainWindow.experienceLabel.setText("Experience: " + QString::number(*experience / 12.0) + " years");
+
+        mainWindow.educationLabel.setVisible(education.has_value());
+        if (education) mainWindow.educationLabel.setText("Education: " + *education);
+
+        mainWindow.skillsLabel.setVisible(!skills.isEmpty());
+        if (!skills.isEmpty()) mainWindow.skillsLabel.setText("Skills: " + skills);
+
+        mainWindow.industryLabel.setVisible(industry.has_value());
+        if (industry) mainWindow.industryLabel.setText("Industry: " + *industry);
+
+        mainWindow.expirationDateLabel.setVisible(expirationDate.has_value());
+        if (expirationDate) mainWindow.expirationDateLabel.setText("Expiration date: " + expirationDate->toString("dd-MM-yyyy"));
+
+        mainWindow.vacancyDesc.setHtml(description);
     }
 
     void App::updateDescriptionList(int temp)

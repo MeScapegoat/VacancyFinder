@@ -36,9 +36,14 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     vacanciesList(*new QListView),
     titleLabel(*new QLabel),
     companyNameLabel(*new QLabel),
+    employmentTypeLabel(*new QLabel),
     levelLabel(*new QLabel),
-    vacancyDesc(*new QTextBrowser)
-
+    experienceLabel(*new QLabel),
+    vacancyDesc(*new QTextBrowser),
+    educationLabel(*new QLabel),
+    skillsLabel(*new QLabel),
+    industryLabel(*new QLabel),
+    expirationDateLabel(*new QLabel)
 {
     qCDebug(MainWindowLog) << __FUNCTION__;
     // Maybe all incredible code below must be refactored into many initSMTH(QWidget* parent) functions for the sake of redability
@@ -175,20 +180,44 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     QVBoxLayout& vacanciesDescriptionLayout = *new QVBoxLayout;
     searchResultLayout.addLayout(&vacanciesDescriptionLayout, 80);
 
-    titleLabel.setText("Vacancy Title");
+    titleLabel.setText("Title");
     titleLabel.setStyleSheet("QLabel { font-size: 22px; }");
     titleLabel.setOpenExternalLinks(true);
     vacanciesDescriptionLayout.addWidget(&titleLabel);
 
-    companyNameLabel.setText("Vacancy Company");
+    companyNameLabel.setText("Company");
     companyNameLabel.setStyleSheet("QLabel { font-size: 22px; }");
     companyNameLabel.setOpenExternalLinks(true);
     vacanciesDescriptionLayout.addWidget(&companyNameLabel);
 
-    levelLabel.setText("Vacancy level");
+    employmentTypeLabel.setText("Employment Type");
+    employmentTypeLabel.setStyleSheet("QLabel { font-size: 18px; }");
+    vacanciesDescriptionLayout.addWidget(&employmentTypeLabel);
+
+    levelLabel.setText("Level");
     levelLabel.setStyleSheet("QLabel { font-size: 18px; }");
-    levelLabel.setOpenExternalLinks(true);
     vacanciesDescriptionLayout.addWidget(&levelLabel);
+
+    experienceLabel.setText("Experience");
+    experienceLabel.setStyleSheet("QLabel { font-size: 18px; }");
+    vacanciesDescriptionLayout.addWidget(&experienceLabel);
+
+    educationLabel.setText("Education");
+    educationLabel.setStyleSheet("QLabel { font-size: 18px; }");
+    vacanciesDescriptionLayout.addWidget(&educationLabel);
+
+    skillsLabel.setText("Skills");
+    skillsLabel.setStyleSheet("QLabel { font-size: 18px; }");
+    vacanciesDescriptionLayout.addWidget(&skillsLabel);
+
+    industryLabel.setText("Industry");
+    industryLabel.setStyleSheet("QLabel { font-size: 18px; }");
+    vacanciesDescriptionLayout.addWidget(&industryLabel);    
+
+    expirationDateLabel.setText("Expiration Date");
+    expirationDateLabel.setStyleSheet("QLabel { font-size: 18px; }");
+    vacanciesDescriptionLayout.addWidget(&expirationDateLabel);
+
 
     vacancyDesc.setStyleSheet("QTextBrowser { font-size: 16px; }");
     vacancyDesc.setHtml(R"(
@@ -221,19 +250,26 @@ MainWindow::~MainWindow()
 
 void MainWindow::updateVacanciesList()
 {
-    auto model = qobject_cast<QStringListModel*>(vacanciesList.model());
+    QStringListModel* model = qobject_cast<QStringListModel*>(vacanciesList.model());
+
+    const QList<const Vacancy*> vacancies = context->app->getVacanciestoShow();
+
     QStringList data;
-    for (const Vacancy* vacancy : context->app->getVacanciestoShow())
+    for (const Vacancy* vacancy : vacancies)
     {
-        const quint64& id = data.size() + 1;
+        const QString& id = QString::number(data.size() + 1);
         const QString& title = vacancy->brief.title;
         const QString& companyName = vacancy->brief.companyName;
-        const quint64& companyNameWidth = companyName.size() + 8;
+        const qsizetype& companyNameWidth = companyName.size() + 8;
+        const QString& age = QString::number(vacancy->brief.date.daysTo(QDate::currentDate()));
+        const QString& location = vacancy->brief.location;
 
-        data.append(QString("%1. %2\n%3\n%4\n%5")
-                    .arg(id, 3)
+        data.append(QString("%1. %2\n%3\n%4\n%5 days ago")
+                    .arg(id.leftJustified(3))
                     .arg(title)
-                    .arg(companyName, companyNameWidth));
+                    .arg(companyName)
+                    .arg(location)
+                    .arg(age));
     }
     model->setStringList(data);
 }
