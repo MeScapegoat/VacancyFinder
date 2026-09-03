@@ -18,7 +18,7 @@ RequestManager::RequestManager(QObject* parent) :
     requestsPerSecond(8),
     requestIntervalMs(1000 / requestsPerSecond),
     requestCooldownTimer(this),
-    requestCooldown(3000),
+    requestCooldown(5000),
     maxConcurrent(8)
 {
     QObject::connect(&networkManager, &QNetworkAccessManager::finished, this, &RequestManager::onFinished);
