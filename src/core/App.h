@@ -13,6 +13,7 @@
 #include "SharedContext.h"
 #include "../parser/HTMLparser.h"
 #include "../gui/GUI.h"
+#include "../data/AppState.h"
 
 class RequestManager;
 class HTMLparser;
@@ -34,6 +35,9 @@ namespace Linked
         ~App();
 
     public:
+        using constVacancyRef = std::reference_wrapper<const Vacancy>;
+
+    public:
         QHash<QUrl, Vacancy>& getVacancies();
         const QHash<QUrl, Vacancy>& getVacancies() const;
         const QList<const Vacancy*>& getVacanciestoShow() const;
@@ -46,6 +50,7 @@ namespace Linked
     public slots:
         void sendSearchRequest();
         void openVacancyDescription(const QModelIndex&);
+        void closeVacancyDescription();
 
         void updateDescriptionList(int temp = 0);
 
@@ -58,9 +63,14 @@ namespace Linked
         void onAllDetailsFinished();
         void onRequestsFinished();
 
+        void onIgnoreButtonPressed();
+        void onInterestButtonPressed();
+        void onRemoveIgnoreButtonPressed();
+        void onRemoveInterestButtonPressed();
+
     signals:
         void initSearch(const QVector<QUrl>& urls);
-        void updateVacanciesList();
+        void updateVacanciesList(const QStringList& data);
 
         void openProgressDialog(const unsigned& maxVacancies);
         void closeProgressDialog();
@@ -70,8 +80,10 @@ namespace Linked
 
         void updateIsAllFinished();
 
+        void applyStatusFilter();
         void applyFiltering();
         void applySorting();
+        void updateModelData();
 
 
         void sortByRelevance();
@@ -85,26 +97,37 @@ namespace Linked
         void sortBySkills();
         void sortByIndustry();
         void sortByExpirationDate();
-        
+
+        std::optional<constVacancyRef> getCurrentVacancy() const;
+
+        VacancyStatus getVacancyStatus(const Vacancy& vacancy);
+
+    protected:
+        void saveState();
+        void loadState();
 
     private:
         SharedContext* context;
 
     private:
         RequestManager& requestManager;
-        QThread* networkThread = nullptr;
+        QThread* networkThread = nullptr;   // TODO: why is it pointers?
+ 
+        HTMLparser* parser = nullptr;       // TODO: why is it pointers?
+        QThread* parserThread = nullptr;    // TODO: why is it pointers?
+ 
+        GUI* gui = nullptr;                 // TODO: why is it pointers?
 
-        HTMLparser* parser = nullptr;
-        QThread* parserThread = nullptr;
-
-        GUI* gui = nullptr;
+        AppState state;
 
         QHash<QUrl, Vacancy> vacancies;
         QVector<const Vacancy*> vacanciesToShow;
 
-        QString baseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
-        QString keywords = "";
-        QString location = "";
+        QSet<QUrl> ignoredVacancies;
+        QSet<QUrl> interestedVacancies;
+
+        QString keywords;
+        QString location;
 
         unsigned maxVacancies;
 

@@ -27,6 +27,9 @@ set(MODEL_SOURCES "")
 set(UTILS_SOURCES_DIR_FOLDER "utils")
 set(UTILS_SOURCES "")
 
+set(DATA_SOURCES_DIR_FOLDER "data")
+set(DATA_SOURCES "")
+
 set(SOURCES_SUPPORTED_EXTENSIONS
     "*.cpp"
     "*.h"
@@ -116,6 +119,15 @@ foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
     list(APPEND UTILS_SOURCES ${FILES})
 endforeach()
 
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${DATA_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND DATA_SOURCES ${FILES})
+endforeach()
+
 
 # Target
 
@@ -126,6 +138,7 @@ add_executable(${PROJECT_NAME}
                ${GUI_SOURCES}
                ${MODEL_SOURCES}
                ${UTILS_SOURCES}
+               ${DATA_SOURCES}
                ${SOURCES_DIR_PATH}/main.cpp       
 )
 

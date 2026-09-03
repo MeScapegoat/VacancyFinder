@@ -5,7 +5,7 @@
 
 Q_DECLARE_LOGGING_CATEGORY(MainWindowLog);
 
-
+// TODO: move to some .h or smth
 enum class SortMode
 {
     Off = 0,
@@ -32,12 +32,25 @@ enum class SortMode
     COUNT
 };
 
+// TODO: move to some .h or smth
 enum class FilterMode
 {
     Off = 0,
 
     Include,
     Exclude,
+
+
+    COUNT
+};
+
+// TODO: move to some .h or smth
+enum class VacancyStatus
+{
+    Unreviewed = 0,
+
+    Interested,
+    Ignored,
 
 
     COUNT
@@ -51,6 +64,8 @@ class QComboBox;
 class QListView;
 class QLabel;
 class QTextBrowser;
+class QCheckBox;
+class QStackedLayout;
 
 class MainWindow : public QMainWindow
 {
@@ -71,6 +86,9 @@ public:
 
     QComboBox& filterMode;
     QLineEdit& filterLineEdit;
+    QCheckBox& unreviewedCheckBox;
+    QCheckBox& ignoredCheckBox;
+    QCheckBox& interestedCheckBox;
 
     QListView& vacanciesList;
 
@@ -85,8 +103,14 @@ public:
     QLabel& expirationDateLabel;
     QTextBrowser& vacancyDesc;
 
+    QStackedLayout& statusButtonsLayout;
+    QPushButton& ignoreButton;
+    QPushButton& interestButton;
+    QPushButton& removeIgnoreButton;
+    QPushButton& removeInterestButton;
+
 public slots:
-    void updateVacanciesList();
+    void updateVacanciesList(const QStringList& data);
     void clearList();
 
 private:

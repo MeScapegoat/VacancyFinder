@@ -2,6 +2,7 @@
 // Qt
 #include <QApplication>
 #include <QButtonGroup>
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -14,6 +15,7 @@
 #include <QTextBrowser>
 #include <QThread>
 #include <QVBoxLayout>
+#include <QStackedLayout>
 
 // custom
 #include "../core/App.h"
@@ -34,6 +36,9 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     sortMode(*new QComboBox),
     filterMode(*new QComboBox),
     filterLineEdit(*new QLineEdit),
+    unreviewedCheckBox(*new QCheckBox),
+    ignoredCheckBox(*new QCheckBox),
+    interestedCheckBox(*new QCheckBox),
     vacanciesList(*new QListView),
     titleLabel(*new QLabel),
     companyNameLabel(*new QLabel),
@@ -44,12 +49,21 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     educationLabel(*new QLabel),
     skillsLabel(*new QLabel),
     industryLabel(*new QLabel),
-    expirationDateLabel(*new QLabel)
+    expirationDateLabel(*new QLabel),
+    statusButtonsLayout(*new QStackedLayout),
+    ignoreButton(*new QPushButton),
+    interestButton(*new QPushButton),
+    removeIgnoreButton(*new QPushButton),
+    removeInterestButton(*new QPushButton)
 {
     qCDebug(MainWindowLog) << __FUNCTION__;
-    // Maybe all incredible code below must be refactored into many initSMTH(QWidget* parent) functions for the sake of redability
+    // TODO: Maybe all incredible code below must be refactored into many initSMTH(QWidget* parent) functions for the sake of redability
+    // TODO: Well there is a lot to change in UI and code...
 
-    setMinimumSize(1024, 768);
+    const QSize maxSize(1920, 1080);
+
+    setMinimumSize(maxSize * 0.75);
+    setMaximumSize(maxSize);
 
     QWidget& centralWidget = *new QWidget(this);
     setCentralWidget(&centralWidget);
@@ -65,8 +79,6 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
 
     QLabel& keywordsLabel = *new QLabel("Keywords:");
     QLabel& locationLabel = *new QLabel("Location:");
-    keywordsLineEdit.setText("C++");
-    locationLineEdit.setText("Serbia");
     searchButton.setText("Search");
 
     searchLayout.addWidget(&keywordsLabel);
@@ -101,7 +113,6 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     QLabel& limitLabel = *new QLabel("Max amount of processed vacancies:");
 
     limitVacanciesInput.setRange(1, 999);
-    limitVacanciesInput.setValue(999);
 
     limitLayout.addWidget(&limitLabel);
     limitLayout.addWidget(&limitVacanciesInput);
@@ -124,8 +135,6 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     filterMode.insertItem(static_cast<qsizetype>(FilterMode::Off), "Off");
     filterMode.insertItem(static_cast<qsizetype>(FilterMode::Include), "Include");
     filterMode.insertItem(static_cast<qsizetype>(FilterMode::Exclude), "Exclude");
-
-    filterMode.setCurrentIndex(static_cast<qsizetype>(FilterMode::Off));
 
     filterLayout.addWidget(&filterMode);
 
@@ -155,10 +164,23 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     sortMode.insertItem(static_cast<qsizetype>(SortMode::Industry),       "Industry");
     sortMode.insertItem(static_cast<qsizetype>(SortMode::ExpirationDate), "ExpirationDate");
 
-    sortMode.setCurrentIndex(static_cast<qsizetype>(SortMode::Off));
-
     sortLayout.addWidget(&sortLabel);
     sortLayout.addWidget(&sortMode);
+
+
+    QLabel& visibleVacanciesLabel = *new QLabel("Show:");
+    unreviewedCheckBox.setText("Unreviewed");
+    ignoredCheckBox.setText("Ignored");
+    interestedCheckBox.setText("Interested");
+
+    QHBoxLayout& visibleVacanciesLayout = *new QHBoxLayout;
+    visibleVacanciesLayout.addWidget(&visibleVacanciesLabel);
+    visibleVacanciesLayout.addWidget(&unreviewedCheckBox);
+    visibleVacanciesLayout.addWidget(&ignoredCheckBox);
+    visibleVacanciesLayout.addWidget(&interestedCheckBox);
+
+    vacanciesListLayout.addLayout(&visibleVacanciesLayout);
+
 
     
     /*
@@ -175,57 +197,58 @@ MainWindow::MainWindow(SharedContext* sharedContext) :
     QVBoxLayout& vacanciesDescriptionLayout = *new QVBoxLayout;
     searchResultLayout.addLayout(&vacanciesDescriptionLayout);
 
-    titleLabel.setText("Title");
     titleLabel.setStyleSheet("QLabel { font-size: 22px; }");
     titleLabel.setOpenExternalLinks(true);
     vacanciesDescriptionLayout.addWidget(&titleLabel);
 
-    companyNameLabel.setText("Company");
     companyNameLabel.setStyleSheet("QLabel { font-size: 22px; }");
     companyNameLabel.setOpenExternalLinks(true);
     vacanciesDescriptionLayout.addWidget(&companyNameLabel);
 
-    employmentTypeLabel.setText("Employment Type");
     employmentTypeLabel.setStyleSheet("QLabel { font-size: 18px; }");
     vacanciesDescriptionLayout.addWidget(&employmentTypeLabel);
 
-    levelLabel.setText("Level");
     levelLabel.setStyleSheet("QLabel { font-size: 18px; }");
     vacanciesDescriptionLayout.addWidget(&levelLabel);
 
-    experienceLabel.setText("Experience");
     experienceLabel.setStyleSheet("QLabel { font-size: 18px; }");
     vacanciesDescriptionLayout.addWidget(&experienceLabel);
 
-    educationLabel.setText("Education");
     educationLabel.setStyleSheet("QLabel { font-size: 18px; }");
     vacanciesDescriptionLayout.addWidget(&educationLabel);
 
-    skillsLabel.setText("Skills");
     skillsLabel.setStyleSheet("QLabel { font-size: 18px; }");
     vacanciesDescriptionLayout.addWidget(&skillsLabel);
 
-    industryLabel.setText("Industry");
     industryLabel.setStyleSheet("QLabel { font-size: 18px; }");
     vacanciesDescriptionLayout.addWidget(&industryLabel);    
 
-    expirationDateLabel.setText("Expiration Date");
     expirationDateLabel.setStyleSheet("QLabel { font-size: 18px; }");
     vacanciesDescriptionLayout.addWidget(&expirationDateLabel);
 
 
     vacancyDesc.setStyleSheet("QTextBrowser { font-size: 16px; }");
-    vacancyDesc.setHtml(R"(
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-            <header>
-                <h1>Choose vacancy from left list to see its description here</h1>
-            </header>
-        </body>
-        </html>)");
+    vacanciesDescriptionLayout.addWidget(&vacancyDesc, 1);
 
-    vacanciesDescriptionLayout.addWidget(&vacancyDesc);
+
+    ignoreButton.setText("Ignore");
+    interestButton.setText("I am interested");
+
+    removeIgnoreButton.setText("Remove from ignore list");
+    removeInterestButton.setText("Remove from interested list");
+
+    QHBoxLayout& unreviewedLayout = *new QHBoxLayout;
+    unreviewedLayout.addWidget(&ignoreButton);
+    unreviewedLayout.addWidget(&interestButton);
+
+    QWidget& unreviewedWidget = *new QWidget;
+    unreviewedWidget.setLayout(&unreviewedLayout);
+
+    statusButtonsLayout.insertWidget(static_cast<int>(VacancyStatus::Unreviewed), &unreviewedWidget);
+    statusButtonsLayout.insertWidget(static_cast<int>(VacancyStatus::Ignored), &removeIgnoreButton);
+    statusButtonsLayout.insertWidget(static_cast<int>(VacancyStatus::Interested), &removeInterestButton);
+
+    vacanciesDescriptionLayout.addLayout(&statusButtonsLayout);
 
     /*
      * vacanciesDescriptionLayout
@@ -243,29 +266,10 @@ MainWindow::~MainWindow()
     qCDebug(MainWindowLog) << __FUNCTION__;
 }
 
-void MainWindow::updateVacanciesList()
+void MainWindow::updateVacanciesList(const QStringList& data)
 {
     QStringListModel* model = qobject_cast<QStringListModel*>(vacanciesList.model());
 
-    const QList<const Vacancy*> vacancies = context->app->getVacanciestoShow();
-
-    QStringList data;
-    for (const Vacancy* vacancy : vacancies)
-    {
-        const QString& id = QString::number(data.size() + 1);
-        const QString& title = vacancy->brief.title;
-        const QString& companyName = vacancy->brief.companyName;
-        const qsizetype& companyNameWidth = companyName.size() + 8;
-        const QString& age = QString::number(vacancy->brief.date.daysTo(QDate::currentDate()));
-        const QString& location = vacancy->brief.location;
-
-        data.append(QString("%1. %2\n%3\n%4\n%5 days ago")
-                    .arg(id.leftJustified(3))
-                    .arg(title)
-                    .arg(companyName)
-                    .arg(location)
-                    .arg(age));
-    }
     model->setStringList(data);
 }
 
