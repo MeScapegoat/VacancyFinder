@@ -22,9 +22,6 @@ namespace Linked
 
     public:
         void setLogRulesPath(const QString &);
-    
-    private:
-        static void myMessageHandler(QtMsgType, const QMessageLogContext &, const QString &); 
 
     public slots:
         void applyLogRules(const QString &);
@@ -36,3 +33,5 @@ namespace Linked
     };
 
 } // namespace Linked
+
+void myMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);

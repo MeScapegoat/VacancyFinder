@@ -60,15 +60,21 @@ namespace Linked
         qCInfo(LinkedLogger) << "Log rules updated!";
     }
 
-    void Logger::myMessageHandler(QtMsgType type, const QMessageLogContext & context, const QString & msg)
+} // namespace Linked
+
+void myMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
+{
+    QFile logFile("app.log");
+    if (!logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
     {
-        QTextStream out(stdout);
-
-        auto log_msg = qFormatLogMessage(type, context, msg);
-        auto currentThread = QThread::currentThread();
-        log_msg.replace("%ThreadName", currentThread->objectName());
-
-        out << log_msg << Qt::endl;
+        return;
     }
 
-} // namespace Linked
+    QTextStream out(&logFile);
+
+    auto log_msg = qFormatLogMessage(type, context, msg);
+    auto currentThread = QThread::currentThread();
+    log_msg.replace("%ThreadName", currentThread->objectName());
+
+    out << log_msg << Qt::endl;
+}
