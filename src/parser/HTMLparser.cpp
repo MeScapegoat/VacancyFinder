@@ -222,6 +222,7 @@ void HTMLparser::parseBrief(const QString& html)
 {
     static constexpr const char* titlePattern = R"(<h3\b[^>]*class="base-search-card__title"[^>]*>(.*?)</h3>)";
     static constexpr const char* linkPattern = R"REGEX(<a\b[^>]*class="base-card__full-link[^"]*"[^>]*href="([^"]+)")REGEX";
+    static constexpr const char* alternateLinkPattern = R"REGEX(<a\s+href="(https://rs\.linkedin\.com/jobs/view/[^"]+)")REGEX";
 
     static constexpr const char* companyNamePattern = R"(<h4\b[^>]*class="base-search-card__subtitle"[^>]*>.*?<a\b[^>]*>(.*?)</a>)";
     static constexpr const char* companyLinkPattern = R"REGEX(<h4\b[^>]*class="base-search-card__subtitle"[^>]*>.*?<a\b[^>]*href="([^"]+)")REGEX";
@@ -243,6 +244,11 @@ void HTMLparser::parseBrief(const QString& html)
     brief.title = extract(html, titlePattern);
 
     brief.link = extract(html, linkPattern);
+
+    if (!brief.link.isValid())
+    {
+        brief.link = extract(html, alternateLinkPattern);
+    }
     brief.link.setQuery(QString());
 
     brief.companyName = extract(html, companyNamePattern);
