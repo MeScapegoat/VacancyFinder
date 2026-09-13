@@ -56,7 +56,6 @@ enum class VacancyStatus
     COUNT
 };
 
-class SharedContext;
 class QSpinBox;
 class QLineEdit;
 class QPushButton;
@@ -72,7 +71,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(SharedContext* context);
+    MainWindow();
     ~MainWindow();
 
 public:
@@ -112,9 +111,6 @@ public:
 public slots:
     void updateVacanciesList(const QStringList& data);
     void clearList();
-
-private:
-    SharedContext* context = nullptr;
 
 protected:
     void closeEvent(QCloseEvent*) override;

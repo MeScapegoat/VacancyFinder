@@ -9,7 +9,7 @@ namespace Linked
 {
     Q_LOGGING_CATEGORY(LinkedGUI, "gui");
 
-    GUI::GUI(SharedContext *sharedContext) : context(sharedContext), mainWindow_(new MainWindow(context)), progressDialog_(new ProgressDialog(mainWindow_, context)) {}
+    GUI::GUI(SharedContext *sharedContext) : context(sharedContext), mainWindow_(new MainWindow), progressDialog_(new ProgressDialog(mainWindow_, context)) {}
 
     MainWindow *GUI::mainWindow()
     {

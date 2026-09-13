@@ -19,7 +19,6 @@
 
 // custom
 #include "../core/App.h"
-#include "../core/SharedContext.h"
 #include "../model/Vacancy.h"
 #include "MainWindow.h"
 
@@ -27,8 +26,7 @@
 
 Q_LOGGING_CATEGORY(MainWindowLog, "gui.main_window");
 
-MainWindow::MainWindow(SharedContext* sharedContext) :
-    context(sharedContext),
+MainWindow::MainWindow() :
     limitVacanciesInput(*new QSpinBox),
     keywordsLineEdit(*new QLineEdit),
     locationLineEdit(*new QLineEdit),
