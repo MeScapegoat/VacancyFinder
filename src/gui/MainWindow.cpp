@@ -22,21 +22,14 @@
 #include "../model/Vacancy.h"
 #include "MainWindow.h"
 
+#include <QLabel>
+
 
 
 Q_LOGGING_CATEGORY(MainWindowLog, "gui.main_window");
 
-MainWindow::MainWindow() :
-    limitVacanciesInput(*new QSpinBox),
-    keywordsLineEdit(*new QLineEdit),
-    locationLineEdit(*new QLineEdit),
-    searchButton(*new QPushButton),
-    sortMode(*new QComboBox),
-    filterMode(*new QComboBox),
-    filterLineEdit(*new QLineEdit),
-    unreviewedCheckBox(*new QCheckBox),
-    ignoredCheckBox(*new QCheckBox),
-    interestedCheckBox(*new QCheckBox),
+MainWindow::MainWindow(QWidget& queryParametersWidget_, QWidget& resultViewOptionsWidget_, QWidget* parent) :
+    QMainWindow(parent),
     vacanciesList(*new QListView),
     titleLabel(*new QLabel),
     companyNameLabel(*new QLabel),
@@ -67,27 +60,8 @@ MainWindow::MainWindow() :
     setCentralWidget(&centralWidget);
 
     QVBoxLayout& mainVLayout = *new QVBoxLayout(&centralWidget);
-
-    /*
-     * searchLayout
-     */
-
-    QHBoxLayout& searchLayout = *new QHBoxLayout;
-    mainVLayout.addLayout(&searchLayout);
-
-    QLabel& keywordsLabel = *new QLabel("Keywords:");
-    QLabel& locationLabel = *new QLabel("Location:");
-    searchButton.setText("Search");
-
-    searchLayout.addWidget(&keywordsLabel);
-    searchLayout.addWidget(&keywordsLineEdit);
-    searchLayout.addWidget(&locationLabel);
-    searchLayout.addWidget(&locationLineEdit);
-    searchLayout.addWidget(&searchButton);
-
-    /*
-     * searchLayout
-     */
+    mainVLayout.addWidget(&queryParametersWidget_);
+    mainVLayout.addWidget(&resultViewOptionsWidget_);
 
      /*
       * searchResultLayout
@@ -102,88 +76,6 @@ MainWindow::MainWindow() :
     QVBoxLayout& vacanciesListLayout = *new QVBoxLayout;
     searchResultLayout.addLayout(&vacanciesListLayout);
 
-    /*
-     * limitLayout
-     */
-    QVBoxLayout& limitLayout = *new QVBoxLayout;
-    vacanciesListLayout.addLayout(&limitLayout);
-
-    QLabel& limitLabel = *new QLabel("Max amount of processed vacancies:");
-
-    limitVacanciesInput.setRange(1, 999);
-
-    limitLayout.addWidget(&limitLabel);
-    limitLayout.addWidget(&limitVacanciesInput);
-
-    /*
-     * limitLayout
-     */
-
-     /*
-      * filterLayout
-      */
-    QLabel& filterLabel = *new QLabel("filter (separate with \",\"):");
-    vacanciesListLayout.addWidget(&filterLabel);
-
-    QHBoxLayout& filterLayout = *new QHBoxLayout;
-    filterLayout.setAlignment(Qt::AlignLeft);
-    vacanciesListLayout.addLayout(&filterLayout);
-
-
-    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Off), "Off");
-    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Include), "Include");
-    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Exclude), "Exclude");
-
-    filterLayout.addWidget(&filterMode);
-
-    vacanciesListLayout.addWidget(&filterLineEdit);
-    /*
-     * filterLayout
-     */
-
-     /*
-      * sortLayout
-      */
-    QHBoxLayout& sortLayout = *new QHBoxLayout;
-    sortLayout.setAlignment(Qt::AlignLeft);
-    vacanciesListLayout.addLayout(&sortLayout);
-
-    QLabel& sortLabel = *new QLabel("Sort by:");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Off),            "Off");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Relevance),      "Relevance");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Title),          "Title");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Company),        "Company");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Time),           "Time");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::EmploymentType), "EmploymentType");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Level),          "Level");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Experience),     "Experience");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Education),      "Education");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Skills),         "Skills");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Industry),       "Industry");
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::ExpirationDate), "ExpirationDate");
-
-    sortLayout.addWidget(&sortLabel);
-    sortLayout.addWidget(&sortMode);
-
-
-    QLabel& visibleVacanciesLabel = *new QLabel("Show:");
-    unreviewedCheckBox.setText("Unreviewed");
-    ignoredCheckBox.setText("Ignored");
-    interestedCheckBox.setText("Interested");
-
-    QHBoxLayout& visibleVacanciesLayout = *new QHBoxLayout;
-    visibleVacanciesLayout.addWidget(&visibleVacanciesLabel);
-    visibleVacanciesLayout.addWidget(&unreviewedCheckBox);
-    visibleVacanciesLayout.addWidget(&ignoredCheckBox);
-    visibleVacanciesLayout.addWidget(&interestedCheckBox);
-
-    vacanciesListLayout.addLayout(&visibleVacanciesLayout);
-
-
-    
-    /*
-     * sortLayout
-     */
 
     QStringListModel& model = *new QStringListModel;
     vacanciesList.setModel(&model);

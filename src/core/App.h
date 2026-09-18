@@ -10,19 +10,23 @@
 #include "../model/Vacancy.h"
 #include "../model/VacancyBrief.h"
 #include "../model/VacancyDetails.h"
-#include "SharedContext.h"
 #include "../parser/HTMLparser.h"
-#include "../gui/GUI.h"
 #include "../data/AppState.h"
+#include "../gui/MainWindow.h"
+#include "../ResultViewOptions/ResultViewOptionsEnums.h"
+
 
 class RequestManager;
 class HTMLparser;
+
+class QueryParametersPresenter;
+class ResultViewOptionsPresenter;
 
 namespace Linked
 {
     Q_DECLARE_LOGGING_CATEGORY(LinkedApp);
 
-    class GUI;
+    class ProgressDialog;
 
     // TODO: current App workflow is a mess, need to create AppController or smth
 
@@ -52,9 +56,10 @@ namespace Linked
         void openVacancyDescription(const QModelIndex&);
         void closeVacancyDescription();
 
-        void updateDescriptionList(int temp = 0);
+        void updateDescriptionList();
+        void updateDescriptionListV(int temp = 0);
 
-        void updateMaxVacancies(const unsigned newMaxVacancies);
+        void updateMaxVacancies();
 
         void onBriefReady(const VacancyBrief& brief);
         void onDetailsReady(const VacancyDetails& details);
@@ -107,16 +112,18 @@ namespace Linked
         void loadState();
 
     private:
-        SharedContext* context;
+        QueryParametersPresenter& queryParametersPresenter;
+        ResultViewOptionsPresenter& resultViewOptionsPresenter;
 
     private:
+        MainWindow& mainWindow;
+        ProgressDialog& progressDialog;
+
         RequestManager& requestManager;
         QThread* networkThread = nullptr;   // TODO: why is it pointers?
  
         HTMLparser* parser = nullptr;       // TODO: why is it pointers?
         QThread* parserThread = nullptr;    // TODO: why is it pointers?
- 
-        GUI* gui = nullptr;                 // TODO: why is it pointers?
 
         AppState state;
 

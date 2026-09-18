@@ -10,7 +10,6 @@
 #include <QNetworkReply>
 
 // custom
-#include "../core/SharedContext.h"
 #include "../model/VacancyBrief.h"
 #include "../model/VacancyDetails.h"
 
@@ -19,7 +18,7 @@ namespace Linked
     class ProgressDialog : public QDialog
     {
     public:
-        ProgressDialog(QWidget *parent, SharedContext *context);
+        ProgressDialog(QWidget *parent);
         ~ProgressDialog() = default;
 
     public slots:
@@ -30,9 +29,6 @@ namespace Linked
 
     public:
         QPushButton& stopButton;
-
-    private:
-        SharedContext *context = nullptr;
 
     private:
         QLabel& briefLabel;

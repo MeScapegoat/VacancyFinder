@@ -30,9 +30,20 @@ set(UTILS_SOURCES "")
 set(DATA_SOURCES_DIR_FOLDER "data")
 set(DATA_SOURCES "")
 
+set(MVP_SOURCES_DIR_FOLDER "MVP")
+set(MVP_SOURCES "")
+
+set(TMP1_SOURCES_DIR_FOLDER "QueryParameters")
+set(TMP1_SOURCES "")
+
+set(TMP2_SOURCES_DIR_FOLDER "ResultViewOptions")
+set(TMP2_SOURCES "")
+
+
 set(SOURCES_SUPPORTED_EXTENSIONS
     "*.cpp"
     "*.h"
+    "*.hpp"
 )
 
 configure_file(
@@ -128,6 +139,33 @@ foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
     list(APPEND DATA_SOURCES ${FILES})
 endforeach()
 
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${MVP_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND MVP_SOURCES ${FILES})
+endforeach()
+
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${TMP1_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND TMP1_SOURCES ${FILES})
+endforeach()
+
+foreach(EXTENSION IN LISTS SOURCES_SUPPORTED_EXTENSIONS)
+    file(GLOB_RECURSE 
+        FILES
+        "${SOURCES_DIR_PATH}/${TMP2_SOURCES_DIR_FOLDER}/${EXTENSION}"
+    )
+
+    list(APPEND TMP2_SOURCES ${FILES})
+endforeach()
+
 
 # Target
 
@@ -139,6 +177,9 @@ add_executable(${PROJECT_NAME}
                ${MODEL_SOURCES}
                ${UTILS_SOURCES}
                ${DATA_SOURCES}
+               ${MVP_SOURCES}
+               ${TMP1_SOURCES}
+               ${TMP2_SOURCES}
                ${SOURCES_DIR_PATH}/main.cpp       
 )
 

@@ -1,6 +1,6 @@
-// std
+#include "App.h"
 
-// Qt
+
 #include <QButtonGroup>
 #include <QCheckBox>
 #include <QComboBox>
@@ -14,9 +14,13 @@
 #include <QUrlQuery>
 #include <QStackedLayout>
 
-// custom
+
 #include "../network/RequestManager.h"
-#include "App.h"
+
+#include "../gui/ProgressDialog.h"
+
+#include "../QueryParameters/QueryParametersPresenter.h"
+#include "../ResultViewOptions/ResultViewOptionsPresenter.h"
 
 namespace
 {
@@ -29,12 +33,14 @@ namespace Linked
 
     App::App(QObject* parent) :
         QObject(parent),
-        context(new SharedContext),
+        queryParametersPresenter(*new QueryParametersPresenter(this)),
+        resultViewOptionsPresenter(*new ResultViewOptionsPresenter(this)),
+        mainWindow(*new MainWindow(queryParametersPresenter.getView().widget(), resultViewOptionsPresenter.getView().widget())),
+        progressDialog(*new ProgressDialog(&mainWindow)),
         requestManager(*new RequestManager),
         networkThread(new QThread(this)),
         parser(new HTMLparser),
-        parserThread(new QThread(this)),
-        gui(new GUI(context))
+        parserThread(new QThread(this))
     {
         networkThread->setObjectName("networkThread");
         requestManager.moveToThread(networkThread);
@@ -42,13 +48,10 @@ namespace Linked
         parserThread->setObjectName("parserThread");
         parser->moveToThread(parserThread);
 
-        context->app = this;
-        context->mainWindow = gui->mainWindow();
-
         QObject::connect(networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
         QObject::connect(parserThread, &QThread::finished, parser, &HTMLparser::deleteLater);
 
-        QObject::connect(&gui->mainWindow()->limitVacanciesInput, &QSpinBox::valueChanged, this, &App::updateMaxVacancies);
+        QObject::connect(&queryParametersPresenter.getModel().maxResults, &Observable<int>::valueChanged, this, &App::updateMaxVacancies);
 
         QObject::connect(&requestManager, &RequestManager::requestsFinished, this, &App::onRequestsFinished);
         QObject::connect(&requestManager, &RequestManager::requestsFinished, parser, &HTMLparser::onRequestsFinished);
@@ -64,35 +67,34 @@ namespace Linked
         QObject::connect(parser, &HTMLparser::briefReady, this, &App::onBriefReady);
         QObject::connect(parser, &HTMLparser::detailsReady, this, &App::onDetailsReady);
 
-        QObject::connect(parser, &HTMLparser::briefReady, gui->progressDialog(), &ProgressDialog::updateBrief);
-        QObject::connect(parser, &HTMLparser::detailsReady, gui->progressDialog(), &ProgressDialog::updateDetails);
+        QObject::connect(parser, &HTMLparser::briefReady, &progressDialog, &ProgressDialog::updateBrief);
+        QObject::connect(parser, &HTMLparser::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
 
-        QObject::connect(this, &App::updateVacanciesList, gui->mainWindow(), &MainWindow::updateVacanciesList);
-        QObject::connect(&gui->mainWindow()->vacanciesList, &QListView::clicked, this, &App::openVacancyDescription);
-        QObject::connect(&gui->mainWindow()->searchButton, &QPushButton::released, this, &App::sendSearchRequest);
+        QObject::connect(this, &App::updateVacanciesList, &mainWindow, &MainWindow::updateVacanciesList);
+        QObject::connect(&mainWindow.vacanciesList, &QListView::clicked, this, &App::openVacancyDescription);
+        QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
 
-        QObject::connect(&gui->mainWindow()->ignoreButton, &QPushButton::released, this, &App::onIgnoreButtonPressed);
-        QObject::connect(&gui->mainWindow()->interestButton, &QPushButton::released, this, &App::onInterestButtonPressed);
-        QObject::connect(&gui->mainWindow()->removeIgnoreButton,   &QPushButton::released, this, &App::onRemoveIgnoreButtonPressed);
-        QObject::connect(&gui->mainWindow()->removeInterestButton, &QPushButton::released, this, &App::onRemoveInterestButtonPressed);
+        QObject::connect(&mainWindow.ignoreButton, &QPushButton::released, this, &App::onIgnoreButtonPressed);
+        QObject::connect(&mainWindow.interestButton, &QPushButton::released, this, &App::onInterestButtonPressed);
+        QObject::connect(&mainWindow.removeIgnoreButton,   &QPushButton::released, this, &App::onRemoveIgnoreButtonPressed);
+        QObject::connect(&mainWindow.removeInterestButton, &QPushButton::released, this, &App::onRemoveInterestButtonPressed);
 
-        QObject::connect(this, &App::openProgressDialog, gui->progressDialog(), &ProgressDialog::start);
-        QObject::connect(this, &App::closeProgressDialog, gui->progressDialog(), &ProgressDialog::accept);
+        QObject::connect(this, &App::openProgressDialog, &progressDialog, &ProgressDialog::start);
+        QObject::connect(this, &App::closeProgressDialog, &progressDialog, &ProgressDialog::accept);
 
-        QObject::connect(&gui->mainWindow()->sortMode, &QComboBox::currentIndexChanged, this, &App::updateDescriptionList);
-        QObject::connect(&gui->mainWindow()->filterMode, &QComboBox::currentIndexChanged, this, &App::updateDescriptionList);
-        QObject::connect(&gui->mainWindow()->filterLineEdit, &QLineEdit::editingFinished, [&]()
-        {
-            updateDescriptionList(0);
-        });
-        QObject::connect(&gui->mainWindow()->unreviewedCheckBox, &QCheckBox::checkStateChanged, this, &App::updateDescriptionList);
-        QObject::connect(&gui->mainWindow()->ignoredCheckBox, &QCheckBox::checkStateChanged, this, &App::updateDescriptionList);
-        QObject::connect(&gui->mainWindow()->interestedCheckBox, &QCheckBox::checkStateChanged, this, &App::updateDescriptionList);
+        QObject::connect(&resultViewOptionsPresenter.getModel().currentSortMode, &Observable<int>::valueChanged, this, &App::updateDescriptionList);
+        QObject::connect(&resultViewOptionsPresenter.getModel().currentFilterMode, &Observable<int>::valueChanged, this, &App::updateDescriptionList);
+        QObject::connect(&resultViewOptionsPresenter.getModel().filterText, &Observable<QString>::valueChanged, this, &App::updateDescriptionList);
 
-        QObject::connect(&requestManager, &RequestManager::replyError, gui->progressDialog(), &ProgressDialog::updateError);
+        
+        QObject::connect(&resultViewOptionsPresenter.getModel().isUnreviewedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
+        QObject::connect(&resultViewOptionsPresenter.getModel().isIgnoredVisible,    &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
+        QObject::connect(&resultViewOptionsPresenter.getModel().isInterestedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
 
-        QObject::connect(&gui->progressDialog()->stopButton, &QPushButton::released, &requestManager, &RequestManager::onInterrupt);
-        QObject::connect(&gui->progressDialog()->stopButton, &QPushButton::released, parser, &HTMLparser::onInterrupt);
+        QObject::connect(&requestManager, &RequestManager::replyError, &progressDialog, &ProgressDialog::updateError);
+
+        QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::onInterrupt);
+        QObject::connect(&progressDialog.stopButton, &QPushButton::released, parser, &HTMLparser::onInterrupt);
 
 
         loadState();
@@ -112,8 +114,6 @@ namespace Linked
 
         parserThread->quit();
         parserThread->wait();
-
-        delete context;
     }
 
     void App::sendSearchRequest()
@@ -123,14 +123,14 @@ namespace Linked
         requestManager.reset();
         parser->reset();
 
-        updateMaxVacancies(gui->mainWindow()->limitVacanciesInput.value());
+        updateMaxVacancies();
 
         isRequestsFinished = false;
         isBriefsFinished = false;
         isAllDetailsFinished = false;
 
-        keywords = gui->mainWindow()->keywordsLineEdit.text();
-        location = gui->mainWindow()->locationLineEdit.text();
+        keywords = queryParametersPresenter.getModel().keywords();
+        location = queryParametersPresenter.getModel().location();
 
         qCInfo(LinkedApp) << "keywords:" << keywords << "location:" << location;
 
@@ -206,7 +206,7 @@ namespace Linked
         const Vacancy& vacancy = *vacanciesToShow[id];
 
         const VacancyStatus status = getVacancyStatus(vacancy);
-        gui->mainWindow()->statusButtonsLayout.setCurrentIndex(static_cast<int>(status));
+        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(status));
 
         const QString& title = vacancy.brief.title;
         const QString& description = vacancy.details.description;
@@ -235,8 +235,6 @@ namespace Linked
         //    "<h1>location</h1>" + vacancy.location +
         //    "<h1>level</h1>" + vacancy.level +
         //    "<h1>employmentType</h1>" + vacancy.employmentType;
-
-        const MainWindow& mainWindow = *gui->mainWindow();
 
         const QString linkPattern = "<a href='%1'>%2</a>";
 
@@ -269,9 +267,6 @@ namespace Linked
 
     void App::closeVacancyDescription()
     {
-        MainWindow& mainWindow = *gui->mainWindow();
-
-
         mainWindow.titleLabel.setText("Title");
         mainWindow.companyNameLabel.setText("Company");
 
@@ -309,9 +304,10 @@ namespace Linked
         mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
     }
 
-    void App::updateDescriptionList(int temp)
+    void App::updateDescriptionList()
     {
-        gui->mainWindow()->clearList();
+
+        mainWindow.clearList();
 
 
         syncVacanciesToShow();
@@ -325,9 +321,14 @@ namespace Linked
         updateModelData();
     }
 
-    void App::updateMaxVacancies(const unsigned newMaxVacancies)
+    void App::updateDescriptionListV(int temp)
     {
-        maxVacancies = newMaxVacancies;
+        updateDescriptionList();
+    }
+
+    void App::updateMaxVacancies()
+    {
+        maxVacancies = queryParametersPresenter.getModel().maxResults();
         parser->setMaxVacancies(maxVacancies);
     }
 
@@ -390,7 +391,7 @@ namespace Linked
         ignoredVacancies.insert(vacancy->get().brief.link);
 
         updateDescriptionList();
-        gui->mainWindow()->statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Ignored));
+        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Ignored));
         closeVacancyDescription();
     }
 
@@ -403,7 +404,7 @@ namespace Linked
         interestedVacancies.insert(vacancy->get().brief.link);
 
         updateDescriptionList();
-        gui->mainWindow()->statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Interested));
+        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Interested));
         closeVacancyDescription();
     }
 
@@ -416,7 +417,7 @@ namespace Linked
         ignoredVacancies.remove(vacancy->get().brief.link);
 
         updateDescriptionList();
-        gui->mainWindow()->statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
+        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
         closeVacancyDescription();
     }
 
@@ -429,7 +430,7 @@ namespace Linked
         interestedVacancies.remove(vacancy->get().brief.link);
 
         updateDescriptionList();
-        gui->mainWindow()->statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
+        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
         closeVacancyDescription();
     }
 
@@ -503,11 +504,9 @@ namespace Linked
 
     void App::applyStatusFilter()
     {
-        const MainWindow& mainWindow = *gui->mainWindow();
-
-        const bool isUnreviewedVisible = mainWindow.unreviewedCheckBox.isChecked();
-        const bool isIgnoredVisible = mainWindow.ignoredCheckBox.isChecked();
-        const bool isInterestedVisible = mainWindow.interestedCheckBox.isChecked();
+        const bool isUnreviewedVisible = resultViewOptionsPresenter.getModel().isUnreviewedVisible();
+        const bool isIgnoredVisible = resultViewOptionsPresenter.getModel().isIgnoredVisible();
+        const bool isInterestedVisible = resultViewOptionsPresenter.getModel().isInterestedVisible();
 
         // TODO: std::erase_if
         for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end(); /* EMPTY */)
@@ -544,11 +543,9 @@ namespace Linked
 
     void App::applyFiltering()
     {
-        const MainWindow& mainWindow = *gui->mainWindow();
+        const FilterMode filterMode = static_cast<FilterMode>(resultViewOptionsPresenter.getModel().currentFilterMode());
 
-        const FilterMode filterMode = static_cast<FilterMode>(mainWindow.filterMode.currentIndex());
-
-        const QString& filterText = gui->mainWindow()->filterLineEdit.text();
+        const QString& filterText = resultViewOptionsPresenter.getModel().filterText();
 
         QStringList filterWords = filterText.split(',');
         if (filterWords.isEmpty()) return;
@@ -615,7 +612,7 @@ namespace Linked
 
     void App::applySorting()
     {
-        const SortMode& sortMode = static_cast<SortMode>(gui->mainWindow()->sortMode.currentIndex());
+        const SortMode& sortMode = static_cast<SortMode>(resultViewOptionsPresenter.getModel().currentSortMode());
 
         switch (sortMode)
         {
@@ -760,7 +757,7 @@ namespace Linked
 
     void App::sortByEmploymentType()
     {
-        qCDebug(LinkedApp) << "sorting by Relevance";
+        qCDebug(LinkedApp) << "sorting by Employment Type";
         auto compareByEmploymentType = [](const Vacancy* left, const Vacancy* right)
         {
             return left->details.employmentType > right->details.employmentType;
@@ -861,7 +858,7 @@ namespace Linked
 
     std::optional<App::constVacancyRef> App::getCurrentVacancy() const
     {
-        const QModelIndex& index = gui->mainWindow()->vacanciesList.currentIndex();
+        const QModelIndex& index = mainWindow.vacanciesList.currentIndex();
 
         if (!index.isValid())
             return std::nullopt;
@@ -886,24 +883,22 @@ namespace Linked
 
     void App::saveState()
     {
-        const MainWindow& mainWindow = *gui->mainWindow();
-
         state.setIgnored(ignoredVacancies);
         state.setInterested(interestedVacancies);
 
-        state.setKeywords(mainWindow.keywordsLineEdit.text());
-        state.setLocation(mainWindow.locationLineEdit.text());
+        state.setKeywords(queryParametersPresenter.getModel().keywords());
+        state.setLocation(queryParametersPresenter.getModel().location());
 
-        state.setLimit(mainWindow.limitVacanciesInput.value());
+        state.setLimit(queryParametersPresenter.getModel().maxResults());
 
-        state.setFilterMode(mainWindow.filterMode.currentIndex());
-        state.setFilters(mainWindow.filterLineEdit.text());
+        state.setFilterMode(resultViewOptionsPresenter.getModel().currentFilterMode());
+        state.setFilters(resultViewOptionsPresenter.getModel().filterText());
 
-        state.setSortMode(mainWindow.sortMode.currentIndex());
+        state.setSortMode(resultViewOptionsPresenter.getModel().currentSortMode());
 
-        state.setIsUnreviewedVisible(mainWindow.unreviewedCheckBox.isChecked());
-        state.setIsIgnoredVisible(mainWindow.ignoredCheckBox.isChecked());
-        state.setIsInterestedVisible(mainWindow.interestedCheckBox.isChecked());
+        state.setIsUnreviewedVisible(resultViewOptionsPresenter.getModel().isUnreviewedVisible());
+        state.setIsIgnoredVisible(resultViewOptionsPresenter.getModel().isIgnoredVisible());
+        state.setIsInterestedVisible(resultViewOptionsPresenter.getModel().isInterestedVisible());
 
 
         state.saveState();
@@ -913,25 +908,23 @@ namespace Linked
     {
         state.loadState();
 
-        MainWindow& mainWindow = *gui->mainWindow();
-
         ignoredVacancies = state.getIgnored();
         interestedVacancies = state.getInterested();
 
-        mainWindow.keywordsLineEdit.setText(state.getKeywords());
-        mainWindow.locationLineEdit.setText(state.getLocation());
+        queryParametersPresenter.getModel().keywords = state.getKeywords();
+        queryParametersPresenter.getModel().location = state.getLocation();
 
-        mainWindow.limitVacanciesInput.setValue(state.getLimit());
+        queryParametersPresenter.getModel().maxResults = state.getLimit();
 
-        mainWindow.filterMode.setCurrentIndex(state.getFilterMode());
-        mainWindow.filterLineEdit.setText(state.getFilters());
+        resultViewOptionsPresenter.getModel().currentFilterMode = state.getFilterMode();
+        resultViewOptionsPresenter.getModel().filterText = state.getFilters();
 
-        mainWindow.sortMode.setCurrentIndex(state.getSortMode());
+        resultViewOptionsPresenter.getModel().currentSortMode = state.getSortMode();
 
 
-        mainWindow.unreviewedCheckBox.setChecked(state.getIsUnreviewedVisible());
-        mainWindow.ignoredCheckBox.setChecked(state.getIsIgnoredVisible());
-        mainWindow.interestedCheckBox.setChecked(state.getIsInterestedVisible());
+        resultViewOptionsPresenter.getModel().isUnreviewedVisible = state.getIsUnreviewedVisible();
+        resultViewOptionsPresenter.getModel().isIgnoredVisible = state.getIsIgnoredVisible();
+        resultViewOptionsPresenter.getModel().isInterestedVisible = state.getIsInterestedVisible();
     }
 
 } // namespace Linked

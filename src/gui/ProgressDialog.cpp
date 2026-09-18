@@ -8,9 +8,8 @@
 
 namespace Linked
 {
-    ProgressDialog::ProgressDialog(QWidget* parent, SharedContext* sharedContext) :
+    ProgressDialog::ProgressDialog(QWidget* parent) :
         QDialog(parent),
-        context(sharedContext),
         briefLabel(*new QLabel),
         briefsProgressBar(*new QProgressBar),
         detailsLabel(*new QLabel),
