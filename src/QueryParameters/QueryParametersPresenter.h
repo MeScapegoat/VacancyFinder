@@ -9,7 +9,7 @@
 #include <QLoggingCategory>
 
 
-Q_DECLARE_LOGGING_CATEGORY(QPR);
+Q_DECLARE_LOGGING_CATEGORY(QPPLog);
 
 
 class QueryParametersPresenter : public Presenter<QueryParametersView, QueryParametersModel>

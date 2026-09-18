@@ -6,13 +6,13 @@
 #include <QLineEdit>
 
 
-Q_LOGGING_CATEGORY(RVOP, "resultViewOptions.presenter");
+Q_LOGGING_CATEGORY(RVOPLog, "resultViewOptions.presenter");
 
 
 ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) : 
     Presenter(parent)
 {
-    qCDebug(RVOP) << __FUNCTION__;
+    qCDebug(RVOPLog) << __FUNCTION__;
 
     const ResultViewOptionsModel& model = getModel();
     const ResultViewOptionsView& view = getView();
@@ -40,7 +40,7 @@ ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) :
 
 void ResultViewOptionsPresenter::onCurrentSortIndexChanged()
 {
-    qCDebug(RVOP) << __FUNCTION__;
+    qCDebug(RVOPLog) << __FUNCTION__;
 
     const ResultViewOptionsModel& model = getModel();
     const ResultViewOptionsView& view = getView();
@@ -50,7 +50,7 @@ void ResultViewOptionsPresenter::onCurrentSortIndexChanged()
 
 void ResultViewOptionsPresenter::onCurrentFilterIndexChanged()
 {
-    qCDebug(RVOP) << __FUNCTION__;
+    qCDebug(RVOPLog) << __FUNCTION__;
 
     const ResultViewOptionsModel& model = getModel();
     const ResultViewOptionsView& view = getView();
@@ -60,7 +60,7 @@ void ResultViewOptionsPresenter::onCurrentFilterIndexChanged()
 
 void ResultViewOptionsPresenter::onFilterTextChanged()
 {
-    qCDebug(RVOP) << __FUNCTION__;
+    qCDebug(RVOPLog) << __FUNCTION__;
 
     const ResultViewOptionsModel& model = getModel();
     const ResultViewOptionsView& view = getView();
@@ -70,7 +70,7 @@ void ResultViewOptionsPresenter::onFilterTextChanged()
 
 void ResultViewOptionsPresenter::onUnreviewedVisibleChanged()
 {
-    qCDebug(RVOP) << __FUNCTION__;
+    qCDebug(RVOPLog) << __FUNCTION__;
 
     const ResultViewOptionsModel& model = getModel();
     const ResultViewOptionsView& view = getView();
@@ -80,7 +80,7 @@ void ResultViewOptionsPresenter::onUnreviewedVisibleChanged()
 
 void ResultViewOptionsPresenter::onIgnoredVisibleChanged()
 {
-    qCDebug(RVOP) << __FUNCTION__;
+    qCDebug(RVOPLog) << __FUNCTION__;
 
     const ResultViewOptionsModel& model = getModel();
     const ResultViewOptionsView& view = getView();
@@ -90,7 +90,7 @@ void ResultViewOptionsPresenter::onIgnoredVisibleChanged()
 
 void ResultViewOptionsPresenter::onInterestedVisibleChanged()
 {
-    qCDebug(RVOP) << __FUNCTION__;
+    qCDebug(RVOPLog) << __FUNCTION__;
 
     const ResultViewOptionsModel& model = getModel();
     const ResultViewOptionsView& view = getView();

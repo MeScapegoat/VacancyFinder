@@ -6,13 +6,13 @@
 #include <QSpinBox>
 
 
-Q_LOGGING_CATEGORY(QPP, "queryParameters.presenter");
+Q_LOGGING_CATEGORY(QPPLog, "queryParameters.presenter");
 
 
 QueryParametersPresenter::QueryParametersPresenter(QObject* parent) :
     Presenter(parent)
 {
-    qCDebug(QPP) << __FUNCTION__;
+    qCDebug(QPPLog) << __FUNCTION__;
 
     const QueryParametersModel& model = getModel();
     const QueryParametersView& view = getView();
@@ -31,7 +31,7 @@ QueryParametersPresenter::QueryParametersPresenter(QObject* parent) :
 
 void QueryParametersPresenter::onMaxResultsChanged()
 {
-    qCDebug(QPP) << __FUNCTION__;
+    qCDebug(QPPLog) << __FUNCTION__;
 
     const QueryParametersModel& model = getModel();
     const QueryParametersView& view = getView();
@@ -42,7 +42,7 @@ void QueryParametersPresenter::onMaxResultsChanged()
 
 void QueryParametersPresenter::onKeywordsChanged()
 {
-    qCDebug(QPP) << __FUNCTION__;
+    qCDebug(QPPLog) << __FUNCTION__;
 
     const QueryParametersModel& model = getModel();
     const QueryParametersView& view = getView();
@@ -52,7 +52,7 @@ void QueryParametersPresenter::onKeywordsChanged()
 
 void QueryParametersPresenter::onLocationChanged()
 {
-    qCDebug(QPP) << __FUNCTION__;
+    qCDebug(QPPLog) << __FUNCTION__;
 
     const QueryParametersModel& model = getModel();
     const QueryParametersView& view = getView();

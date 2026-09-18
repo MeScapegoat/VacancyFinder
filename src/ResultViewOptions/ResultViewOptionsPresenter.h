@@ -9,7 +9,7 @@
 #include <QObject>
 
 
-Q_DECLARE_LOGGING_CATEGORY(RVOP);
+Q_DECLARE_LOGGING_CATEGORY(RVOPLog);
 
 
 class ResultViewOptionsPresenter : public Presenter<ResultViewOptionsView, ResultViewOptionsModel>
