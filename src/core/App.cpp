@@ -40,6 +40,8 @@ App::App(QObject* parent) :
     parser(new HTMLparser),
     parserThread(new QThread(this))
 {
+
+    // Threads
     networkThread->setObjectName("networkThread");
     requestManager.moveToThread(networkThread);
 
@@ -49,52 +51,71 @@ App::App(QObject* parent) :
     QObject::connect(networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
     QObject::connect(parserThread, &QThread::finished, parser, &HTMLparser::deleteLater);
 
-    QObject::connect(&queryParametersPresenter.getModel().maxResults, &Observable<int>::valueChanged, this, &App::updateMaxVacancies);
 
+    // Query Parameters
+    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
+
+    QueryParametersModel& QPModel = queryParametersPresenter.getModel();
+
+    QObject::connect(&QPModel.maxResults, &Observable<int>::valueChanged, this, &App::updateMaxVacancies);
+
+
+    // Result View Options
+    ResultViewOptionsModel& RVOModel = resultViewOptionsPresenter.getModel();
+
+    QObject::connect(&RVOModel.currentSortMode,   &Observable<int>::valueChanged,     this, &App::updateDescriptionList);
+
+    QObject::connect(&RVOModel.currentFilterMode, &Observable<int>::valueChanged,     this, &App::updateDescriptionList);
+    QObject::connect(&RVOModel.filterText,        &Observable<QString>::valueChanged, this, &App::updateDescriptionList);
+
+    QObject::connect(&RVOModel.isUnreviewedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
+    QObject::connect(&RVOModel.isIgnoredVisible,    &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
+    QObject::connect(&RVOModel.isInterestedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
+
+
+    // Request Manager
     QObject::connect(&requestManager, &RequestManager::requestsFinished, this, &App::onRequestsFinished);
     QObject::connect(&requestManager, &RequestManager::requestsFinished, parser, &HTMLparser::onRequestsFinished);
 
     QObject::connect(&requestManager, &RequestManager::receivedReply, parser, &HTMLparser::processHTML);
-    QObject::connect(this, &App::initSearch, &requestManager, &RequestManager::addUrls);
+    QObject::connect(&requestManager, &RequestManager::replyError, &progressDialog, &ProgressDialog::updateError);
 
+
+    // Parser
     QObject::connect(parser, &HTMLparser::sendRequest, &requestManager, &RequestManager::addUrl);
+
+    QObject::connect(parser, &HTMLparser::briefReady, this, &App::onBriefReady);
+    QObject::connect(parser, &HTMLparser::briefReady, &progressDialog, &ProgressDialog::updateBrief);
+
+    QObject::connect(parser, &HTMLparser::detailsReady, this, &App::onDetailsReady);
+    QObject::connect(parser, &HTMLparser::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
 
     QObject::connect(parser, &HTMLparser::briefsFinished, this, &App::onBriefsFinished);
     QObject::connect(parser, &HTMLparser::allDetailsFinished, this, &App::onAllDetailsFinished);
 
-    QObject::connect(parser, &HTMLparser::briefReady, this, &App::onBriefReady);
-    QObject::connect(parser, &HTMLparser::detailsReady, this, &App::onDetailsReady);
 
-    QObject::connect(parser, &HTMLparser::briefReady, &progressDialog, &ProgressDialog::updateBrief);
-    QObject::connect(parser, &HTMLparser::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
+    // Main Window
+    QObject::connect(&mainWindow.vacanciesList,        &QListView::clicked,    this, &App::openVacancyDescription);
 
-    QObject::connect(this, &App::updateVacanciesList, &mainWindow, &MainWindow::updateVacanciesList);
-    QObject::connect(&mainWindow.vacanciesList, &QListView::clicked, this, &App::openVacancyDescription);
-    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
+    QObject::connect(&mainWindow.ignoreButton,         &QPushButton::released, this, &App::onIgnoreButtonPressed);
+    QObject::connect(&mainWindow.interestButton,       &QPushButton::released, this, &App::onInterestButtonPressed);
 
-    QObject::connect(&mainWindow.ignoreButton, &QPushButton::released, this, &App::onIgnoreButtonPressed);
-    QObject::connect(&mainWindow.interestButton, &QPushButton::released, this, &App::onInterestButtonPressed);
-    QObject::connect(&mainWindow.removeIgnoreButton, &QPushButton::released, this, &App::onRemoveIgnoreButtonPressed);
+    QObject::connect(&mainWindow.removeIgnoreButton,   &QPushButton::released, this, &App::onRemoveIgnoreButtonPressed);
     QObject::connect(&mainWindow.removeInterestButton, &QPushButton::released, this, &App::onRemoveInterestButtonPressed);
 
-    QObject::connect(this, &App::openProgressDialog, &progressDialog, &ProgressDialog::start);
-    QObject::connect(this, &App::closeProgressDialog, &progressDialog, &ProgressDialog::accept);
 
-    QObject::connect(&resultViewOptionsPresenter.getModel().currentSortMode, &Observable<int>::valueChanged, this, &App::updateDescriptionList);
-    QObject::connect(&resultViewOptionsPresenter.getModel().currentFilterMode, &Observable<int>::valueChanged, this, &App::updateDescriptionList);
-    QObject::connect(&resultViewOptionsPresenter.getModel().filterText, &Observable<QString>::valueChanged, this, &App::updateDescriptionList);
-
-
-    QObject::connect(&resultViewOptionsPresenter.getModel().isUnreviewedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
-    QObject::connect(&resultViewOptionsPresenter.getModel().isIgnoredVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
-    QObject::connect(&resultViewOptionsPresenter.getModel().isInterestedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
-
-    QObject::connect(&requestManager, &RequestManager::replyError, &progressDialog, &ProgressDialog::updateError);
-
+    // ProgressDialog
     QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::onInterrupt);
     QObject::connect(&progressDialog.stopButton, &QPushButton::released, parser, &HTMLparser::onInterrupt);
 
 
+    // This
+    QObject::connect(this, &App::initSearch, &requestManager, &RequestManager::addUrls);    
+    QObject::connect(this, &App::updateVacanciesList, &mainWindow, &MainWindow::updateVacanciesList);
+    QObject::connect(this, &App::openProgressDialog, &progressDialog, &ProgressDialog::start);
+    QObject::connect(this, &App::closeProgressDialog, &progressDialog, &ProgressDialog::accept);
+
+    
     loadState();
 
     closeVacancyDescription();
@@ -157,39 +178,6 @@ void App::sendSearchRequest()
     url.setQuery(query);
     urls.append(url);
 
-    //QUrl url1(baseUrl);
-    //QUrlQuery query1;
-    //query1.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-    //query1.addQueryItem("location", QUrl::toPercentEncoding(location));
-    //query1.addQueryItem("start", QString::number(20));
-    //url1.setQuery(query1);
-    //
-    //QUrl url2(baseUrl);
-    //QUrlQuery query2;
-    //query2.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-    //query2.addQueryItem("location", QUrl::toPercentEncoding(location));
-    //query2.addQueryItem("start", QString::number(20));
-    //url2.setQuery(query2);
-    //
-    //QUrl url3(baseUrl);
-    //QUrlQuery query3;
-    //query3.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-    //query3.addQueryItem("location", QUrl::toPercentEncoding(location));
-    //query3.addQueryItem("start", QString::number(20));
-    //url3.setQuery(query3);
-    //
-    //QUrl url4(baseUrl);
-    //QUrlQuery query4;
-    //query4.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-    //query4.addQueryItem("location", QUrl::toPercentEncoding(location));
-    //query4.addQueryItem("start", QString::number(20));
-    //url4.setQuery(query4);
-    //
-    //urls.append(url1);
-    //urls.append(url2);
-    //urls.append(url3);
-    //urls.append(url4);
-
     searchStartTime = QTime::currentTime();
 
     qCInfo(AppLog) << QThread::currentThread();
@@ -219,20 +207,6 @@ void App::openVacancyDescription(const QModelIndex& index)
     const QString& companyLink = vacancy.brief.companyLink.toString();
 
     qCInfo(AppLog) << "Loading descrption:" << id << "." << title;
-
-    //const QString HTMLformated =  "<h1>Description:</h1>" + description +
-    //                        "<h1>Level:</h1>" + level +
-    //                        "<h1>employmentType:</h1>" + employmentType;
-
-    //QString HTMLdebug = "<h1>description</h1>" + vacancy.description +
-    //    "<h1>title</h1>" + vacancy.title +
-    //    "<h1>link</h1>" + vacancy.link.toString() +
-    //    "<h1>companyName</h1>" + vacancy.companyName +
-    //    "<h1>companyLink</h1>" + vacancy.companyLink.toString() +
-    //    "<h1>date</h1>" + vacancy.date.toString() +
-    //    "<h1>location</h1>" + vacancy.location +
-    //    "<h1>level</h1>" + vacancy.level +
-    //    "<h1>employmentType</h1>" + vacancy.employmentType;
 
     const QString linkPattern = "<a href='%1'>%2</a>";
 
