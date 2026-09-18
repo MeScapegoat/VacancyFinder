@@ -9,29 +9,26 @@
 // custom
 
 
-namespace Linked
+Q_DECLARE_LOGGING_CATEGORY(LoggerLog);
+
+class Logger : public QObject
 {
-    Q_DECLARE_LOGGING_CATEGORY(LinkedLogger);
-    
-    class Logger : public QObject
-    {
-        Q_OBJECT
-    public:
-        Logger();
-        ~Logger();
+    Q_OBJECT
 
-    public:
-        void setLogRulesPath(const QString &);
+public:
+    Logger();
+    ~Logger();
 
-    public slots:
-        void applyLogRules(const QString &);
+public:
+    void setLogRulesPath(const QString&);
 
-    private:
-        QString logRulesPath;
-        QFileSystemWatcher logRulesWatcher;
-        QThread logThread;
-    };
+public slots:
+    void applyLogRules(const QString&);
 
-} // namespace Linked
+private:
+    QString logRulesPath;
+    QFileSystemWatcher logRulesWatcher;
+    QThread logThread;
+};
 
 void myMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg);

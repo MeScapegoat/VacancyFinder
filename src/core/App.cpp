@@ -27,271 +27,269 @@ namespace
     inline constexpr const char* BaseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
 }
 
-namespace Linked
+Q_LOGGING_CATEGORY(AppLog, "app");
+
+App::App(QObject* parent) :
+    QObject(parent),
+    queryParametersPresenter(*new QueryParametersPresenter(this)),
+    resultViewOptionsPresenter(*new ResultViewOptionsPresenter(this)),
+    mainWindow(*new MainWindow(queryParametersPresenter.getView().widget(), resultViewOptionsPresenter.getView().widget())),
+    progressDialog(*new ProgressDialog(&mainWindow)),
+    requestManager(*new RequestManager),
+    networkThread(new QThread(this)),
+    parser(new HTMLparser),
+    parserThread(new QThread(this))
 {
-    Q_LOGGING_CATEGORY(LinkedApp, "app");
+    networkThread->setObjectName("networkThread");
+    requestManager.moveToThread(networkThread);
 
-    App::App(QObject* parent) :
-        QObject(parent),
-        queryParametersPresenter(*new QueryParametersPresenter(this)),
-        resultViewOptionsPresenter(*new ResultViewOptionsPresenter(this)),
-        mainWindow(*new MainWindow(queryParametersPresenter.getView().widget(), resultViewOptionsPresenter.getView().widget())),
-        progressDialog(*new ProgressDialog(&mainWindow)),
-        requestManager(*new RequestManager),
-        networkThread(new QThread(this)),
-        parser(new HTMLparser),
-        parserThread(new QThread(this))
+    parserThread->setObjectName("parserThread");
+    parser->moveToThread(parserThread);
+
+    QObject::connect(networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
+    QObject::connect(parserThread, &QThread::finished, parser, &HTMLparser::deleteLater);
+
+    QObject::connect(&queryParametersPresenter.getModel().maxResults, &Observable<int>::valueChanged, this, &App::updateMaxVacancies);
+
+    QObject::connect(&requestManager, &RequestManager::requestsFinished, this, &App::onRequestsFinished);
+    QObject::connect(&requestManager, &RequestManager::requestsFinished, parser, &HTMLparser::onRequestsFinished);
+
+    QObject::connect(&requestManager, &RequestManager::receivedReply, parser, &HTMLparser::processHTML);
+    QObject::connect(this, &App::initSearch, &requestManager, &RequestManager::addUrls);
+
+    QObject::connect(parser, &HTMLparser::sendRequest, &requestManager, &RequestManager::addUrl);
+
+    QObject::connect(parser, &HTMLparser::briefsFinished, this, &App::onBriefsFinished);
+    QObject::connect(parser, &HTMLparser::allDetailsFinished, this, &App::onAllDetailsFinished);
+
+    QObject::connect(parser, &HTMLparser::briefReady, this, &App::onBriefReady);
+    QObject::connect(parser, &HTMLparser::detailsReady, this, &App::onDetailsReady);
+
+    QObject::connect(parser, &HTMLparser::briefReady, &progressDialog, &ProgressDialog::updateBrief);
+    QObject::connect(parser, &HTMLparser::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
+
+    QObject::connect(this, &App::updateVacanciesList, &mainWindow, &MainWindow::updateVacanciesList);
+    QObject::connect(&mainWindow.vacanciesList, &QListView::clicked, this, &App::openVacancyDescription);
+    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
+
+    QObject::connect(&mainWindow.ignoreButton, &QPushButton::released, this, &App::onIgnoreButtonPressed);
+    QObject::connect(&mainWindow.interestButton, &QPushButton::released, this, &App::onInterestButtonPressed);
+    QObject::connect(&mainWindow.removeIgnoreButton, &QPushButton::released, this, &App::onRemoveIgnoreButtonPressed);
+    QObject::connect(&mainWindow.removeInterestButton, &QPushButton::released, this, &App::onRemoveInterestButtonPressed);
+
+    QObject::connect(this, &App::openProgressDialog, &progressDialog, &ProgressDialog::start);
+    QObject::connect(this, &App::closeProgressDialog, &progressDialog, &ProgressDialog::accept);
+
+    QObject::connect(&resultViewOptionsPresenter.getModel().currentSortMode, &Observable<int>::valueChanged, this, &App::updateDescriptionList);
+    QObject::connect(&resultViewOptionsPresenter.getModel().currentFilterMode, &Observable<int>::valueChanged, this, &App::updateDescriptionList);
+    QObject::connect(&resultViewOptionsPresenter.getModel().filterText, &Observable<QString>::valueChanged, this, &App::updateDescriptionList);
+
+
+    QObject::connect(&resultViewOptionsPresenter.getModel().isUnreviewedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
+    QObject::connect(&resultViewOptionsPresenter.getModel().isIgnoredVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
+    QObject::connect(&resultViewOptionsPresenter.getModel().isInterestedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
+
+    QObject::connect(&requestManager, &RequestManager::replyError, &progressDialog, &ProgressDialog::updateError);
+
+    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::onInterrupt);
+    QObject::connect(&progressDialog.stopButton, &QPushButton::released, parser, &HTMLparser::onInterrupt);
+
+
+    loadState();
+
+    closeVacancyDescription();
+
+    networkThread->start();
+    parserThread->start();
+}
+
+App::~App()
+{
+    saveState();
+
+    networkThread->quit();
+    networkThread->wait();
+
+    parserThread->quit();
+    parserThread->wait();
+}
+
+void App::sendSearchRequest()
+{
+    vacancies.clear();
+    vacanciesToShow.clear();
+    requestManager.reset();
+    parser->reset();
+
+    updateMaxVacancies();
+
+    isRequestsFinished = false;
+    isBriefsFinished = false;
+    isAllDetailsFinished = false;
+
+    keywords = queryParametersPresenter.getModel().keywords();
+    location = queryParametersPresenter.getModel().location();
+
+    qCInfo(AppLog) << "keywords:" << keywords << "location:" << location;
+
+    QVector<QUrl> urls;
+
+    if (maxVacancies > 10)
     {
-        networkThread->setObjectName("networkThread");
-        requestManager.moveToThread(networkThread);
-
-        parserThread->setObjectName("parserThread");
-        parser->moveToThread(parserThread);
-
-        QObject::connect(networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
-        QObject::connect(parserThread, &QThread::finished, parser, &HTMLparser::deleteLater);
-
-        QObject::connect(&queryParametersPresenter.getModel().maxResults, &Observable<int>::valueChanged, this, &App::updateMaxVacancies);
-
-        QObject::connect(&requestManager, &RequestManager::requestsFinished, this, &App::onRequestsFinished);
-        QObject::connect(&requestManager, &RequestManager::requestsFinished, parser, &HTMLparser::onRequestsFinished);
-
-        QObject::connect(&requestManager, &RequestManager::receivedReply, parser, &HTMLparser::processHTML);
-        QObject::connect(this, &App::initSearch, &requestManager, &RequestManager::addUrls);
-
-        QObject::connect(parser, &HTMLparser::sendRequest, &requestManager, &RequestManager::addUrl);
-
-        QObject::connect(parser, &HTMLparser::briefsFinished, this, &App::onBriefsFinished);
-        QObject::connect(parser, &HTMLparser::allDetailsFinished, this, &App::onAllDetailsFinished);
-
-        QObject::connect(parser, &HTMLparser::briefReady, this, &App::onBriefReady);
-        QObject::connect(parser, &HTMLparser::detailsReady, this, &App::onDetailsReady);
-
-        QObject::connect(parser, &HTMLparser::briefReady, &progressDialog, &ProgressDialog::updateBrief);
-        QObject::connect(parser, &HTMLparser::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
-
-        QObject::connect(this, &App::updateVacanciesList, &mainWindow, &MainWindow::updateVacanciesList);
-        QObject::connect(&mainWindow.vacanciesList, &QListView::clicked, this, &App::openVacancyDescription);
-        QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
-
-        QObject::connect(&mainWindow.ignoreButton, &QPushButton::released, this, &App::onIgnoreButtonPressed);
-        QObject::connect(&mainWindow.interestButton, &QPushButton::released, this, &App::onInterestButtonPressed);
-        QObject::connect(&mainWindow.removeIgnoreButton,   &QPushButton::released, this, &App::onRemoveIgnoreButtonPressed);
-        QObject::connect(&mainWindow.removeInterestButton, &QPushButton::released, this, &App::onRemoveInterestButtonPressed);
-
-        QObject::connect(this, &App::openProgressDialog, &progressDialog, &ProgressDialog::start);
-        QObject::connect(this, &App::closeProgressDialog, &progressDialog, &ProgressDialog::accept);
-
-        QObject::connect(&resultViewOptionsPresenter.getModel().currentSortMode, &Observable<int>::valueChanged, this, &App::updateDescriptionList);
-        QObject::connect(&resultViewOptionsPresenter.getModel().currentFilterMode, &Observable<int>::valueChanged, this, &App::updateDescriptionList);
-        QObject::connect(&resultViewOptionsPresenter.getModel().filterText, &Observable<QString>::valueChanged, this, &App::updateDescriptionList);
-
-        
-        QObject::connect(&resultViewOptionsPresenter.getModel().isUnreviewedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
-        QObject::connect(&resultViewOptionsPresenter.getModel().isIgnoredVisible,    &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
-        QObject::connect(&resultViewOptionsPresenter.getModel().isInterestedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
-
-        QObject::connect(&requestManager, &RequestManager::replyError, &progressDialog, &ProgressDialog::updateError);
-
-        QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::onInterrupt);
-        QObject::connect(&progressDialog.stopButton, &QPushButton::released, parser, &HTMLparser::onInterrupt);
-
-
-        loadState();
-
-        closeVacancyDescription();
-
-        networkThread->start();
-        parserThread->start();
-    }
-
-    App::~App()
-    {
-        saveState();
-
-        networkThread->quit();
-        networkThread->wait();
-
-        parserThread->quit();
-        parserThread->wait();
-    }
-
-    void App::sendSearchRequest()
-    {
-        vacancies.clear();
-        vacanciesToShow.clear();
-        requestManager.reset();
-        parser->reset();
-
-        updateMaxVacancies();
-
-        isRequestsFinished = false;
-        isBriefsFinished = false;
-        isAllDetailsFinished = false;
-
-        keywords = queryParametersPresenter.getModel().keywords();
-        location = queryParametersPresenter.getModel().location();
-
-        qCInfo(LinkedApp) << "keywords:" << keywords << "location:" << location;
-
-        QVector<QUrl> urls;
-
-        if (maxVacancies > 10)
+        for (auto n = 0; n < maxVacancies; n += 10)
         {
-            for (auto n = 0; n < maxVacancies; n += 10)
-            {
-                QUrl url(BaseUrl);
-                QUrlQuery query;
-                query.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-                query.addQueryItem("location", QUrl::toPercentEncoding(location));
-                query.addQueryItem("start", QString::number(n));
-                url.setQuery(query);
+            QUrl url(BaseUrl);
+            QUrlQuery query;
+            query.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
+            query.addQueryItem("location", QUrl::toPercentEncoding(location));
+            query.addQueryItem("start", QString::number(n));
+            url.setQuery(query);
 
-                urls.append(url);
-            }
+            urls.append(url);
         }
-
-        QUrl url(BaseUrl);
-        QUrlQuery query;
-        query.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-        query.addQueryItem("location", QUrl::toPercentEncoding(location));
-        query.addQueryItem("start", QString::number(maxVacancies));
-        url.setQuery(query);
-        urls.append(url);
-
-        //QUrl url1(baseUrl);
-        //QUrlQuery query1;
-        //query1.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-        //query1.addQueryItem("location", QUrl::toPercentEncoding(location));
-        //query1.addQueryItem("start", QString::number(20));
-        //url1.setQuery(query1);
-        //
-        //QUrl url2(baseUrl);
-        //QUrlQuery query2;
-        //query2.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-        //query2.addQueryItem("location", QUrl::toPercentEncoding(location));
-        //query2.addQueryItem("start", QString::number(20));
-        //url2.setQuery(query2);
-        //
-        //QUrl url3(baseUrl);
-        //QUrlQuery query3;
-        //query3.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-        //query3.addQueryItem("location", QUrl::toPercentEncoding(location));
-        //query3.addQueryItem("start", QString::number(20));
-        //url3.setQuery(query3);
-        //
-        //QUrl url4(baseUrl);
-        //QUrlQuery query4;
-        //query4.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-        //query4.addQueryItem("location", QUrl::toPercentEncoding(location));
-        //query4.addQueryItem("start", QString::number(20));
-        //url4.setQuery(query4);
-        //
-        //urls.append(url1);
-        //urls.append(url2);
-        //urls.append(url3);
-        //urls.append(url4);
-
-        searchStartTime = QTime::currentTime();
-
-        qCInfo(LinkedApp) << QThread::currentThread();
-
-        emit initSearch(urls);
-        emit openProgressDialog(maxVacancies);
     }
 
-    void App::openVacancyDescription(const QModelIndex& index)
-    {
-        const int id = index.row();
-        const Vacancy& vacancy = *vacanciesToShow[id];
+    QUrl url(BaseUrl);
+    QUrlQuery query;
+    query.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
+    query.addQueryItem("location", QUrl::toPercentEncoding(location));
+    query.addQueryItem("start", QString::number(maxVacancies));
+    url.setQuery(query);
+    urls.append(url);
 
-        const VacancyStatus status = getVacancyStatus(vacancy);
-        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(status));
+    //QUrl url1(baseUrl);
+    //QUrlQuery query1;
+    //query1.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
+    //query1.addQueryItem("location", QUrl::toPercentEncoding(location));
+    //query1.addQueryItem("start", QString::number(20));
+    //url1.setQuery(query1);
+    //
+    //QUrl url2(baseUrl);
+    //QUrlQuery query2;
+    //query2.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
+    //query2.addQueryItem("location", QUrl::toPercentEncoding(location));
+    //query2.addQueryItem("start", QString::number(20));
+    //url2.setQuery(query2);
+    //
+    //QUrl url3(baseUrl);
+    //QUrlQuery query3;
+    //query3.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
+    //query3.addQueryItem("location", QUrl::toPercentEncoding(location));
+    //query3.addQueryItem("start", QString::number(20));
+    //url3.setQuery(query3);
+    //
+    //QUrl url4(baseUrl);
+    //QUrlQuery query4;
+    //query4.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
+    //query4.addQueryItem("location", QUrl::toPercentEncoding(location));
+    //query4.addQueryItem("start", QString::number(20));
+    //url4.setQuery(query4);
+    //
+    //urls.append(url1);
+    //urls.append(url2);
+    //urls.append(url3);
+    //urls.append(url4);
 
-        const QString& title = vacancy.brief.title;
-        const QString& description = vacancy.details.description;
-        const std::optional<QString>& level = vacancy.details.level;
-        const std::optional<Months>& experience = vacancy.details.experience;
-        const std::optional<QString>& industry = vacancy.details.industry;
-        const std::optional<QString>& education = vacancy.details.education;
-        const std::optional<QDate>& expirationDate = vacancy.details.expirationDate;
-        const QString& skills = vacancy.details.skills;
-        const QString& employmentType = vacancy.details.employmentType;
-        const QString& companyName = vacancy.brief.companyName;
-        const QString& companyLink = vacancy.brief.companyLink.toString();
+    searchStartTime = QTime::currentTime();
 
-        qCInfo(LinkedApp) << "Loading descrption:" << id << "." << title;
+    qCInfo(AppLog) << QThread::currentThread();
 
-        //const QString HTMLformated =  "<h1>Description:</h1>" + description +
-        //                        "<h1>Level:</h1>" + level +
-        //                        "<h1>employmentType:</h1>" + employmentType;
+    emit initSearch(urls);
+    emit openProgressDialog(maxVacancies);
+}
 
-        //QString HTMLdebug = "<h1>description</h1>" + vacancy.description +
-        //    "<h1>title</h1>" + vacancy.title +
-        //    "<h1>link</h1>" + vacancy.link.toString() +
-        //    "<h1>companyName</h1>" + vacancy.companyName +
-        //    "<h1>companyLink</h1>" + vacancy.companyLink.toString() +
-        //    "<h1>date</h1>" + vacancy.date.toString() +
-        //    "<h1>location</h1>" + vacancy.location +
-        //    "<h1>level</h1>" + vacancy.level +
-        //    "<h1>employmentType</h1>" + vacancy.employmentType;
+void App::openVacancyDescription(const QModelIndex& index)
+{
+    const int id = index.row();
+    const Vacancy& vacancy = *vacanciesToShow[id];
 
-        const QString linkPattern = "<a href='%1'>%2</a>";
+    const VacancyStatus status = getVacancyStatus(vacancy);
+    mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(status));
 
-        mainWindow.titleLabel.setText(linkPattern.arg(vacancy.brief.link.toString()).arg(title));
-        mainWindow.companyNameLabel.setText(linkPattern.arg(companyLink).arg(companyName));
+    const QString& title = vacancy.brief.title;
+    const QString& description = vacancy.details.description;
+    const std::optional<QString>& level = vacancy.details.level;
+    const std::optional<Months>& experience = vacancy.details.experience;
+    const std::optional<QString>& industry = vacancy.details.industry;
+    const std::optional<QString>& education = vacancy.details.education;
+    const std::optional<QDate>& expirationDate = vacancy.details.expirationDate;
+    const QString& skills = vacancy.details.skills;
+    const QString& employmentType = vacancy.details.employmentType;
+    const QString& companyName = vacancy.brief.companyName;
+    const QString& companyLink = vacancy.brief.companyLink.toString();
 
-        mainWindow.employmentTypeLabel.setText("Employment type: " + employmentType);
+    qCInfo(AppLog) << "Loading descrption:" << id << "." << title;
 
+    //const QString HTMLformated =  "<h1>Description:</h1>" + description +
+    //                        "<h1>Level:</h1>" + level +
+    //                        "<h1>employmentType:</h1>" + employmentType;
 
-        mainWindow.levelLabel.setVisible(level.has_value());
-        if (level) mainWindow.levelLabel.setText("Level: " + *level);
+    //QString HTMLdebug = "<h1>description</h1>" + vacancy.description +
+    //    "<h1>title</h1>" + vacancy.title +
+    //    "<h1>link</h1>" + vacancy.link.toString() +
+    //    "<h1>companyName</h1>" + vacancy.companyName +
+    //    "<h1>companyLink</h1>" + vacancy.companyLink.toString() +
+    //    "<h1>date</h1>" + vacancy.date.toString() +
+    //    "<h1>location</h1>" + vacancy.location +
+    //    "<h1>level</h1>" + vacancy.level +
+    //    "<h1>employmentType</h1>" + vacancy.employmentType;
 
-        mainWindow.experienceLabel.setVisible(experience.has_value());
-        if (experience) mainWindow.experienceLabel.setText("Experience: " + QString::number(*experience / 12.0) + " years");
+    const QString linkPattern = "<a href='%1'>%2</a>";
 
-        mainWindow.educationLabel.setVisible(education.has_value());
-        if (education) mainWindow.educationLabel.setText("Education: " + *education);
+    mainWindow.titleLabel.setText(linkPattern.arg(vacancy.brief.link.toString()).arg(title));
+    mainWindow.companyNameLabel.setText(linkPattern.arg(companyLink).arg(companyName));
 
-        mainWindow.skillsLabel.setVisible(!skills.isEmpty());
-        if (!skills.isEmpty()) mainWindow.skillsLabel.setText("Skills: " + skills);
-
-        mainWindow.industryLabel.setVisible(industry.has_value());
-        if (industry) mainWindow.industryLabel.setText("Industry: " + *industry);
-
-        mainWindow.expirationDateLabel.setVisible(expirationDate.has_value());
-        if (expirationDate) mainWindow.expirationDateLabel.setText("Expiration date: " + expirationDate->toString("dd-MM-yyyy"));
-
-        mainWindow.vacancyDesc.setHtml(description);
-    }
-
-    void App::closeVacancyDescription()
-    {
-        mainWindow.titleLabel.setText("Title");
-        mainWindow.companyNameLabel.setText("Company");
-
-        mainWindow.employmentTypeLabel.setText("Employment type");
-
-        mainWindow.levelLabel.setVisible(true);
-        mainWindow.levelLabel.setText("Level");
-
-        mainWindow.experienceLabel.setVisible(true);
-        mainWindow.experienceLabel.setText("Experience");
-
-        mainWindow.educationLabel.setVisible(true);
-        mainWindow.educationLabel.setText("Education");
-
-        mainWindow.skillsLabel.setVisible(true);
-        mainWindow.skillsLabel.setText("Skills");
-
-        mainWindow.industryLabel.setVisible(true);
-        mainWindow.industryLabel.setText("Industry");
-
-        mainWindow.expirationDateLabel.setVisible(true);
-        mainWindow.expirationDateLabel.setText("Expiration date");
+    mainWindow.employmentTypeLabel.setText("Employment type: " + employmentType);
 
 
-        mainWindow.vacancyDesc.setHtml(R"(
+    mainWindow.levelLabel.setVisible(level.has_value());
+    if (level) mainWindow.levelLabel.setText("Level: " + *level);
+
+    mainWindow.experienceLabel.setVisible(experience.has_value());
+    if (experience) mainWindow.experienceLabel.setText("Experience: " + QString::number(*experience / 12.0) + " years");
+
+    mainWindow.educationLabel.setVisible(education.has_value());
+    if (education) mainWindow.educationLabel.setText("Education: " + *education);
+
+    mainWindow.skillsLabel.setVisible(!skills.isEmpty());
+    if (!skills.isEmpty()) mainWindow.skillsLabel.setText("Skills: " + skills);
+
+    mainWindow.industryLabel.setVisible(industry.has_value());
+    if (industry) mainWindow.industryLabel.setText("Industry: " + *industry);
+
+    mainWindow.expirationDateLabel.setVisible(expirationDate.has_value());
+    if (expirationDate) mainWindow.expirationDateLabel.setText("Expiration date: " + expirationDate->toString("dd-MM-yyyy"));
+
+    mainWindow.vacancyDesc.setHtml(description);
+}
+
+void App::closeVacancyDescription()
+{
+    mainWindow.titleLabel.setText("Title");
+    mainWindow.companyNameLabel.setText("Company");
+
+    mainWindow.employmentTypeLabel.setText("Employment type");
+
+    mainWindow.levelLabel.setVisible(true);
+    mainWindow.levelLabel.setText("Level");
+
+    mainWindow.experienceLabel.setVisible(true);
+    mainWindow.experienceLabel.setText("Experience");
+
+    mainWindow.educationLabel.setVisible(true);
+    mainWindow.educationLabel.setText("Education");
+
+    mainWindow.skillsLabel.setVisible(true);
+    mainWindow.skillsLabel.setText("Skills");
+
+    mainWindow.industryLabel.setVisible(true);
+    mainWindow.industryLabel.setText("Industry");
+
+    mainWindow.expirationDateLabel.setVisible(true);
+    mainWindow.expirationDateLabel.setText("Expiration date");
+
+
+    mainWindow.vacancyDesc.setHtml(R"(
         <!DOCTYPE html>
         <html lang="en">
         <body>
@@ -301,630 +299,628 @@ namespace Linked
         </body>
         </html>)");
 
-        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
+    mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
+}
+
+void App::updateDescriptionList()
+{
+
+    mainWindow.clearList();
+
+
+    syncVacanciesToShow();
+
+    applyStatusFilter();
+
+    applyFiltering();
+
+    applySorting();
+
+    updateModelData();
+}
+
+void App::updateDescriptionListV(int temp)
+{
+    updateDescriptionList();
+}
+
+void App::updateMaxVacancies()
+{
+    maxVacancies = queryParametersPresenter.getModel().maxResults();
+    parser->setMaxVacancies(maxVacancies);
+}
+
+void App::onBriefReady(const VacancyBrief& brief)
+{
+    auto it = vacancies.find(brief.link);
+    if (it == vacancies.end())
+    {
+        vacancies.emplace(brief.link, brief);
+    }
+    else
+    {
+        Vacancy& foundVacancy = it.value();
+        foundVacancy.brief = brief;
+
+        qCDebug(AppLog) << foundVacancy;
+    }
+}
+
+void App::onDetailsReady(const VacancyDetails& details)
+{
+    auto it = vacancies.find(details.link);
+    if (it == vacancies.end())
+    {
+        vacancies.emplace(details.link, details);
+    }
+    else
+    {
+        Vacancy& foundVacancy = it.value();
+        foundVacancy.details = details;
+
+        qCDebug(AppLog) << foundVacancy;
+    }
+}
+
+void App::onBriefsFinished()
+{
+    isBriefsFinished = true;
+    updateIsAllFinished();
+}
+
+void App::onAllDetailsFinished()
+{
+    isAllDetailsFinished = true;
+    updateIsAllFinished();
+}
+
+void App::onRequestsFinished()
+{
+    isRequestsFinished = true;
+    updateIsAllFinished();
+}
+
+void App::onIgnoreButtonPressed()
+{
+    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
+    if (!vacancy)
+        return;
+
+    ignoredVacancies.insert(vacancy->get().brief.link);
+
+    updateDescriptionList();
+    mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Ignored));
+    closeVacancyDescription();
+}
+
+void App::onInterestButtonPressed()
+{
+    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
+    if (!vacancy)
+        return;
+
+    interestedVacancies.insert(vacancy->get().brief.link);
+
+    updateDescriptionList();
+    mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Interested));
+    closeVacancyDescription();
+}
+
+void App::onRemoveIgnoreButtonPressed()
+{
+    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
+    if (!vacancy)
+        return;
+
+    ignoredVacancies.remove(vacancy->get().brief.link);
+
+    updateDescriptionList();
+    mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
+    closeVacancyDescription();
+}
+
+void App::onRemoveInterestButtonPressed()
+{
+    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
+    if (!vacancy)
+        return;
+
+    interestedVacancies.remove(vacancy->get().brief.link);
+
+    updateDescriptionList();
+    mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
+    closeVacancyDescription();
+}
+
+QString App::loadTitleFromFile(const QString& path)
+{
+    QFile file(path);
+    QString ret;
+    if (file.open(QIODeviceBase::ReadOnly))
+    {
+        ret = file.readAll();
+        file.close();
+    }
+    else
+        qCWarning(AppLog) << "couldn't open " << path;
+    return ret;
+}
+
+QString App::loadDescriptionFromFile(const QString& path)
+{
+    QFile file(path);
+    QString ret;
+    if (file.open(QIODeviceBase::ReadOnly))
+    {
+        ret = file.readAll();
+        file.close();
+    }
+    else
+        qCWarning(AppLog) << "couldn't open " << path;
+    return ret;
+}
+
+QHash<QUrl, Vacancy>& App::getVacancies()
+{
+    return vacancies;
+}
+
+const QHash<QUrl, Vacancy>& App::getVacancies() const
+{
+    return vacancies;
+}
+
+const QList<const Vacancy*>& App::getVacanciestoShow() const
+{
+    return vacanciesToShow;
+}
+
+void App::syncVacanciesToShow()
+{
+    vacanciesToShow.clear();
+    for (const Vacancy& vacancy : vacancies)
+    {
+        vacanciesToShow.push_back(&vacancy);
+    }
+}
+
+void App::updateIsAllFinished()
+{
+    isAllFinished = isRequestsFinished && isBriefsFinished && isAllDetailsFinished;
+
+    if (!isAllFinished)
+    {
+        return;
     }
 
-    void App::updateDescriptionList()
+    qCInfo(AppLog) << "Time spent for" << vacancies.size() << "vacancies is" << searchStartTime.secsTo(QTime::currentTime()) << "seconds";
+
+    updateDescriptionList();
+
+    emit closeProgressDialog();
+}
+
+void App::applyStatusFilter()
+{
+    const bool isUnreviewedVisible = resultViewOptionsPresenter.getModel().isUnreviewedVisible();
+    const bool isIgnoredVisible = resultViewOptionsPresenter.getModel().isIgnoredVisible();
+    const bool isInterestedVisible = resultViewOptionsPresenter.getModel().isInterestedVisible();
+
+    // TODO: std::erase_if
+    for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end(); /* EMPTY */)
     {
+        const Vacancy& vacancy = **it;
+        const VacancyStatus status = getVacancyStatus(vacancy);
+        bool isRemoving = false;
 
-        mainWindow.clearList();
-
-
-        syncVacanciesToShow();
-
-        applyStatusFilter();
-
-        applyFiltering();
-
-        applySorting();
-
-        updateModelData();
-    }
-
-    void App::updateDescriptionListV(int temp)
-    {
-        updateDescriptionList();
-    }
-
-    void App::updateMaxVacancies()
-    {
-        maxVacancies = queryParametersPresenter.getModel().maxResults();
-        parser->setMaxVacancies(maxVacancies);
-    }
-
-    void App::onBriefReady(const VacancyBrief& brief)
-    {
-        auto it = vacancies.find(brief.link);
-        if (it == vacancies.end())
+        switch (status)
         {
-            vacancies.emplace(brief.link, brief);
-        }
-        else
-        {
-            Vacancy& foundVacancy = it.value();
-            foundVacancy.brief = brief;
-
-            qCDebug(LinkedApp) << foundVacancy;
-        }
-    }
-
-    void App::onDetailsReady(const VacancyDetails& details)
-    {
-        auto it = vacancies.find(details.link);
-        if (it == vacancies.end())
-        {
-            vacancies.emplace(details.link, details);
-        }
-        else
-        {
-            Vacancy& foundVacancy = it.value();
-            foundVacancy.details = details;
-
-            qCDebug(LinkedApp) << foundVacancy;
-        }
-    }
-
-    void App::onBriefsFinished()
-    {
-        isBriefsFinished = true;
-        updateIsAllFinished();
-    }
-
-    void App::onAllDetailsFinished()
-    {
-        isAllDetailsFinished = true;
-        updateIsAllFinished();
-    }
-
-    void App::onRequestsFinished()
-    {
-        isRequestsFinished = true;
-        updateIsAllFinished();
-    }
-
-    void App::onIgnoreButtonPressed()
-    {
-        const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-        if (!vacancy)
-            return;
-
-        ignoredVacancies.insert(vacancy->get().brief.link);
-
-        updateDescriptionList();
-        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Ignored));
-        closeVacancyDescription();
-    }
-
-    void App::onInterestButtonPressed()
-    {
-        const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-        if (!vacancy)
-            return;
-
-        interestedVacancies.insert(vacancy->get().brief.link);
-
-        updateDescriptionList();
-        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Interested));
-        closeVacancyDescription();
-    }
-
-    void App::onRemoveIgnoreButtonPressed()
-    {
-        const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-        if (!vacancy)
-            return;
-
-        ignoredVacancies.remove(vacancy->get().brief.link);
-
-        updateDescriptionList();
-        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
-        closeVacancyDescription();
-    }
-
-    void App::onRemoveInterestButtonPressed()
-    {
-        const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-        if (!vacancy)
-            return;
-
-        interestedVacancies.remove(vacancy->get().brief.link);
-
-        updateDescriptionList();
-        mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
-        closeVacancyDescription();
-    }
-
-    QString App::loadTitleFromFile(const QString& path)
-    {
-        QFile file(path);
-        QString ret;
-        if (file.open(QIODeviceBase::ReadOnly))
-        {
-            ret = file.readAll();
-            file.close();
-        }
-        else
-            qCWarning(LinkedApp) << "couldn't open " << path;
-        return ret;
-    }
-
-    QString App::loadDescriptionFromFile(const QString& path)
-    {
-        QFile file(path);
-        QString ret;
-        if (file.open(QIODeviceBase::ReadOnly))
-        {
-            ret = file.readAll();
-            file.close();
-        }
-        else
-            qCWarning(LinkedApp) << "couldn't open " << path;
-        return ret;
-    }
-
-    QHash<QUrl, Vacancy>& App::getVacancies()
-    {
-        return vacancies;
-    }
-
-    const QHash<QUrl, Vacancy>& App::getVacancies() const
-    {
-        return vacancies;
-    }
-
-    const QList<const Vacancy*>& App::getVacanciestoShow() const
-    {
-        return vacanciesToShow;
-    }
-
-    void App::syncVacanciesToShow()
-    {
-        vacanciesToShow.clear();
-        for (const Vacancy& vacancy : vacancies)
-        {
-            vacanciesToShow.push_back(&vacancy);
-        }
-    }
-
-    void App::updateIsAllFinished()
-    {
-        isAllFinished = isRequestsFinished && isBriefsFinished && isAllDetailsFinished;
-
-        if (!isAllFinished)
-        {
-            return;
-        }
-
-        qCInfo(LinkedApp) << "Time spent for" << vacancies.size() << "vacancies is" << searchStartTime.secsTo(QTime::currentTime()) << "seconds";
-
-        updateDescriptionList();
-
-        emit closeProgressDialog();
-    }
-
-    void App::applyStatusFilter()
-    {
-        const bool isUnreviewedVisible = resultViewOptionsPresenter.getModel().isUnreviewedVisible();
-        const bool isIgnoredVisible = resultViewOptionsPresenter.getModel().isIgnoredVisible();
-        const bool isInterestedVisible = resultViewOptionsPresenter.getModel().isInterestedVisible();
-
-        // TODO: std::erase_if
-        for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end(); /* EMPTY */)
-        {
-            const Vacancy& vacancy = **it;
-            const VacancyStatus status = getVacancyStatus(vacancy);
-            bool isRemoving = false;
-
-            switch (status)
+            case VacancyStatus::Ignored:
             {
-                case VacancyStatus::Ignored:
-                {
-                    isRemoving = !isIgnoredVisible;
-                    break;
-                }
-                case VacancyStatus::Interested:
-                {
-                    isRemoving = !isInterestedVisible;
-                    break;
-                }
-                case VacancyStatus::Unreviewed:
-                {
-                    isRemoving = !isUnreviewedVisible;
-                    break;
-                }
+                isRemoving = !isIgnoredVisible;
+                break;
             }
-
-            if (isRemoving)
-                it = vacanciesToShow.erase(it);
-            else
-                ++it;
-        }
-    }
-
-    void App::applyFiltering()
-    {
-        const FilterMode filterMode = static_cast<FilterMode>(resultViewOptionsPresenter.getModel().currentFilterMode());
-
-        const QString& filterText = resultViewOptionsPresenter.getModel().filterText();
-
-        QStringList filterWords = filterText.split(',');
-        if (filterWords.isEmpty()) return;
-
-        for (QString& word : filterWords)
-            word = word.trimmed();
-
-        switch (filterMode)
-        {
-            case FilterMode::Off:
+            case VacancyStatus::Interested:
             {
-                return;
+                isRemoving = !isInterestedVisible;
+                break;
             }
-            case FilterMode::Include:
+            case VacancyStatus::Unreviewed:
             {
-                // TODO: std::erase_if
-                qCDebug(LinkedApp) << "Include filter mode, filter words:" << filterWords;
-                for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end(); /* EMPTY */)
+                isRemoving = !isUnreviewedVisible;
+                break;
+            }
+        }
+
+        if (isRemoving)
+            it = vacanciesToShow.erase(it);
+        else
+            ++it;
+    }
+}
+
+void App::applyFiltering()
+{
+    const FilterMode filterMode = static_cast<FilterMode>(resultViewOptionsPresenter.getModel().currentFilterMode());
+
+    const QString& filterText = resultViewOptionsPresenter.getModel().filterText();
+
+    QStringList filterWords = filterText.split(',');
+    if (filterWords.isEmpty()) return;
+
+    for (QString& word : filterWords)
+        word = word.trimmed();
+
+    switch (filterMode)
+    {
+        case FilterMode::Off:
+        {
+            return;
+        }
+        case FilterMode::Include:
+        {
+            // TODO: std::erase_if
+            qCDebug(AppLog) << "Include filter mode, filter words:" << filterWords;
+            for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end(); /* EMPTY */)
+            {
+                const Vacancy& vacancy = **it;
+                bool isFilterOk = true;
+                for (const QString& word : filterWords)
                 {
-                    const Vacancy& vacancy = **it;
-                    bool isFilterOk = true;
-                    for (const QString& word : filterWords)
+                    if (vacancy.count(word) == 0)
                     {
-                        if (vacancy.count(word) == 0)
-                        {
-                            isFilterOk = false;
-                            break;
-                        }
+                        isFilterOk = false;
+                        break;
                     }
-
-                    if (!isFilterOk)
-                        it = vacanciesToShow.erase(it);
-                    else
-                        ++it;
                 }
-                break;
+
+                if (!isFilterOk)
+                    it = vacanciesToShow.erase(it);
+                else
+                    ++it;
             }
-            case FilterMode::Exclude:
+            break;
+        }
+        case FilterMode::Exclude:
+        {
+            // TODO: std::erase_if
+            qCDebug(AppLog) << "Exclude filter mode, filter words:" << filterWords;
+            for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end(); /* EMPTY */)
             {
-                // TODO: std::erase_if
-                qCDebug(LinkedApp) << "Exclude filter mode, filter words:" << filterWords;
-                for (auto it = vacanciesToShow.begin(); it != vacanciesToShow.end(); /* EMPTY */)
+                const Vacancy& vacancy = **it;
+                bool isFilterOk = true;
+                for (const QString& word : filterWords)
                 {
-                    const Vacancy& vacancy = **it;
-                    bool isFilterOk = true;
-                    for (const QString& word : filterWords)
+                    if (vacancy.count(word) != 0)
                     {
-                        if (vacancy.count(word) != 0)
-                        {
-                            isFilterOk = false;
-                            break;
-                        }
+                        isFilterOk = false;
+                        break;
                     }
-
-                    if (!isFilterOk)
-                        it = vacanciesToShow.erase(it);
-                    else
-                        ++it;
                 }
-                break;
+
+                if (!isFilterOk)
+                    it = vacanciesToShow.erase(it);
+                else
+                    ++it;
             }
+            break;
         }
     }
+}
 
-    void App::applySorting()
+void App::applySorting()
+{
+    const SortMode& sortMode = static_cast<SortMode>(resultViewOptionsPresenter.getModel().currentSortMode());
+
+    switch (sortMode)
     {
-        const SortMode& sortMode = static_cast<SortMode>(resultViewOptionsPresenter.getModel().currentSortMode());
-
-        switch (sortMode)
+        case SortMode::Off:
         {
-            case SortMode::Off:
-            {
-                return;
-            }
-            case SortMode::Relevance:
-            {
-                sortByRelevance();
-                break;
-            }
-            case SortMode::Title:
-            {
-                sortByTitle();
-                break;
-            }
-            case SortMode::Company:
-            {
-                sortByCompany();
-                break;
-            }
-            case SortMode::Time:
-            {
-                sortByTime();
-                break;
-            }
-            case SortMode::EmploymentType:
-            {
-                sortByEmploymentType();
-                break;
-            }
-            case SortMode::Level:
-            {
-                sortByLevel();
-                break;
-            }
-            case SortMode::Experience:
-            {
-                sortByExperience();
-                break;
-            }
-            case SortMode::Education:
-            {
-                sortByEducation();
-                break;
-            }
-            case SortMode::Skills:
-            {
-                sortBySkills();
-                break;
-            }
-            case SortMode::Industry:
-            {
-                sortByIndustry();
-                break;
-            }
-            case SortMode::ExpirationDate:
-            {
-                sortByExpirationDate();
-                break;
-            }
+            return;
+        }
+        case SortMode::Relevance:
+        {
+            sortByRelevance();
+            break;
+        }
+        case SortMode::Title:
+        {
+            sortByTitle();
+            break;
+        }
+        case SortMode::Company:
+        {
+            sortByCompany();
+            break;
+        }
+        case SortMode::Time:
+        {
+            sortByTime();
+            break;
+        }
+        case SortMode::EmploymentType:
+        {
+            sortByEmploymentType();
+            break;
+        }
+        case SortMode::Level:
+        {
+            sortByLevel();
+            break;
+        }
+        case SortMode::Experience:
+        {
+            sortByExperience();
+            break;
+        }
+        case SortMode::Education:
+        {
+            sortByEducation();
+            break;
+        }
+        case SortMode::Skills:
+        {
+            sortBySkills();
+            break;
+        }
+        case SortMode::Industry:
+        {
+            sortByIndustry();
+            break;
+        }
+        case SortMode::ExpirationDate:
+        {
+            sortByExpirationDate();
+            break;
         }
     }
+}
 
-    void App::updateModelData()
+void App::updateModelData()
+{
+    QStringList data;
+
+    for (const Vacancy* vacancy : vacanciesToShow)
     {
-        QStringList data;
+        const QString& id = QString::number(data.size() + 1);
+        const QString& title = vacancy->brief.title;
+        const QString& companyName = vacancy->brief.companyName;
+        const qsizetype& companyNameWidth = companyName.size() + 8;
+        const QString& age = QString::number(vacancy->brief.date.daysTo(QDate::currentDate()));
+        const QString& location = vacancy->brief.location;
 
-        for (const Vacancy* vacancy : vacanciesToShow)
-        {
-            const QString& id = QString::number(data.size() + 1);
-            const QString& title = vacancy->brief.title;
-            const QString& companyName = vacancy->brief.companyName;
-            const qsizetype& companyNameWidth = companyName.size() + 8;
-            const QString& age = QString::number(vacancy->brief.date.daysTo(QDate::currentDate()));
-            const QString& location = vacancy->brief.location;
-
-            data.append(QString("%1. %2\n%3\n%4\n%5 days ago")
-                        .arg(id.leftJustified(3))
-                        .arg(title)
-                        .arg(companyName)
-                        .arg(location)
-                        .arg(age));
-        }
-
-        emit updateVacanciesList(data);
+        data.append(QString("%1. %2\n%3\n%4\n%5 days ago")
+                    .arg(id.leftJustified(3))
+                    .arg(title)
+                    .arg(companyName)
+                    .arg(location)
+                    .arg(age));
     }
 
-    const unsigned& App::getMaxVacancies() const
+    emit updateVacanciesList(data);
+}
+
+const unsigned& App::getMaxVacancies() const
+{
+    return maxVacancies;
+}
+
+void App::sortByRelevance()
+{
+    qCDebug(AppLog) << "Sorting by relevance";
+
+    auto compareByRelevance = [&](const Vacancy* left, const Vacancy* right)
     {
-        return maxVacancies;
-    }
+        return left->count(keywords) > right->count(keywords);
+    };
 
-    void App::sortByRelevance()
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByRelevance);
+}
+
+void App::sortByTitle()
+{
+    qCDebug(AppLog) << "Sorting by title";
+
+    auto compareByTitle = [](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "Sorting by relevance";
+        return left->brief.title < right->brief.title;
+    };
 
-        auto compareByRelevance = [&](const Vacancy* left, const Vacancy* right)
-        {
-            return left->count(keywords) > right->count(keywords);
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTitle);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByRelevance);
-    }
+void App::sortByCompany()
+{
+    qCDebug(AppLog) << "Sorting by company";
 
-    void App::sortByTitle()
+    auto compareByCompany = [](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "Sorting by title";
+        return left->brief.companyName < right->brief.companyName;
+    };
 
-        auto compareByTitle = [](const Vacancy* left, const Vacancy* right)
-        {
-            return left->brief.title < right->brief.title;
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByCompany);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTitle);
-    }
+void App::sortByTime()
+{
+    qCDebug(AppLog) << "Sorting by time";
 
-    void App::sortByCompany()
+    auto compareByTime = [](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "Sorting by company";
+        return left->brief.date > right->brief.date;
+    };
 
-        auto compareByCompany = [](const Vacancy* left, const Vacancy* right)
-        {
-            return left->brief.companyName < right->brief.companyName;
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTime);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByCompany);
-    }
-
-    void App::sortByTime()
+void App::sortByEmploymentType()
+{
+    qCDebug(AppLog) << "sorting by Employment Type";
+    auto compareByEmploymentType = [](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "Sorting by time";
+        return left->details.employmentType > right->details.employmentType;
+    };
 
-        auto compareByTime = [](const Vacancy* left, const Vacancy* right)
-        {
-            return left->brief.date > right->brief.date;
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByEmploymentType);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTime);
-    }
+void App::sortByLevel()
+{
+    qCDebug(AppLog) << "Sorting by level";
 
-    void App::sortByEmploymentType()
+    auto compareByLevel = [&](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "sorting by Employment Type";
-        auto compareByEmploymentType = [](const Vacancy* left, const Vacancy* right)
-        {
-            return left->details.employmentType > right->details.employmentType;
-        };
+        if (!left->details.level.has_value()) return false;
+        if (!right->details.level.has_value()) return true;
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByEmploymentType);
-    }
+        return left->details.level < right->details.level;
+    };
 
-    void App::sortByLevel()
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByLevel);
+}
+
+void App::sortByExperience()
+{
+    qCDebug(AppLog) << "Sorting by experience";
+
+    auto compareByExperience = [&](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "Sorting by level";
+        if (!left->details.experience.has_value()) return false;
+        if (!right->details.experience.has_value()) return true;
 
-        auto compareByLevel = [&](const Vacancy* left, const Vacancy* right)
-        {
-            if (!left->details.level.has_value()) return false;
-            if (!right->details.level.has_value()) return true;
+        return left->details.experience < right->details.experience;
+    };
 
-            return left->details.level < right->details.level;
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByExperience);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByLevel);
-    }
+void App::sortByEducation()
+{
+    qCDebug(AppLog) << "Sorting by education";
 
-    void App::sortByExperience()
+    auto compareByEducation = [&](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "Sorting by experience";
+        if (!left->details.education.has_value()) return false;
+        if (!right->details.education.has_value()) return true;
 
-        auto compareByExperience = [&](const Vacancy* left, const Vacancy* right)
-        {
-            if (!left->details.experience.has_value()) return false;
-            if (!right->details.experience.has_value()) return true;
+        return left->details.education < right->details.education;
+    };
 
-            return left->details.experience < right->details.experience;
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByEducation);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByExperience);
-    }
+void App::sortBySkills()
+{
+    qCDebug(AppLog) << "Sorting by skills";
 
-    void App::sortByEducation()
+    auto compareBySkills = [&](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "Sorting by education";
+        if (left->details.skills.isEmpty()) return false;
+        if (right->details.skills.isEmpty()) return true;
 
-        auto compareByEducation = [&](const Vacancy* left, const Vacancy* right)
-        {
-            if (!left->details.education.has_value()) return false;
-            if (!right->details.education.has_value()) return true;
+        return left->details.skills < right->details.skills;
+    };
 
-            return left->details.education < right->details.education;
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareBySkills);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByEducation);
-    }
+void App::sortByIndustry()
+{
+    qCDebug(AppLog) << "sorting by industry";
 
-    void App::sortBySkills()
+    auto compareByIndustry = [&](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "Sorting by skills";
+        if (!left->details.industry.has_value()) return false;
+        if (!right->details.industry.has_value()) return true;
 
-        auto compareBySkills = [&](const Vacancy* left, const Vacancy* right)
-        {
-            if (left->details.skills.isEmpty()) return false;
-            if (right->details.skills.isEmpty()) return true;
+        return left->details.industry < right->details.industry;
+    };
 
-            return left->details.skills < right->details.skills;
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByIndustry);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareBySkills);
-    }
+void App::sortByExpirationDate()
+{
+    qCDebug(AppLog) << "sorting by Relevance";
 
-    void App::sortByIndustry()
+    auto compareByExpirationDate = [&](const Vacancy* left, const Vacancy* right)
     {
-        qCDebug(LinkedApp) << "sorting by industry";
+        if (!left->details.expirationDate.has_value()) return false;
+        if (!right->details.expirationDate.has_value()) return true;
 
-        auto compareByIndustry = [&](const Vacancy* left, const Vacancy* right)
-        {
-            if (!left->details.industry.has_value()) return false;
-            if (!right->details.industry.has_value()) return true;
+        return left->details.expirationDate < right->details.expirationDate;
+    };
 
-            return left->details.industry < right->details.industry;
-        };
+    std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByExpirationDate);
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByIndustry);
-    }
+std::optional<App::constVacancyRef> App::getCurrentVacancy() const
+{
+    const QModelIndex& index = mainWindow.vacanciesList.currentIndex();
 
-    void App::sortByExpirationDate()
-    {
-        qCDebug(LinkedApp) << "sorting by Relevance";
+    if (!index.isValid())
+        return std::nullopt;
 
-        auto compareByExpirationDate = [&](const Vacancy* left, const Vacancy* right)
-        {
-            if (!left->details.expirationDate.has_value()) return false;
-            if (!right->details.expirationDate.has_value()) return true;
+    const int id = index.row();
 
-            return left->details.expirationDate < right->details.expirationDate;
-        };
+    return *vacanciesToShow[id];
+}
 
-        std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByExpirationDate);
-    }
+VacancyStatus App::getVacancyStatus(const Vacancy& vacancy)
+{
+    const QUrl& url = vacancy.brief.link;
 
-    std::optional<App::constVacancyRef> App::getCurrentVacancy() const
-    {
-        const QModelIndex& index = mainWindow.vacanciesList.currentIndex();
+    if (interestedVacancies.contains(url))
+        return VacancyStatus::Interested;
 
-        if (!index.isValid())
-            return std::nullopt;
+    if (ignoredVacancies.contains(url))
+        return VacancyStatus::Ignored;
 
-        const int id = index.row();
+    return VacancyStatus::Unreviewed;
+}
 
-        return *vacanciesToShow[id];
-    }
+void App::saveState()
+{
+    state.setIgnored(ignoredVacancies);
+    state.setInterested(interestedVacancies);
 
-    VacancyStatus App::getVacancyStatus(const Vacancy& vacancy)
-    {
-        const QUrl& url = vacancy.brief.link;
+    state.setKeywords(queryParametersPresenter.getModel().keywords());
+    state.setLocation(queryParametersPresenter.getModel().location());
 
-        if (interestedVacancies.contains(url))
-            return VacancyStatus::Interested;
+    state.setLimit(queryParametersPresenter.getModel().maxResults());
 
-        if (ignoredVacancies.contains(url))
-            return VacancyStatus::Ignored;
+    state.setFilterMode(resultViewOptionsPresenter.getModel().currentFilterMode());
+    state.setFilters(resultViewOptionsPresenter.getModel().filterText());
 
-        return VacancyStatus::Unreviewed;
-    }
+    state.setSortMode(resultViewOptionsPresenter.getModel().currentSortMode());
 
-    void App::saveState()
-    {
-        state.setIgnored(ignoredVacancies);
-        state.setInterested(interestedVacancies);
-
-        state.setKeywords(queryParametersPresenter.getModel().keywords());
-        state.setLocation(queryParametersPresenter.getModel().location());
-
-        state.setLimit(queryParametersPresenter.getModel().maxResults());
-
-        state.setFilterMode(resultViewOptionsPresenter.getModel().currentFilterMode());
-        state.setFilters(resultViewOptionsPresenter.getModel().filterText());
-
-        state.setSortMode(resultViewOptionsPresenter.getModel().currentSortMode());
-
-        state.setIsUnreviewedVisible(resultViewOptionsPresenter.getModel().isUnreviewedVisible());
-        state.setIsIgnoredVisible(resultViewOptionsPresenter.getModel().isIgnoredVisible());
-        state.setIsInterestedVisible(resultViewOptionsPresenter.getModel().isInterestedVisible());
+    state.setIsUnreviewedVisible(resultViewOptionsPresenter.getModel().isUnreviewedVisible());
+    state.setIsIgnoredVisible(resultViewOptionsPresenter.getModel().isIgnoredVisible());
+    state.setIsInterestedVisible(resultViewOptionsPresenter.getModel().isInterestedVisible());
 
 
-        state.saveState();
-    }
+    state.saveState();
+}
 
-    void App::loadState()
-    {
-        state.loadState();
+void App::loadState()
+{
+    state.loadState();
 
-        ignoredVacancies = state.getIgnored();
-        interestedVacancies = state.getInterested();
+    ignoredVacancies = state.getIgnored();
+    interestedVacancies = state.getInterested();
 
-        queryParametersPresenter.getModel().keywords = state.getKeywords();
-        queryParametersPresenter.getModel().location = state.getLocation();
+    queryParametersPresenter.getModel().keywords = state.getKeywords();
+    queryParametersPresenter.getModel().location = state.getLocation();
 
-        queryParametersPresenter.getModel().maxResults = state.getLimit();
+    queryParametersPresenter.getModel().maxResults = state.getLimit();
 
-        resultViewOptionsPresenter.getModel().currentFilterMode = state.getFilterMode();
-        resultViewOptionsPresenter.getModel().filterText = state.getFilters();
+    resultViewOptionsPresenter.getModel().currentFilterMode = state.getFilterMode();
+    resultViewOptionsPresenter.getModel().filterText = state.getFilters();
 
-        resultViewOptionsPresenter.getModel().currentSortMode = state.getSortMode();
+    resultViewOptionsPresenter.getModel().currentSortMode = state.getSortMode();
 
 
-        resultViewOptionsPresenter.getModel().isUnreviewedVisible = state.getIsUnreviewedVisible();
-        resultViewOptionsPresenter.getModel().isIgnoredVisible = state.getIsIgnoredVisible();
-        resultViewOptionsPresenter.getModel().isInterestedVisible = state.getIsInterestedVisible();
-    }
-
-} // namespace Linked
+    resultViewOptionsPresenter.getModel().isUnreviewedVisible = state.getIsUnreviewedVisible();
+    resultViewOptionsPresenter.getModel().isIgnoredVisible = state.getIsIgnoredVisible();
+    resultViewOptionsPresenter.getModel().isInterestedVisible = state.getIsInterestedVisible();
+}

@@ -13,31 +13,29 @@
 #include "../model/VacancyBrief.h"
 #include "../model/VacancyDetails.h"
 
-namespace Linked
+
+class ProgressDialog : public QDialog
 {
-    class ProgressDialog : public QDialog
-    {
-    public:
-        ProgressDialog(QWidget *parent);
-        ~ProgressDialog() = default;
+public:
+    ProgressDialog(QWidget* parent);
+    ~ProgressDialog() = default;
 
-    public slots:
-        void updateBrief(const VacancyBrief& brief);
-        void updateDetails(const VacancyDetails& details);
-        void updateError(QNetworkReply::NetworkError);
-        void start(const unsigned& maxVacancies);
+public slots:
+    void updateBrief(const VacancyBrief& brief);
+    void updateDetails(const VacancyDetails& details);
+    void updateError(QNetworkReply::NetworkError);
+    void start(const unsigned& maxVacancies);
 
-    public:
-        QPushButton& stopButton;
+public:
+    QPushButton& stopButton;
 
-    private:
-        QLabel& briefLabel;
-        QProgressBar& briefsProgressBar;
+private:
+    QLabel& briefLabel;
+    QProgressBar& briefsProgressBar;
 
 
-        QLabel& detailsLabel;
-        QProgressBar& allDetailsProgressBar;
+    QLabel& detailsLabel;
+    QProgressBar& allDetailsProgressBar;
 
-        QLabel& errorLabel;
-    };
-} // namespace Linked
+    QLabel& errorLabel;
+};

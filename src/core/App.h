@@ -22,129 +22,125 @@ class HTMLparser;
 class QueryParametersPresenter;
 class ResultViewOptionsPresenter;
 
-namespace Linked
+Q_DECLARE_LOGGING_CATEGORY(AppLog);
+
+class ProgressDialog;
+
+// TODO: current App workflow is a mess, need to create AppController or smth
+
+class App : public QObject
 {
-    Q_DECLARE_LOGGING_CATEGORY(LinkedApp);
+    Q_OBJECT
 
-    class ProgressDialog;
+public:
+    App(QObject* parent = nullptr);
+    ~App();
 
-    // TODO: current App workflow is a mess, need to create AppController or smth
+public:
+    using constVacancyRef = std::reference_wrapper<const Vacancy>;
 
-    class App : public QObject
-    {
-        Q_OBJECT
+public:
+    QHash<QUrl, Vacancy>& getVacancies();
+    const QHash<QUrl, Vacancy>& getVacancies() const;
+    const QList<const Vacancy*>& getVacanciestoShow() const;
+    const unsigned& getMaxVacancies() const;
 
-    public:
-        App(QObject* parent = nullptr);
-        ~App();
+public:
+    QString loadTitleFromFile(const QString& path);
+    QString loadDescriptionFromFile(const QString& path);
 
-    public:
-        using constVacancyRef = std::reference_wrapper<const Vacancy>;
+public slots:
+    void sendSearchRequest();
+    void openVacancyDescription(const QModelIndex&);
+    void closeVacancyDescription();
 
-    public:
-        QHash<QUrl, Vacancy>& getVacancies();
-        const QHash<QUrl, Vacancy>& getVacancies() const;
-        const QList<const Vacancy*>& getVacanciestoShow() const;
-        const unsigned& getMaxVacancies() const;
+    void updateDescriptionList();
+    void updateDescriptionListV(int temp = 0);
 
-    public:
-        QString loadTitleFromFile(const QString& path);
-        QString loadDescriptionFromFile(const QString& path);
+    void updateMaxVacancies();
 
-    public slots:
-        void sendSearchRequest();
-        void openVacancyDescription(const QModelIndex&);
-        void closeVacancyDescription();
+    void onBriefReady(const VacancyBrief& brief);
+    void onDetailsReady(const VacancyDetails& details);
 
-        void updateDescriptionList();
-        void updateDescriptionListV(int temp = 0);
+    void onBriefsFinished();
+    void onAllDetailsFinished();
+    void onRequestsFinished();
 
-        void updateMaxVacancies();
+    void onIgnoreButtonPressed();
+    void onInterestButtonPressed();
+    void onRemoveIgnoreButtonPressed();
+    void onRemoveInterestButtonPressed();
 
-        void onBriefReady(const VacancyBrief& brief);
-        void onDetailsReady(const VacancyDetails& details);
+signals:
+    void initSearch(const QVector<QUrl>& urls);
+    void updateVacanciesList(const QStringList& data);
 
-        void onBriefsFinished();
-        void onAllDetailsFinished();
-        void onRequestsFinished();
+    void openProgressDialog(const unsigned& maxVacancies);
+    void closeProgressDialog();
 
-        void onIgnoreButtonPressed();
-        void onInterestButtonPressed();
-        void onRemoveIgnoreButtonPressed();
-        void onRemoveInterestButtonPressed();
+protected:
+    void syncVacanciesToShow();
 
-    signals:
-        void initSearch(const QVector<QUrl>& urls);
-        void updateVacanciesList(const QStringList& data);
+    void updateIsAllFinished();
 
-        void openProgressDialog(const unsigned& maxVacancies);
-        void closeProgressDialog();
-
-    protected:
-        void syncVacanciesToShow();
-
-        void updateIsAllFinished();
-
-        void applyStatusFilter();
-        void applyFiltering();
-        void applySorting();
-        void updateModelData();
+    void applyStatusFilter();
+    void applyFiltering();
+    void applySorting();
+    void updateModelData();
 
 
-        void sortByRelevance();
-        void sortByTitle();
-        void sortByCompany();
-        void sortByTime();
-        void sortByEmploymentType();
-        void sortByLevel();
-        void sortByExperience();
-        void sortByEducation();
-        void sortBySkills();
-        void sortByIndustry();
-        void sortByExpirationDate();
+    void sortByRelevance();
+    void sortByTitle();
+    void sortByCompany();
+    void sortByTime();
+    void sortByEmploymentType();
+    void sortByLevel();
+    void sortByExperience();
+    void sortByEducation();
+    void sortBySkills();
+    void sortByIndustry();
+    void sortByExpirationDate();
 
-        std::optional<constVacancyRef> getCurrentVacancy() const;
+    std::optional<constVacancyRef> getCurrentVacancy() const;
 
-        VacancyStatus getVacancyStatus(const Vacancy& vacancy);
+    VacancyStatus getVacancyStatus(const Vacancy& vacancy);
 
-    protected:
-        void saveState();
-        void loadState();
+protected:
+    void saveState();
+    void loadState();
 
-    private:
-        QueryParametersPresenter& queryParametersPresenter;
-        ResultViewOptionsPresenter& resultViewOptionsPresenter;
+private:
+    QueryParametersPresenter& queryParametersPresenter;
+    ResultViewOptionsPresenter& resultViewOptionsPresenter;
 
-    private:
-        MainWindow& mainWindow;
-        ProgressDialog& progressDialog;
+private:
+    MainWindow& mainWindow;
+    ProgressDialog& progressDialog;
 
-        RequestManager& requestManager;
-        QThread* networkThread = nullptr;   // TODO: why is it pointers?
- 
-        HTMLparser* parser = nullptr;       // TODO: why is it pointers?
-        QThread* parserThread = nullptr;    // TODO: why is it pointers?
+    RequestManager& requestManager;
+    QThread* networkThread = nullptr;   // TODO: why is it pointers?
 
-        AppState state;
+    HTMLparser* parser = nullptr;       // TODO: why is it pointers?
+    QThread* parserThread = nullptr;    // TODO: why is it pointers?
 
-        QHash<QUrl, Vacancy> vacancies;
-        QVector<const Vacancy*> vacanciesToShow;
+    AppState state;
 
-        QSet<QUrl> ignoredVacancies;
-        QSet<QUrl> interestedVacancies;
+    QHash<QUrl, Vacancy> vacancies;
+    QVector<const Vacancy*> vacanciesToShow;
 
-        QString keywords;
-        QString location;
+    QSet<QUrl> ignoredVacancies;
+    QSet<QUrl> interestedVacancies;
 
-        unsigned maxVacancies;
+    QString keywords;
+    QString location;
 
-        QTime searchStartTime;
+    unsigned maxVacancies;
 
-        bool isRequestsFinished;
-        bool isBriefsFinished;
-        bool isAllDetailsFinished;
+    QTime searchStartTime;
 
-        bool isAllFinished;
-    };
+    bool isRequestsFinished;
+    bool isBriefsFinished;
+    bool isAllDetailsFinished;
 
-} // namespace Linked
+    bool isAllFinished;
+};

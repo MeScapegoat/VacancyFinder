@@ -25,10 +25,10 @@ int main(int argc, char *argv[])
     //application.setStyle("windows"); // ???
 
     QString logRulesPath("log_rules.ini");
-    Linked::Logger logger;
+    Logger logger;
     logger.setLogRulesPath(logRulesPath);
 
-    Linked::App app;
+    App app;
 
     return application.exec();
 }
