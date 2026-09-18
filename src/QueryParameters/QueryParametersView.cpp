@@ -1,0 +1,49 @@
+#include "QueryParametersView.h"
+
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QSignalBlocker>
+#include <QSpinBox>
+
+QueryParametersView::QueryParametersView(QWidget* parent) :
+    QWidget(parent),
+    keywordsInput(*new QLineEdit),
+    locationInput(*new QLineEdit),
+    maxResultsInput(*new QSpinBox),
+    searchButton(*new QPushButton)
+{
+    QHBoxLayout& mainLayout = *new QHBoxLayout;
+
+
+    QLabel& keywordsLabel = *new QLabel(tr("Keywords:"));
+    QLabel& locationLabel = *new QLabel(tr("Location:"));
+    QLabel& maxResultsLabel = *new QLabel(tr("Max amount of processed vacancies:"));
+    maxResultsInput.setRange(1, 999);
+    searchButton.setText(tr("Search"));
+
+
+    mainLayout.addWidget(&keywordsLabel);
+    mainLayout.addWidget(&keywordsInput);
+
+    mainLayout.addWidget(&locationLabel);
+    mainLayout.addWidget(&locationInput);
+
+    mainLayout.addWidget(&maxResultsLabel);
+    mainLayout.addWidget(&maxResultsInput);
+
+    mainLayout.addWidget(&searchButton);
+
+    setLayout(&mainLayout);
+}
+
+QWidget& QueryParametersView::widget()
+{
+    return *this;
+}
+
+const QWidget& QueryParametersView::widget() const
+{
+    return *this;
+}

@@ -1,0 +1,61 @@
+#include "QueryParametersPresenter.h"
+
+#include <QDebug>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QSpinBox>
+
+
+Q_LOGGING_CATEGORY(QPP, "queryParameters.presenter");
+
+
+QueryParametersPresenter::QueryParametersPresenter(QObject* parent) :
+    Presenter(parent)
+{
+    qCDebug(QPP) << __FUNCTION__;
+
+    const QueryParametersModel& model = getModel();
+    const QueryParametersView& view = getView();
+
+    connect(&view.maxResultsInput, &QSpinBox::valueChanged, &model.maxResults, &Observable<int>::setValue);
+    connect(&model.maxResults, &Observable<int>::valueChanged, this, &QueryParametersPresenter::onMaxResultsChanged);
+
+    connect(&view.keywordsInput, &QLineEdit::textEdited, &model.keywords, &Observable<QString>::setValue);
+    connect(&model.keywords, &Observable<QString>::valueChanged, this, &QueryParametersPresenter::onKeywordsChanged);
+
+    connect(&view.locationInput, &QLineEdit::textEdited, &model.location, &Observable<QString>::setValue);
+    connect(&model.location, &Observable<QString>::valueChanged, this, &QueryParametersPresenter::onLocationChanged);
+
+    connect(&view.searchButton, &QPushButton::released, this, &QueryParametersPresenter::searchRequested);
+}
+
+void QueryParametersPresenter::onMaxResultsChanged()
+{
+    qCDebug(QPP) << __FUNCTION__;
+
+    const QueryParametersModel& model = getModel();
+    const QueryParametersView& view = getView();
+
+    QSignalBlocker blocker(view.maxResultsInput);
+    view.maxResultsInput.setValue(model.maxResults());
+}
+
+void QueryParametersPresenter::onKeywordsChanged()
+{
+    qCDebug(QPP) << __FUNCTION__;
+
+    const QueryParametersModel& model = getModel();
+    const QueryParametersView& view = getView();
+
+    view.keywordsInput.setText(model.keywords());
+}
+
+void QueryParametersPresenter::onLocationChanged()
+{
+    qCDebug(QPP) << __FUNCTION__;
+
+    const QueryParametersModel& model = getModel();
+    const QueryParametersView& view = getView();
+
+    view.locationInput.setText(model.location());
+}
