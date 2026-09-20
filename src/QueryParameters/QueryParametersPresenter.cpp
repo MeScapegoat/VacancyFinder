@@ -27,6 +27,10 @@ QueryParametersPresenter::QueryParametersPresenter(QObject* parent) :
     connect(&model.location, &Observable<QString>::valueChanged, this, &QueryParametersPresenter::onLocationChanged);
 
     connect(&view.searchButton, &QPushButton::released, this, &QueryParametersPresenter::searchRequested);
+
+    connect(&view.searchInterestedButton, &QPushButton::released, this, &QueryParametersPresenter::loadInterestedRequested);
+
+    connect(&view.resetButton, &QPushButton::released, this, &QueryParametersPresenter::resetRequested);
 }
 
 void QueryParametersPresenter::onMaxResultsChanged()

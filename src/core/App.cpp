@@ -54,10 +54,10 @@ App::App(QObject* parent) :
 
     // Query Parameters
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
+    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::loadInterestedRequested, this, &App::loadInterested);
+    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::resetRequested, this, &App::reset);
 
     QueryParametersModel& QPModel = queryParametersPresenter.getModel();
-
-    QObject::connect(&QPModel.maxResults, &Observable<int>::valueChanged, this, &App::updateMaxVacancies);
 
 
     // Result View Options
@@ -135,14 +135,27 @@ App::~App()
     parserThread->wait();
 }
 
-void App::sendSearchRequest()
+void App::reset()
 {
     vacancies.clear();
     vacanciesToShow.clear();
     requestManager.reset();
     parser->reset();
+}
 
-    updateMaxVacancies();
+void App::loadInterested()
+{
+    updateMaxVacancies(interestedVacancies.size());
+
+    searchStartTime = QTime::currentTime();
+
+    emit initSearch(interestedVacancies.values().toVector());
+    emit openProgressDialog(maxVacancies);
+}
+
+void App::sendSearchRequest()
+{    
+    updateMaxVacancies(queryParametersPresenter.getModel().maxResults());
 
     isRequestsFinished = false;
     isBriefsFinished = false;
@@ -179,8 +192,6 @@ void App::sendSearchRequest()
     urls.append(url);
 
     searchStartTime = QTime::currentTime();
-
-    qCInfo(AppLog) << QThread::currentThread();
 
     emit initSearch(urls);
     emit openProgressDialog(maxVacancies);
@@ -293,14 +304,9 @@ void App::updateDescriptionList()
     updateModelData();
 }
 
-void App::updateDescriptionListV(int temp)
+void App::updateMaxVacancies(const int maxVacancies_)
 {
-    updateDescriptionList();
-}
-
-void App::updateMaxVacancies()
-{
-    maxVacancies = queryParametersPresenter.getModel().maxResults();
+    maxVacancies = maxVacancies_;
     parser->setMaxVacancies(maxVacancies);
 }
 
@@ -655,7 +661,7 @@ void App::updateModelData()
     QStringList data;
 
     for (const Vacancy* vacancy : vacanciesToShow)
-    {
+    {                            
         const QString& id = QString::number(data.size() + 1);
         const QString& title = vacancy->title;
         const QString& companyName = vacancy->companyName;

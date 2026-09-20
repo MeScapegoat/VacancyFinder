@@ -26,4 +26,6 @@ public:
     QSpinBox& maxResultsInput;
 
     QPushButton& searchButton;
+    QPushButton& searchInterestedButton;
+    QPushButton& resetButton;
 };

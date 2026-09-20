@@ -22,6 +22,8 @@ public:
 
 signals:
     void searchRequested();
+    void loadInterestedRequested();
+    void resetRequested();
 
 private slots:
     void onMaxResultsChanged();

@@ -49,14 +49,16 @@ public:
     QString loadDescriptionFromFile(const QString& path);
 
 public slots:
+    void reset();
+    void loadInterested();
+
     void sendSearchRequest();
     void openVacancyDescription(const QModelIndex&);
     void closeVacancyDescription();
 
     void updateDescriptionList();
-    void updateDescriptionListV(int temp = 0);
 
-    void updateMaxVacancies();
+    void updateMaxVacancies(const int maxVacancies);
 
     void onBriefReady(const Vacancy& brief);
     void onDetailsReady(const Vacancy& details);

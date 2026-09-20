@@ -367,30 +367,31 @@ Vacancy HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& ur
 
     static constexpr const char* descriptionTypeFieldName = "description";
 
-    //vacancy.title;
-    //vacancy.link;
-    //vacancy.companyName;
-    //vacancy.companyLink;
-    //vacancy.location;
-    //vacancy.date;
 
     Vacancy vacancy;
 
     vacancy.id = processedDetails.size();
+
+    vacancy.title = object[titleFieldName].toString();
     vacancy.link = url;
+
+    vacancy.companyName = object[organizationFieldName][organizationNameFieldName].toString();
+    vacancy.companyLink = object[organizationFieldName][organizationLinkFieldName].toString();
+
+    vacancy.location = object[locationFieldName][locationAddressFieldName][locationAddressLocalityFieldName].toString();
+
     vacancy.employmentType = object[employmentTypeFieldName].toString();
     vacancy.skills = object[skillsFieldName].toString();
+
     vacancy.description = object[descriptionTypeFieldName].toString();
 
+    vacancy.date = QDate::fromString(object[dateFieldName].toString(), Qt::ISODate);
 
     vacancy.industry = object[industryFieldName].toString();
+    //vacancy.level;
     vacancy.experience = object[experienceFieldName][experienceMonthsFieldName].toInt();
     vacancy.education = object[educationFieldName][educationCategoryFieldName].toString();
     vacancy.expirationDate = QDate::fromString(object[expirationDateFieldName].toString(), Qt::ISODate);;
-
-    //vacancy.companyLink = object[organizationFieldName][organizationLinkFieldName].toString();
-    //vacancy.location = object[locationFieldName][locationAddressFieldName][locationAddressLocalityFieldName].toString();
-    //vacancy.date = QDate::fromString(object[dateFieldName].toString(), Qt::ISODate);
     
     static constexpr const char* typeFieldName = "@type";
 
@@ -433,7 +434,9 @@ Vacancy HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
 
     static constexpr const char* jobCriteriaPattern = R"REGEX(<span\b[^>]*class="description__job-criteria-text[^"]*description__job-criteria-text--criteria[^"]*"[^>]*>(.*?)</span>)REGEX";
 
-    const QStringList jobCriteriaList = extractAll(html, jobCriteriaPattern); // TODO: check for list size before assignment
+    //static constexpr const char* isClosedJobStr = "closed-job";
+
+    const QStringList jobCriteriaList = extractAll(html, jobCriteriaPattern);
 
     if (jobCriteriaList.size() > 4)
     {
@@ -451,23 +454,25 @@ Vacancy HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
     Vacancy vacancy;
 
     vacancy.id = processedDetails.size();
+
+    vacancy.title = extract(html, titlePattern);
     vacancy.link = url;
 
-    if (jobCriteriaList.size() > 1) vacancy.employmentType = jobCriteriaList[1];
-    vacancy.description = extract(html, descriptionPattern);
+    vacancy.companyName = extract(html, companyNamePattern);
+    vacancy.companyLink = extract(html, companyLinkPattern);
+    vacancy.companyLink.setQuery(QString());
 
+    vacancy.location = extract(html, locationPattern);
+
+    if (jobCriteriaList.size() > 1) vacancy.employmentType = jobCriteriaList[1];
+    //skills;
+    vacancy.description = extract(html, descriptionPattern);
+    //date;
     if (jobCriteriaList.size() > 3) vacancy.industry = jobCriteriaList[3];
     if (jobCriteriaList.size() > 0) vacancy.level = jobCriteriaList[0];
-    //vacancy.link = extract(html, linkPattern);
-    //vacancy.link.setQuery(QString());
-
-    
-    //vacancy.companyLink = extract(html, companyLinkPattern);
-    //vacancy.companyLink.setQuery(QString());
-
-    //vacancy.location = extract(html, locationPattern);
-    
-    
+    //experience;
+    //education;
+    //expirationDate;
 
     QList<QStringList> lists;
     lists.append(extractAll(html, descriptionPattern));

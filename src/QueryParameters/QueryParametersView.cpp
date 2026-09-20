@@ -12,7 +12,9 @@ QueryParametersView::QueryParametersView(QWidget* parent) :
     keywordsInput(*new QLineEdit),
     locationInput(*new QLineEdit),
     maxResultsInput(*new QSpinBox),
-    searchButton(*new QPushButton)
+    searchButton(*new QPushButton),
+    searchInterestedButton(*new QPushButton),
+    resetButton(*new QPushButton)
 {
     QHBoxLayout& mainLayout = *new QHBoxLayout;
 
@@ -22,6 +24,8 @@ QueryParametersView::QueryParametersView(QWidget* parent) :
     QLabel& maxResultsLabel = *new QLabel(tr("Max amount of processed vacancies:"));
     maxResultsInput.setRange(1, 999);
     searchButton.setText(tr("Search"));
+    searchInterestedButton.setText(tr("Load interested"));
+    resetButton.setText(tr("Reset"));
 
 
     mainLayout.addWidget(&keywordsLabel);
@@ -34,6 +38,8 @@ QueryParametersView::QueryParametersView(QWidget* parent) :
     mainLayout.addWidget(&maxResultsInput);
 
     mainLayout.addWidget(&searchButton);
+    mainLayout.addWidget(&searchInterestedButton);
+    mainLayout.addWidget(&resetButton);
 
     setLayout(&mainLayout);
 }
