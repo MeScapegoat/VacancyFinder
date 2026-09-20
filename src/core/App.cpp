@@ -16,7 +16,7 @@
 
 
 #include "../network/RequestManager.h"
-
+#include "../model/Vacancy.h"
 #include "../gui/ProgressDialog.h"
 
 #include "../QueryParameters/QueryParametersPresenter.h"
@@ -194,23 +194,23 @@ void App::openVacancyDescription(const QModelIndex& index)
     const VacancyStatus status = getVacancyStatus(vacancy);
     mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(status));
 
-    const QString& title = vacancy.brief.title;
-    const QString& description = vacancy.details.description;
-    const std::optional<QString>& level = vacancy.details.level;
-    const std::optional<Months>& experience = vacancy.details.experience;
-    const std::optional<QString>& industry = vacancy.details.industry;
-    const std::optional<QString>& education = vacancy.details.education;
-    const std::optional<QDate>& expirationDate = vacancy.details.expirationDate;
-    const QString& skills = vacancy.details.skills;
-    const QString& employmentType = vacancy.details.employmentType;
-    const QString& companyName = vacancy.brief.companyName;
-    const QString& companyLink = vacancy.brief.companyLink.toString();
+    const QString& title = vacancy.title;
+    const QString& description = vacancy.description;
+    const std::optional<QString>& level = vacancy.level;
+    const std::optional<Months>& experience = vacancy.experience;
+    const std::optional<QString>& industry = vacancy.industry;
+    const std::optional<QString>& education = vacancy.education;
+    const std::optional<QDate>& expirationDate = vacancy.expirationDate;
+    const QString& skills = vacancy.skills;
+    const QString& employmentType = vacancy.employmentType;
+    const QString& companyName = vacancy.companyName;
+    const QString& companyLink = vacancy.companyLink.toString();
 
     qCInfo(AppLog) << "Loading descrption:" << id << "." << title;
 
     const QString linkPattern = "<a href='%1'>%2</a>";
 
-    mainWindow.titleLabel.setText(linkPattern.arg(vacancy.brief.link.toString()).arg(title));
+    mainWindow.titleLabel.setText(linkPattern.arg(vacancy.link.toString()).arg(title));
     mainWindow.companyNameLabel.setText(linkPattern.arg(companyLink).arg(companyName));
 
     mainWindow.employmentTypeLabel.setText("Employment type: " + employmentType);
@@ -304,33 +304,33 @@ void App::updateMaxVacancies()
     parser->setMaxVacancies(maxVacancies);
 }
 
-void App::onBriefReady(const VacancyBrief& brief)
+void App::onBriefReady(const Vacancy& vacancy)
 {
-    auto it = vacancies.find(brief.link);
+    auto it = vacancies.find(vacancy.link);
     if (it == vacancies.end())
     {
-        vacancies.emplace(brief.link, brief);
+        vacancies.emplace(vacancy.link, vacancy);
     }
     else
     {
         Vacancy& foundVacancy = it.value();
-        foundVacancy.brief = brief;
+        foundVacancy.fillEmptyFrom(vacancy);
 
         qCDebug(AppLog) << foundVacancy;
     }
 }
 
-void App::onDetailsReady(const VacancyDetails& details)
+void App::onDetailsReady(const Vacancy& vacancy)
 {
-    auto it = vacancies.find(details.link);
+    auto it = vacancies.find(vacancy.link);
     if (it == vacancies.end())
     {
-        vacancies.emplace(details.link, details);
+        vacancies.emplace(vacancy.link, vacancy);
     }
     else
     {
         Vacancy& foundVacancy = it.value();
-        foundVacancy.details = details;
+        foundVacancy.fillEmptyFrom(vacancy);
 
         qCDebug(AppLog) << foundVacancy;
     }
@@ -360,7 +360,7 @@ void App::onIgnoreButtonPressed()
     if (!vacancy)
         return;
 
-    ignoredVacancies.insert(vacancy->get().brief.link);
+    ignoredVacancies.insert(vacancy->get().link);
 
     updateDescriptionList();
     mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Ignored));
@@ -373,7 +373,7 @@ void App::onInterestButtonPressed()
     if (!vacancy)
         return;
 
-    interestedVacancies.insert(vacancy->get().brief.link);
+    interestedVacancies.insert(vacancy->get().link);
 
     updateDescriptionList();
     mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Interested));
@@ -386,7 +386,7 @@ void App::onRemoveIgnoreButtonPressed()
     if (!vacancy)
         return;
 
-    ignoredVacancies.remove(vacancy->get().brief.link);
+    ignoredVacancies.remove(vacancy->get().link);
 
     updateDescriptionList();
     mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
@@ -399,7 +399,7 @@ void App::onRemoveInterestButtonPressed()
     if (!vacancy)
         return;
 
-    interestedVacancies.remove(vacancy->get().brief.link);
+    interestedVacancies.remove(vacancy->get().link);
 
     updateDescriptionList();
     mainWindow.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
@@ -657,11 +657,11 @@ void App::updateModelData()
     for (const Vacancy* vacancy : vacanciesToShow)
     {
         const QString& id = QString::number(data.size() + 1);
-        const QString& title = vacancy->brief.title;
-        const QString& companyName = vacancy->brief.companyName;
+        const QString& title = vacancy->title;
+        const QString& companyName = vacancy->companyName;
         const qsizetype& companyNameWidth = companyName.size() + 8;
-        const QString& age = QString::number(vacancy->brief.date.daysTo(QDate::currentDate()));
-        const QString& location = vacancy->brief.location;
+        const QString& age = QString::number(vacancy->date.daysTo(QDate::currentDate()));
+        const QString& location = vacancy->location;
 
         data.append(QString("%1. %2\n%3\n%4\n%5 days ago")
                     .arg(id.leftJustified(3))
@@ -697,7 +697,7 @@ void App::sortByTitle()
 
     auto compareByTitle = [](const Vacancy* left, const Vacancy* right)
     {
-        return left->brief.title < right->brief.title;
+        return left->title < right->title;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTitle);
@@ -709,7 +709,7 @@ void App::sortByCompany()
 
     auto compareByCompany = [](const Vacancy* left, const Vacancy* right)
     {
-        return left->brief.companyName < right->brief.companyName;
+        return left->companyName < right->companyName;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByCompany);
@@ -721,7 +721,7 @@ void App::sortByTime()
 
     auto compareByTime = [](const Vacancy* left, const Vacancy* right)
     {
-        return left->brief.date > right->brief.date;
+        return left->date > right->date;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByTime);
@@ -732,7 +732,7 @@ void App::sortByEmploymentType()
     qCDebug(AppLog) << "sorting by Employment Type";
     auto compareByEmploymentType = [](const Vacancy* left, const Vacancy* right)
     {
-        return left->details.employmentType > right->details.employmentType;
+        return left->employmentType > right->employmentType;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByEmploymentType);
@@ -744,10 +744,10 @@ void App::sortByLevel()
 
     auto compareByLevel = [&](const Vacancy* left, const Vacancy* right)
     {
-        if (!left->details.level.has_value()) return false;
-        if (!right->details.level.has_value()) return true;
+        if (!left->level.has_value()) return false;
+        if (!right->level.has_value()) return true;
 
-        return left->details.level < right->details.level;
+        return left->level < right->level;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByLevel);
@@ -759,10 +759,10 @@ void App::sortByExperience()
 
     auto compareByExperience = [&](const Vacancy* left, const Vacancy* right)
     {
-        if (!left->details.experience.has_value()) return false;
-        if (!right->details.experience.has_value()) return true;
+        if (!left->experience.has_value()) return false;
+        if (!right->experience.has_value()) return true;
 
-        return left->details.experience < right->details.experience;
+        return left->experience < right->experience;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByExperience);
@@ -774,10 +774,10 @@ void App::sortByEducation()
 
     auto compareByEducation = [&](const Vacancy* left, const Vacancy* right)
     {
-        if (!left->details.education.has_value()) return false;
-        if (!right->details.education.has_value()) return true;
+        if (!left->education.has_value()) return false;
+        if (!right->education.has_value()) return true;
 
-        return left->details.education < right->details.education;
+        return left->education < right->education;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByEducation);
@@ -789,10 +789,10 @@ void App::sortBySkills()
 
     auto compareBySkills = [&](const Vacancy* left, const Vacancy* right)
     {
-        if (left->details.skills.isEmpty()) return false;
-        if (right->details.skills.isEmpty()) return true;
+        if (left->skills.isEmpty()) return false;
+        if (right->skills.isEmpty()) return true;
 
-        return left->details.skills < right->details.skills;
+        return left->skills < right->skills;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareBySkills);
@@ -804,10 +804,10 @@ void App::sortByIndustry()
 
     auto compareByIndustry = [&](const Vacancy* left, const Vacancy* right)
     {
-        if (!left->details.industry.has_value()) return false;
-        if (!right->details.industry.has_value()) return true;
+        if (!left->industry.has_value()) return false;
+        if (!right->industry.has_value()) return true;
 
-        return left->details.industry < right->details.industry;
+        return left->industry < right->industry;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByIndustry);
@@ -819,10 +819,10 @@ void App::sortByExpirationDate()
 
     auto compareByExpirationDate = [&](const Vacancy* left, const Vacancy* right)
     {
-        if (!left->details.expirationDate.has_value()) return false;
-        if (!right->details.expirationDate.has_value()) return true;
+        if (!left->expirationDate.has_value()) return false;
+        if (!right->expirationDate.has_value()) return true;
 
-        return left->details.expirationDate < right->details.expirationDate;
+        return left->expirationDate < right->expirationDate;
     };
 
     std::sort(vacanciesToShow.begin(), vacanciesToShow.end(), compareByExpirationDate);
@@ -842,7 +842,7 @@ std::optional<App::constVacancyRef> App::getCurrentVacancy() const
 
 VacancyStatus App::getVacancyStatus(const Vacancy& vacancy)
 {
-    const QUrl& url = vacancy.brief.link;
+    const QUrl& url = vacancy.link;
 
     if (interestedVacancies.contains(url))
         return VacancyStatus::Interested;

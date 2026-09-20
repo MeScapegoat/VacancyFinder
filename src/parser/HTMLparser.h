@@ -3,8 +3,7 @@
 
 #include <QLoggingCategory>
 
-#include "../model/VacancyBrief.h"
-#include "../model/VacancyDetails.h"
+#include "../model/Vacancy.h"
 
 
 Q_DECLARE_LOGGING_CATEGORY(ParserLog);
@@ -33,8 +32,8 @@ public slots:
     void onRequestsFinished();
 
 signals:
-    void briefReady(VacancyBrief);
-    void detailsReady(VacancyDetails);
+    void briefReady(Vacancy);
+    void detailsReady(Vacancy);
 
     void sendRequest(const QUrl& ulr);
 
@@ -51,39 +50,18 @@ private:
     void processBriefs(const QString& html, const int id);
     void processDetails(const QString& html, const QUrl& url);
 
-    // fills field of Vacancy:
-    // id
-    // title
-    // companyName
-    // companyLink
-    // location
-    // date
     void parseBrief(const QString& html);
 
 
     void parseDetails(const QString& html, const QUrl& url);
 
-    // fills field of Vacancy:
-    // industry
-    // expirationDate
-    // experience
-    // education
-    // skills
-    // employmentType
-    // description
-    VacancyDetails parseDetailsByJson(const QJsonObject& object, const QUrl& url);
-
-    // fills field of Vacancy:
-    // industry
-    // level
-    // employmentType
-    // description
-    VacancyDetails parseDetailsByHtml(const QString& html, const QUrl& url);
+    Vacancy parseDetailsByJson(const QJsonObject& object, const QUrl& url);
+    Vacancy parseDetailsByHtml(const QString& html, const QUrl& url);
 
 private:
-    unsigned maxVacancies;
-    unsigned totalVacancies;
-    unsigned emptyPagesAmount;
+    size_t maxVacancies;
+    size_t totalVacancies;
+    size_t emptyPagesAmount;
 
     QSet<QUrl> processedBriefs;
     QSet<QUrl> processedDetails;

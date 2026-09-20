@@ -10,8 +10,7 @@
 #include <QNetworkReply>
 
 // custom
-#include "../model/VacancyBrief.h"
-#include "../model/VacancyDetails.h"
+#include "../model/Vacancy.h"
 
 
 class ProgressDialog : public QDialog
@@ -21,8 +20,8 @@ public:
     ~ProgressDialog() = default;
 
 public slots:
-    void updateBrief(const VacancyBrief& brief);
-    void updateDetails(const VacancyDetails& details);
+    void updateBrief(const Vacancy& vacancy);
+    void updateDetails(const Vacancy& vacancy);
     void updateError(QNetworkReply::NetworkError);
     void start(const unsigned& maxVacancies);
 

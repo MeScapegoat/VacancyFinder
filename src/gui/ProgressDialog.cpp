@@ -38,25 +38,25 @@ ProgressDialog::ProgressDialog(QWidget* parent) :
     QObject::connect(&stopButton, &QPushButton::released, this, &ProgressDialog::accept);
 }
 
-void ProgressDialog::updateBrief(const VacancyBrief& brief)
+void ProgressDialog::updateBrief(const Vacancy& vacancy)
 {
     static constexpr const char* briefPattern = "Processed brief: #%1, %2 by %3";
 
     briefLabel.setText(QString(briefPattern)
-                       .arg(brief.id)
-                       .arg(brief.title)
-                       .arg(brief.companyName));
+                       .arg(vacancy.id)
+                       .arg(vacancy.title)
+                       .arg(vacancy.companyName));
 
-    briefsProgressBar.setValue(brief.id);
+    briefsProgressBar.setValue(vacancy.id);
 }
 
-void ProgressDialog::updateDetails(const VacancyDetails& details)
+void ProgressDialog::updateDetails(const Vacancy& vacancy)
 {
     static constexpr const char* detailsPattern = "Processed details: #%1";
 
-    detailsLabel.setText(QString(detailsPattern).arg(details.id));
+    detailsLabel.setText(QString(detailsPattern).arg(vacancy.id));
 
-    allDetailsProgressBar.setValue(details.id);
+    allDetailsProgressBar.setValue(vacancy.id);
 }
 
 void ProgressDialog::updateError(QNetworkReply::NetworkError err)

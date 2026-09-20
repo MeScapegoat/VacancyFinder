@@ -8,8 +8,6 @@
 
 // custom
 #include "../model/Vacancy.h"
-#include "../model/VacancyBrief.h"
-#include "../model/VacancyDetails.h"
 #include "../parser/HTMLparser.h"
 #include "../data/AppState.h"
 #include "../gui/MainWindow.h"
@@ -25,6 +23,7 @@ class ResultViewOptionsPresenter;
 Q_DECLARE_LOGGING_CATEGORY(AppLog);
 
 class ProgressDialog;
+class Vacancy;
 
 // TODO: current App workflow is a mess, need to create AppController or smth
 
@@ -59,8 +58,8 @@ public slots:
 
     void updateMaxVacancies();
 
-    void onBriefReady(const VacancyBrief& brief);
-    void onDetailsReady(const VacancyDetails& details);
+    void onBriefReady(const Vacancy& brief);
+    void onDetailsReady(const Vacancy& details);
 
     void onBriefsFinished();
     void onAllDetailsFinished();

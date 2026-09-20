@@ -240,39 +240,39 @@ void HTMLparser::parseBrief(const QString& html)
         return;
     }
 
-    VacancyBrief brief;
-    brief.title = extract(html, titlePattern);
+    Vacancy vacancy;
+    vacancy.title = extract(html, titlePattern);
 
-    brief.link = extract(html, linkPattern);
+    vacancy.link = extract(html, linkPattern);
 
-    if (!brief.link.isValid())
+    if (!vacancy.link.isValid())
     {
-        brief.link = extract(html, alternateLinkPattern);
+        vacancy.link = extract(html, alternateLinkPattern);
     }
-    brief.link.setQuery(QString());
+    vacancy.link.setQuery(QString());
 
-    brief.companyName = extract(html, companyNamePattern);
+    vacancy.companyName = extract(html, companyNamePattern);
 
     QUrl companyLink = extract(html, companyLinkPattern);
     companyLink.setQuery(QString());
 
-    brief.companyLink = companyLink;
+    vacancy.companyLink = companyLink;
 
-    brief.location = extract(html, locationPattern);
+    vacancy.location = extract(html, locationPattern);
 
     const QString date = extract(html, datePattern);
-    brief.date = QDate::fromString(date, Qt::ISODate);
+    vacancy.date = QDate::fromString(date, Qt::ISODate);
 
-    if (processedBriefs.contains(brief.link))
+    if (processedBriefs.contains(vacancy.link))
     {
-        qCDebug(ParserLog) << "ALREADY PROCESSED THIS BRIEF:" << brief.link;
+        qCDebug(ParserLog) << "ALREADY PROCESSED THIS BRIEF:" << vacancy.link;
         return;
     }
     else
     {
-        processedBriefs.insert(brief.link);
+        processedBriefs.insert(vacancy.link);
     }
-    brief.id = processedBriefs.size();
+    vacancy.id = processedBriefs.size();
 
     QList<QStringList> lists;
     lists.append(extractAll(html, linkPattern));
@@ -293,8 +293,8 @@ void HTMLparser::parseBrief(const QString& html)
 
     //qCDebug(ParserLog) << vacancy;
 
-    emit briefReady(brief);
-    emit sendRequest(brief.link);
+    emit briefReady(vacancy);
+    emit sendRequest(vacancy.link);
 
     if (processedBriefs.size() >= totalVacancies)
     {
@@ -318,18 +318,18 @@ void HTMLparser::parseDetails(const QString& html, const QUrl& url)
     const QString jsonText = extract(html, jsonDataPattern);
     const QJsonDocument document = QJsonDocument::fromJson(jsonText.toUtf8());
 
-    VacancyDetails details;
+    Vacancy vacancy;
 
     if (!document.isNull() && document.isObject())
     {
-        details = parseDetailsByJson(document.object(), url);
+        vacancy = parseDetailsByJson(document.object(), url);
     }
     else
     {
-        details = parseDetailsByHtml(html, url);
+        vacancy = parseDetailsByHtml(html, url);
     }
 
-    emit detailsReady(details);
+    emit detailsReady(vacancy);
 
     if (processedDetails.size() >= totalVacancies)
     {
@@ -338,7 +338,7 @@ void HTMLparser::parseDetails(const QString& html, const QUrl& url)
     }
 }
 
-VacancyDetails HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& url)
+Vacancy HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& url)
 {
     static constexpr const char* titleFieldName = "title";
 
@@ -374,19 +374,19 @@ VacancyDetails HTMLparser::parseDetailsByJson(const QJsonObject& object, const Q
     //vacancy.location;
     //vacancy.date;
 
-    VacancyDetails details;
+    Vacancy vacancy;
 
-    details.id = processedDetails.size();
-    details.link = url;
-    details.employmentType = object[employmentTypeFieldName].toString();
-    details.skills = object[skillsFieldName].toString();
-    details.description = object[descriptionTypeFieldName].toString();
+    vacancy.id = processedDetails.size();
+    vacancy.link = url;
+    vacancy.employmentType = object[employmentTypeFieldName].toString();
+    vacancy.skills = object[skillsFieldName].toString();
+    vacancy.description = object[descriptionTypeFieldName].toString();
 
 
-    details.industry = object[industryFieldName].toString();
-    details.experience = object[experienceFieldName][experienceMonthsFieldName].toInt();
-    details.education = object[educationFieldName][educationCategoryFieldName].toString();
-    details.expirationDate = QDate::fromString(object[expirationDateFieldName].toString(), Qt::ISODate);;
+    vacancy.industry = object[industryFieldName].toString();
+    vacancy.experience = object[experienceFieldName][experienceMonthsFieldName].toInt();
+    vacancy.education = object[educationFieldName][educationCategoryFieldName].toString();
+    vacancy.expirationDate = QDate::fromString(object[expirationDateFieldName].toString(), Qt::ISODate);;
 
     //vacancy.companyLink = object[organizationFieldName][organizationLinkFieldName].toString();
     //vacancy.location = object[locationFieldName][locationAddressFieldName][locationAddressLocalityFieldName].toString();
@@ -416,10 +416,10 @@ VacancyDetails HTMLparser::parseDetailsByJson(const QJsonObject& object, const Q
         qCDebug(ParserLog) << "NOT Organization";
     }
 
-    return details;
+    return vacancy;
 }
 
-VacancyDetails HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
+Vacancy HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
 {
     static constexpr const char* titlePattern = R"REGEX(<h1\b[^>]*class="top-card-layout__title[^"]*"[^>]*>(.*?)</h1>)REGEX";
     static constexpr const char* linkPattern = R"REGEX(<link\b[^>]*rel="canonical"[^>]*href="([^"]+)")REGEX";
@@ -448,16 +448,16 @@ VacancyDetails HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& u
         qCDebug(ParserLog) << "TEXT";
     }
 
-    VacancyDetails details;
+    Vacancy vacancy;
 
-    details.id = processedDetails.size();
-    details.link = url;
+    vacancy.id = processedDetails.size();
+    vacancy.link = url;
 
-    if (jobCriteriaList.size() > 1) details.employmentType = jobCriteriaList[1];
-    details.description = extract(html, descriptionPattern);
+    if (jobCriteriaList.size() > 1) vacancy.employmentType = jobCriteriaList[1];
+    vacancy.description = extract(html, descriptionPattern);
 
-    if (jobCriteriaList.size() > 3) details.industry = jobCriteriaList[3];
-    if (jobCriteriaList.size() > 0) details.level = jobCriteriaList[0];
+    if (jobCriteriaList.size() > 3) vacancy.industry = jobCriteriaList[3];
+    if (jobCriteriaList.size() > 0) vacancy.level = jobCriteriaList[0];
     //vacancy.link = extract(html, linkPattern);
     //vacancy.link.setQuery(QString());
 
@@ -482,7 +482,7 @@ VacancyDetails HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& u
         }
     }
 
-    return details;
+    return vacancy;
 }
 
 
