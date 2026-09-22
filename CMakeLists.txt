@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 4.4)
 
 # Project configuration
 
-set(PROJECT_NAME "LinkedIn_Job_Finder")
+set(PROJECT_NAME VacancyFinder)
 set(PROJECT_VERSION "0.0.1")
 
 set(SOURCES_DIR_FOLDER "src")
@@ -169,7 +169,7 @@ endforeach()
 
 # Target
 
-add_executable(${PROJECT_NAME} 
+add_executable(VacancyFinderApp 
                ${CORE_SOURCES}
                ${NETWORK_SOURCES}
                ${PARSER_SOURCES}
@@ -183,7 +183,7 @@ add_executable(${PROJECT_NAME}
                ${SOURCES_DIR_PATH}/main.cpp       
 )
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(VacancyFinderApp
     PRIVATE
         Qt6::Core
         Qt6::Network
