@@ -1,6 +1,7 @@
 .vs
 
 build
+out
 
 CMakeUserPresets.json
 
