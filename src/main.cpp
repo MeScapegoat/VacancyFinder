@@ -13,8 +13,8 @@
 #include <QThread>
 
 // custom
-#include "core/App.h"
-#include "core/Logger.h"
+#include <App.h>
+#include <Logger.h>
 
 int main(int argc, char *argv[])
 {
