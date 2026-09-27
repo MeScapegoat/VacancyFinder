@@ -2,11 +2,7 @@
 
 #include <ResultViewOptionsPresenter.h>
 #include <ResultViewOptionsEnums.h>
-
-#include <QComboBox>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QTest>
+#include <test_helpers.hpp>
 
 
 void testObservableAndComboBox(Observable<int>& model, QComboBox& view, int modesAmount)
@@ -21,17 +17,6 @@ void testObservableAndComboBox(Observable<int>& model, QComboBox& view, int mode
     EXPECT_EQ(model(), view.currentIndex());
 }
 
-void testObservableAndCheckBox(Observable<bool>& model, QCheckBox& view)
-{
-    EXPECT_EQ(model(), view.isChecked()) << "Initial value of model and view differs";
-
-    model = !model();
-    EXPECT_EQ(model(), view.isChecked());
-
-    view.setChecked(!view.isChecked());
-    EXPECT_EQ(model(), view.isChecked());
-}
-
 
 TEST(ResultViewOptions, SortModeSync)
 {
@@ -39,7 +24,7 @@ TEST(ResultViewOptions, SortModeSync)
     auto& model = presenter.getModel().currentSortMode;
     auto& view = presenter.getView().sortMode;
 
-    testObservableAndComboBox(model, view, static_cast<int>(SortMode::COUNT));
+    testModelAndViewSync(model, view, static_cast<int>(SortMode::COUNT));
 }
 
 TEST(ResultViewOptions, FilterModeSync)
@@ -48,7 +33,7 @@ TEST(ResultViewOptions, FilterModeSync)
     auto& model = presenter.getModel().currentFilterMode;
     auto& view = presenter.getView().filterMode;
 
-    testObservableAndComboBox(model, view, static_cast<int>(FilterMode::COUNT));
+    testModelAndViewSync(model, view, static_cast<int>(FilterMode::COUNT));
 }
 
 TEST(ResultViewOptions, FilterTextSync)
@@ -57,38 +42,32 @@ TEST(ResultViewOptions, FilterTextSync)
     auto& model = presenter.getModel().filterText;
     auto& view = presenter.getView().filterLineEdit;
 
-    EXPECT_EQ(model(), view.text());
-
-    model = model() + "TEXT";
-    EXPECT_EQ(model(), view.text());
-
-    QTest::keyClicks(&view, view.text() + "TEXT");
-    EXPECT_EQ(model(), view.text());
+    testModelAndViewSync(model, view);
 }
 
 TEST(ResultViewOptions, UnreviewedStateSync)
 {
     ResultViewOptionsPresenter presenter;
-    Observable<bool>& model = presenter.getModel().isUnreviewedVisible;
-    QCheckBox& view = presenter.getView().unreviewedCheckBox;
+    auto& model = presenter.getModel().isUnreviewedVisible;
+    auto& view = presenter.getView().unreviewedCheckBox;
 
-    testObservableAndCheckBox(model, view);
+    testModelAndViewSync(model, view);
 }
 
 TEST(ResultViewOptions, IgnoredStateSync)
 {
     ResultViewOptionsPresenter presenter;
-    Observable<bool>& model = presenter.getModel().isIgnoredVisible;
-    QCheckBox& view = presenter.getView().ignoredCheckBox;
+    auto& model = presenter.getModel().isIgnoredVisible;
+    auto& view = presenter.getView().ignoredCheckBox;
 
-    testObservableAndCheckBox(model, view);
+    testModelAndViewSync(model, view);
 }
 
 TEST(ResultViewOptions, InterestedStateSync)
 {
     ResultViewOptionsPresenter presenter;
-    Observable<bool>& model = presenter.getModel().isInterestedVisible;
-    QCheckBox& view = presenter.getView().interestedCheckBox;
+    auto& model = presenter.getModel().isInterestedVisible;
+    auto& view = presenter.getView().interestedCheckBox;
 
-    testObservableAndCheckBox(model, view);
+    testModelAndViewSync(model, view);
 }

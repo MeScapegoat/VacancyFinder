@@ -6,6 +6,7 @@
 
 #include <concepts>
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QSpinBox>
@@ -19,6 +20,12 @@ concept QWidgetDerived = std::derived_from<T, QWidget>;
 
 template <typename T>
 concept Numeric = std::integral<T> || std::floating_point<T>;
+
+template <typename T>
+concept HasNumericCount = requires(const T & value)
+{
+    { value.count() } -> Numeric;
+};
 
 
 template<QWidgetDerived Widget>
@@ -42,6 +49,7 @@ void changeValue(QComboBox& view)
     view.setCurrentIndex(newValue);
 }
 
+
 // QSpinBox
 template<>
 auto value(const QSpinBox& view)
@@ -55,6 +63,7 @@ void changeValue(QSpinBox& view)
     int newValue = value(view) + 1;
     view.setValue(newValue);
 }
+
 
 // QLineEdit
 template<>
@@ -71,9 +80,25 @@ void changeValue(QLineEdit& view)
 }
 
 
+// QCheckBox
+template<>
+auto value(const QCheckBox& view)
+{
+    return view.isChecked();
+}
+
+template<>
+void changeValue(QCheckBox& view)
+{
+    const bool newValue = !value(view);
+    view.setChecked(newValue);
+}
+
+
 
 template<class T>
 void changeValue(Observable<T>& model);
+
 
 // Numeric
 template <Numeric T>
@@ -90,7 +115,22 @@ void changeValue(Observable<QString>& model) // TODO: maybe make general to take
 }
 
 
+// bool
+void changeValue(Observable<bool>& model)
+{
+    model = !model();
+}
 
+
+
+template <class T, QWidgetDerived Widget, Numeric N>
+requires HasNumericCount<Widget>
+void testModelAndViewSync(Observable<T>& model, Widget& view, N modesAmount)
+{
+    EXPECT_EQ(view.count(), modesAmount) << "Not all available modes are reflected in UI";
+
+    testModelAndViewSync(model, view);
+}
 
 template <class T, QWidgetDerived Widget>
 void testModelAndViewSync(Observable<T>& model, Widget& view)

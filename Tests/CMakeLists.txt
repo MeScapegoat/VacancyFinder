@@ -1,17 +1,26 @@
 enable_testing()
 
+
+
 # Helpers
 
 add_library(test_helpers INTERFACE test_helpers.hpp)
 
 target_link_libraries(test_helpers
 	INTERFACE
-		GTest::gtest
 		Utils
-		Qt6::Widget
+		GTest::gtest
+		Qt6::Test
+		Qt6::Widgets
+)
+
+target_include_directories(test_helpers INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 set_target_properties(test_helpers PROPERTIES FOLDER "Tests")
+
+
 
 # Presentation
 
@@ -23,11 +32,11 @@ add_executable(ResultViewOptions_test
 target_link_libraries(ResultViewOptions_test
 	PRIVATE
 		ResultViewOptions
-		GTest::gtest
-		Qt6::Test
+		test_helpers
 )
 
 set_target_properties(ResultViewOptions_test PROPERTIES FOLDER "Tests/ResultViewOptions")
+
 
 
 add_executable(QueryParameters_test
@@ -35,20 +44,15 @@ add_executable(QueryParameters_test
 	Presentation/QueryParameters/main_test.cpp
 )
 
-target_include_directories(QueryParameters_test PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
 target_link_libraries(QueryParameters_test
 	PRIVATE
 		QueryParameters
-		GTest::gtest
-		Qt6::Test
-	INTERFACE
 		test_helpers
 )
 
 set_target_properties(QueryParameters_test PROPERTIES FOLDER "Tests/QueryParameters")
+
+
 
 include(GoogleTest)
 
