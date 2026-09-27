@@ -4,7 +4,10 @@ enable_testing()
 
 # Helpers
 
-add_library(test_helpers INTERFACE test_helpers.hpp)
+add_library(test_helpers 
+	INTERFACE
+		test_utils.hpp
+		test_helpers.hpp)
 
 target_link_libraries(test_helpers
 	INTERFACE

@@ -40,11 +40,7 @@ TEST(QueryParameters, SearchRequest)
     QueryParametersPresenter presenter;
     auto& view = presenter.getView().searchButton;
 
-    QSignalSpy spy(&presenter, &QueryParametersPresenter::searchRequested);
-
-    QTest::mouseClick(&view, Qt::LeftButton);
-
-    EXPECT_EQ(spy.count(), 1);
+    testButtonSignalEmitted(presenter, &QueryParametersPresenter::searchRequested, view);
 }
 
 TEST(QueryParameters, LoadInterestedRequested)
@@ -52,11 +48,7 @@ TEST(QueryParameters, LoadInterestedRequested)
     QueryParametersPresenter presenter;
     auto& view = presenter.getView().searchInterestedButton;
 
-    QSignalSpy spy(&presenter, &QueryParametersPresenter::loadInterestedRequested);
-
-    QTest::mouseClick(&view, Qt::LeftButton);
-
-    EXPECT_EQ(spy.count(), 1);
+    testButtonSignalEmitted(presenter, &QueryParametersPresenter::loadInterestedRequested, view);
 }
 
 TEST(QueryParameters, ResetRequest)
@@ -64,9 +56,5 @@ TEST(QueryParameters, ResetRequest)
     QueryParametersPresenter presenter;
     auto& view = presenter.getView().resetButton;
 
-    QSignalSpy spy(&presenter, &QueryParametersPresenter::resetRequested);
-
-    QTest::mouseClick(&view, Qt::LeftButton);
-
-    EXPECT_EQ(spy.count(), 1);
+    testButtonSignalEmitted(presenter, &QueryParametersPresenter::resetRequested, view);
 }
