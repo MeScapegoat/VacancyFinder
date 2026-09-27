@@ -33,7 +33,7 @@ void testObservableAndCheckBox(Observable<bool>& model, QCheckBox& view)
 }
 
 
-TEST(ResultViewOptions_tests, SortModeSync)
+TEST(ResultViewOptions, SortModeSync)
 {
     ResultViewOptionsPresenter presenter;
     auto& model = presenter.getModel().currentSortMode;
@@ -42,7 +42,7 @@ TEST(ResultViewOptions_tests, SortModeSync)
     testObservableAndComboBox(model, view, static_cast<int>(SortMode::COUNT));
 }
 
-TEST(ResultViewOptions_tests, FilterModeSync)
+TEST(ResultViewOptions, FilterModeSync)
 {
     ResultViewOptionsPresenter presenter;
     auto& model = presenter.getModel().currentFilterMode;
@@ -51,7 +51,7 @@ TEST(ResultViewOptions_tests, FilterModeSync)
     testObservableAndComboBox(model, view, static_cast<int>(FilterMode::COUNT));
 }
 
-TEST(ResultViewOptions_tests, FilterTextSync)
+TEST(ResultViewOptions, FilterTextSync)
 {
     ResultViewOptionsPresenter presenter;
     auto& model = presenter.getModel().filterText;
@@ -66,7 +66,7 @@ TEST(ResultViewOptions_tests, FilterTextSync)
     EXPECT_EQ(model(), view.text());
 }
 
-TEST(ResultViewOptions_tests, UnreviewedStateSync)
+TEST(ResultViewOptions, UnreviewedStateSync)
 {
     ResultViewOptionsPresenter presenter;
     Observable<bool>& model = presenter.getModel().isUnreviewedVisible;
@@ -75,7 +75,7 @@ TEST(ResultViewOptions_tests, UnreviewedStateSync)
     testObservableAndCheckBox(model, view);
 }
 
-TEST(ResultViewOptions_tests, IgnoredStateSync)
+TEST(ResultViewOptions, IgnoredStateSync)
 {
     ResultViewOptionsPresenter presenter;
     Observable<bool>& model = presenter.getModel().isIgnoredVisible;
@@ -84,7 +84,7 @@ TEST(ResultViewOptions_tests, IgnoredStateSync)
     testObservableAndCheckBox(model, view);
 }
 
-TEST(ResultViewOptions_tests, InterestedStateSync)
+TEST(ResultViewOptions, InterestedStateSync)
 {
     ResultViewOptionsPresenter presenter;
     Observable<bool>& model = presenter.getModel().isInterestedVisible;
