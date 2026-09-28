@@ -11,7 +11,7 @@ template <class T, QWidgetDerived Widget, std::integral N>
 requires HasCount<Widget>
 void testModelAndViewSync(Observable<T>& model, Widget& view, N modesAmount)
 {
-    EXPECT_EQ(view.count(), modesAmount) << "Not all available modes are reflected in UI";
+    EXPECT_EQ(view.count(), modesAmount) << "UI does not contain all available modes";
 
     testModelAndViewSync(model, view);
 }
@@ -19,13 +19,13 @@ void testModelAndViewSync(Observable<T>& model, Widget& view, N modesAmount)
 template <class T, QWidgetDerived Widget>
 void testModelAndViewSync(Observable<T>& model, Widget& view)
 {
-    EXPECT_EQ(model(), value(view)) << "Initial value of model and view differs";
+    EXPECT_EQ(model(), value(view)) << "Initial model and view values differ";
 
     model = otherValue(model());
-    EXPECT_EQ(model(), value(view));
+    EXPECT_EQ(model(), value(view)) << "Model and view values differ after changing the model";
 
     changeValue(view);
-    EXPECT_EQ(model(), value(view));
+    EXPECT_EQ(model(), value(view)) << "Model and view values differ after changing the view";
 }
 
 
