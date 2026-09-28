@@ -29,7 +29,7 @@ set_target_properties(test_helpers PROPERTIES FOLDER "Tests")
 
 add_executable(ResultViewOptions_test
 	Presentation/ResultViewOptions/ResultViewOptions_test.cpp
-	Presentation/ResultViewOptions/main_test.cpp
+	main_for_qt_tests.cpp
 )
 
 target_link_libraries(ResultViewOptions_test
@@ -38,13 +38,13 @@ target_link_libraries(ResultViewOptions_test
 		test_helpers
 )
 
-set_target_properties(ResultViewOptions_test PROPERTIES FOLDER "Tests/ResultViewOptions")
+set_target_properties(ResultViewOptions_test PROPERTIES FOLDER "Tests/Presentation/ResultViewOptions")
 
 
 
 add_executable(QueryParameters_test
 	Presentation/QueryParameters/QueryParameters_test.cpp
-	Presentation/QueryParameters/main_test.cpp
+	main_for_qt_tests.cpp
 )
 
 target_link_libraries(QueryParameters_test
@@ -53,7 +53,7 @@ target_link_libraries(QueryParameters_test
 		test_helpers
 )
 
-set_target_properties(QueryParameters_test PROPERTIES FOLDER "Tests/QueryParameters")
+set_target_properties(QueryParameters_test PROPERTIES FOLDER "Tests/Presentation/QueryParameters")
 
 
 
