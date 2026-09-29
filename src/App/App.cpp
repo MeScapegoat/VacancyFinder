@@ -307,7 +307,6 @@ void App::updateDescriptionList()
 void App::updateMaxVacancies(const int maxVacancies_)
 {
     maxVacancies = maxVacancies_;
-    parser->setMaxVacancies(maxVacancies);
 }
 
 void App::onBriefReady(const Vacancy& vacancy)

@@ -22,31 +22,28 @@ Q_LOGGING_CATEGORY(ParserLog, "parser");
 
 HTMLparser::HTMLparser(QObject* parent) :
     QObject(parent),
-    maxVacancies(0),
-    totalVacancies(0),
-    emptyPagesAmount(0),
-    processedBriefs(),
-    processedDetails(),
+    m_processedBriefs(),
+    m_processedDetails(),
     isInterrupted(false)
 {
 }
 
-void HTMLparser::setMaxVacancies(const unsigned& newMaxVacancies)
-{
-    maxVacancies = newMaxVacancies;
-    totalVacancies = maxVacancies;
-}
-
 void HTMLparser::reset()
 {
-    maxVacancies = 0;
-    totalVacancies = 0;
-    emptyPagesAmount = 0;
-
-    processedBriefs.clear();
-    processedDetails.clear();
+    m_processedBriefs.clear();
+    m_processedDetails.clear();
 
     isInterrupted = false;
+}
+
+const QSet<QUrl>& HTMLparser::processedBriefs() const
+{
+    return m_processedBriefs;
+}
+
+const QSet<QUrl>& HTMLparser::processedDetails() const
+{
+    return m_processedDetails;
 }
 
 void HTMLparser::processHTML(const QString& html, const QUrl& url)
@@ -76,18 +73,6 @@ void HTMLparser::onInterrupt()
     isInterrupted = true;
 
     qCDebug(ParserLog) << "Interrupted";
-}
-
-void HTMLparser::onRequestsFinished()
-{
-    qCDebug(ParserLog) << "maxVacancies:        " << maxVacancies;
-    qCDebug(ParserLog) << "totalVacancies:      " << totalVacancies;
-    qCDebug(ParserLog) << "emptyPagesAmount:    " << emptyPagesAmount;
-    qCDebug(ParserLog) << "processedBriefs:     " << processedBriefs.size();
-    qCDebug(ParserLog) << "processedDetails:    " << processedDetails.size();
-
-    emit briefsFinished();
-    emit allDetailsFinished();
 }
 
 QString HTMLparser::removeSpaces(QString str)
@@ -171,14 +156,7 @@ void HTMLparser::processBriefs(const QString& html, const int id)
     if (data.isEmpty())
     {
         qCDebug(ParserLog) << "EMPTY:" << id;
-        ++emptyPagesAmount;
         return;
-    }
-
-    if (data.size() < 10)
-    {
-        qCDebug(ParserLog) << "LESS THAN 10:" << data.size() << id;
-        totalVacancies = id + data.size();
     }
 
     for (const QString& title : data)
@@ -195,25 +173,19 @@ void HTMLparser::processDetails(const QString& html, const QUrl& url)
         return;
     }
 
-    if (processedDetails.size() >= totalVacancies)
+    if (m_processedDetails.contains(url))
     {
-        qCInfo(ParserLog) << "All Details Finished!";
-        emit allDetailsFinished();
-    }
-
-    if (processedDetails.contains(url))
-    {
-        qCDebug(ParserLog) << "ALREADY PROCESSED DESCRIPTION:" << url;
+        qCDebug(ParserLog) << "Already processed details:" << url;
         return;
     }
     else
     {
-        processedDetails.insert(url);
+        m_processedDetails.insert(url);
     }
 
     const QString cleanHtml = removeSpaces(html);
 
-    saveToFile(cleanHtml, QString::number(processedDetails.size()), DescriptionFolder);
+    saveToFile(cleanHtml, QString::number(m_processedDetails.size()), DescriptionFolder);
 
     parseDetails(cleanHtml, url);
 }
@@ -232,13 +204,6 @@ void HTMLparser::parseBrief(const QString& html)
 
 
     static constexpr const char* dateFormat = "dd-MM-yyyy";
-
-    if (processedBriefs.size() >= totalVacancies)
-    {
-        qCDebug(ParserLog) << "Briefs Finished!";
-        emit briefsFinished();
-        return;
-    }
 
     Vacancy vacancy;
     vacancy.title = extract(html, titlePattern);
@@ -263,57 +228,24 @@ void HTMLparser::parseBrief(const QString& html)
     const QString date = extract(html, datePattern);
     vacancy.date = QDate::fromString(date, Qt::ISODate);
 
-    if (processedBriefs.contains(vacancy.link))
+    if (m_processedBriefs.contains(vacancy.link)) // TODO: move out of this function
     {
-        qCDebug(ParserLog) << "ALREADY PROCESSED THIS BRIEF:" << vacancy.link;
+        qCDebug(ParserLog) << "Already processed brief:" << vacancy.link;
         return;
     }
     else
     {
-        processedBriefs.insert(vacancy.link);
+        m_processedBriefs.insert(vacancy.link);
     }
-    vacancy.id = processedBriefs.size();
-
-    QList<QStringList> lists;
-    lists.append(extractAll(html, linkPattern));
-    lists.append(extractAll(html, titlePattern));
-    lists.append(extractAll(html, companyLinkPattern));
-    lists.append(extractAll(html, companyNamePattern));
-    lists.append(extractAll(html, locationPattern));
-    lists.append(extractAll(html, datePattern));
-
-    for (const QStringList list : lists)
-    {
-        if (list.size() > 1)
-        {
-            qCDebug(ParserLog) << list;
-            qCDebug(ParserLog) << "TEXT";
-        }
-    }
-
-    //qCDebug(ParserLog) << vacancy;
+    vacancy.id = m_processedBriefs.size();
 
     emit briefReady(vacancy);
     emit sendRequest(vacancy.link);
-
-    if (processedBriefs.size() >= totalVacancies)
-    {
-        qCInfo(ParserLog) << "Briefs Finished!";
-        emit briefsFinished();
     }
-}
 
 void HTMLparser::parseDetails(const QString& html, const QUrl& url)
 {
     static constexpr const char* jsonDataPattern = R"REGEX(<script\b[^>]*type="application/ld\+json"[^>]*>(.*?)</script>)REGEX";
-
-    const QStringList list = extractAll(html, jsonDataPattern);
-    if (list.size() > 1)
-    {
-        qCDebug(ParserLog) << "MORE THAN ONE:";
-        qCDebug(ParserLog) << list;
-        qCDebug(ParserLog) << "TEXT";
-    }
 
     const QString jsonText = extract(html, jsonDataPattern);
     const QJsonDocument document = QJsonDocument::fromJson(jsonText.toUtf8());
@@ -330,12 +262,6 @@ void HTMLparser::parseDetails(const QString& html, const QUrl& url)
     }
 
     emit detailsReady(vacancy);
-
-    if (processedDetails.size() >= totalVacancies)
-    {
-        qCInfo(ParserLog) << "All Details Finished!";
-        emit allDetailsFinished();
-    }
 }
 
 Vacancy HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& url)
@@ -370,7 +296,7 @@ Vacancy HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& ur
 
     Vacancy vacancy;
 
-    vacancy.id = processedDetails.size();
+    vacancy.id = m_processedDetails.size();
 
     vacancy.title = object[titleFieldName].toString();
     vacancy.link = url;
@@ -393,29 +319,6 @@ Vacancy HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& ur
     vacancy.education = object[educationFieldName][educationCategoryFieldName].toString();
     vacancy.expirationDate = QDate::fromString(object[expirationDateFieldName].toString(), Qt::ISODate);;
     
-    static constexpr const char* typeFieldName = "@type";
-
-    //qCDebug(ParserLog).noquote() << QJsonDocument(object).toJson(QJsonDocument::Indented);
-
-    if (!object[educationFieldName][typeFieldName].toString().isEmpty() && object[educationFieldName][typeFieldName].toString() != "EducationalOccupationalCredential")
-    {
-        qCDebug(ParserLog) << "NOT EducationalOccupationalCredential";
-    }
-
-    if (!object[experienceFieldName][typeFieldName].toString().isEmpty() && object[experienceFieldName][typeFieldName].toString() != "OccupationalExperienceRequirements")
-    {
-        qCDebug(ParserLog) << "NOT OccupationalExperienceRequirements";
-    }
-
-    if (!object[locationFieldName][typeFieldName].toString().isEmpty() && object[locationFieldName][typeFieldName].toString() != "Place")
-    {
-        qCDebug(ParserLog) << "NOT Place";
-    }
-
-    if (!object[organizationFieldName][typeFieldName].toString().isEmpty() && object[organizationFieldName][typeFieldName].toString() != "Organization")
-    {
-        qCDebug(ParserLog) << "NOT Organization";
-    }
 
     return vacancy;
 }
@@ -438,22 +341,9 @@ Vacancy HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
 
     const QStringList jobCriteriaList = extractAll(html, jobCriteriaPattern);
 
-    if (jobCriteriaList.size() > 4)
-    {
-        qCDebug(ParserLog) << "MORE THAN FOUR:";
-        qCDebug(ParserLog) << jobCriteriaList;
-        qCDebug(ParserLog) << "TEXT";
-    }
-    else if (jobCriteriaList.size() < 4)
-    {
-        qCDebug(ParserLog) << "LESS THAN FOUR:";
-        qCDebug(ParserLog) << jobCriteriaList;
-        qCDebug(ParserLog) << "TEXT";
-    }
-
     Vacancy vacancy;
 
-    vacancy.id = processedDetails.size();
+    vacancy.id = m_processedDetails.size();
 
     vacancy.title = extract(html, titlePattern);
     vacancy.link = url;
@@ -473,19 +363,6 @@ Vacancy HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
     //experience;
     //education;
     //expirationDate;
-
-    QList<QStringList> lists;
-    lists.append(extractAll(html, descriptionPattern));
-
-    for (const QStringList list : lists)
-    {
-        if (list.size() > 1)
-        {
-            qCDebug(ParserLog) << "MORE THAN ONE:";
-            qCDebug(ParserLog) << list;
-            qCDebug(ParserLog) << "TEXT";
-        }
-    }
 
     return vacancy;
 }

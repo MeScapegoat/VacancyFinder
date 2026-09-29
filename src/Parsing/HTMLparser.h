@@ -20,9 +20,10 @@ public:
     ~HTMLparser() = default;
 
 public:
-    void setMaxVacancies(const unsigned& newMaxVacancies);
-
     void reset();
+
+    const QSet<QUrl>& processedBriefs() const;
+    const QSet<QUrl>& processedDetails() const;
 
 public slots:
     void processHTML(const QString& html, const QUrl& url);
@@ -59,12 +60,8 @@ private:
     Vacancy parseDetailsByHtml(const QString& html, const QUrl& url);
 
 private:
-    size_t maxVacancies;
-    size_t totalVacancies;
-    size_t emptyPagesAmount;
-
-    QSet<QUrl> processedBriefs;
-    QSet<QUrl> processedDetails;
+    QSet<QUrl> m_processedBriefs;
+    QSet<QUrl> m_processedDetails;
 
     bool isInterrupted;
 };
