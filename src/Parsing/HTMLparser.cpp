@@ -54,7 +54,9 @@ void HTMLparser::processHTML(const QString& html, const QUrl& url)
         return;
     }
 
-    qCDebug(ParserLog) << url;
+    emit parsingStarted();
+
+    qCInfo(ParserLog) << url;
 
     if (html.contains("description"))
     {
@@ -66,6 +68,8 @@ void HTMLparser::processHTML(const QString& html, const QUrl& url)
 
         processBriefs(html, id);
     }
+
+    emit parsingFinished();
 }
 
 void HTMLparser::onInterrupt()
@@ -241,7 +245,7 @@ void HTMLparser::parseBrief(const QString& html)
 
     emit briefReady(vacancy);
     emit sendRequest(vacancy.link);
-    }
+}
 
 void HTMLparser::parseDetails(const QString& html, const QUrl& url)
 {

@@ -1,8 +1,12 @@
 add_library(App
     App.h
     App.cpp
+
     AppState.h
     AppState.cpp
+
+    AppController.h
+    AppController.cpp
 )
 
 target_include_directories(App PUBLIC

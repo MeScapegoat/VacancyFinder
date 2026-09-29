@@ -113,7 +113,7 @@ private:
 
         connect(requestManager, &RequestManager::requestsFinished, this, [this]()
         {
-            finishCurrentBenchmark();
+            static_assert(false); // TODO: Update this to match the new workflow
         });
 
         timer.start();

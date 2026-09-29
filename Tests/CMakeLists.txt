@@ -25,6 +25,43 @@ set_target_properties(test_helpers PROPERTIES FOLDER "Tests")
 
 
 
+# General
+
+add_executable(AppWorkflow_test
+	app_workflow_test.cpp
+	main_for_qt_tests.cpp
+)
+
+target_link_libraries(AppWorkflow_test
+	PRIVATE
+		App
+		Network
+		Parsing
+		GTest::gtest
+		Qt6::Test
+)
+
+set_target_properties(AppWorkflow_test PROPERTIES FOLDER "Tests/General")
+
+
+
+# App
+
+add_executable(AppController_test
+	App/AppController/AppController_test.cpp
+)
+
+target_link_libraries(AppController_test
+	PRIVATE
+		App
+		GTest::gtest_main
+		Qt6::Test
+)
+
+set_target_properties(AppController_test PROPERTIES FOLDER "Tests/App/AppController")
+
+
+
 # Presentation
 
 add_executable(ResultViewOptions_test
@@ -59,5 +96,7 @@ set_target_properties(QueryParameters_test PROPERTIES FOLDER "Tests/Presentation
 
 include(GoogleTest)
 
+gtest_discover_tests(AppWorkflow_test)
+gtest_discover_tests(AppController_test)
 gtest_discover_tests(ResultViewOptions_test)
 gtest_discover_tests(QueryParameters_test)

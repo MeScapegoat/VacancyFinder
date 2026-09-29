@@ -30,16 +30,14 @@ public slots:
 
     void onInterrupt();
 
-    void onRequestsFinished();
-
 signals:
+    void parsingStarted(int amount = 1);
+    void parsingFinished(int amount = 1);
+
     void briefReady(Vacancy);
     void detailsReady(Vacancy);
 
     void sendRequest(const QUrl& ulr);
-
-    void briefsFinished();
-    void allDetailsFinished();
 
 private:
     QString removeSpaces(QString str);

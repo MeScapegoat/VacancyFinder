@@ -1,31 +1,24 @@
 #pragma once
-// std
 
-// Qt
-#include <QThread>
+#include <QObject>
+
 #include <QLoggingCategory>
-#include <QTime>
 
-// custom
-#include <Vacancy.h>
-#include <HTMLparser.h>
-#include <AppState.h>
-#include <MainWindow.h>
+#include "AppState.h"
 #include <ResultViewOptionsEnums.h>
+#include <Vacancy.h>
 
-
+class AppController;
 class RequestManager;
 class HTMLparser;
-
 class QueryParametersPresenter;
 class ResultViewOptionsPresenter;
+class ProgressDialog;
+class MainWindow;
+class HTMLparser;
+class QNetworkReply;
 
 Q_DECLARE_LOGGING_CATEGORY(AppLog);
-
-class ProgressDialog;
-class Vacancy;
-
-// TODO: current App workflow is a mess, need to create AppController or smth
 
 class App : public QObject
 {
@@ -45,6 +38,7 @@ public:
     const unsigned& getMaxVacancies() const;
 
 public:
+    // TODO: bad class for this
     QString loadTitleFromFile(const QString& path);
     QString loadDescriptionFromFile(const QString& path);
 
@@ -53,6 +47,8 @@ public slots:
     void loadInterested();
 
     void sendSearchRequest();
+
+    // TODO: bad class for this
     void openVacancyDescription(const QModelIndex&);
     void closeVacancyDescription();
 
@@ -63,33 +59,28 @@ public slots:
     void onBriefReady(const Vacancy& brief);
     void onDetailsReady(const Vacancy& details);
 
-    void onBriefsFinished();
-    void onAllDetailsFinished();
-    void onRequestsFinished();
-
     void onIgnoreButtonPressed();
     void onInterestButtonPressed();
     void onRemoveIgnoreButtonPressed();
     void onRemoveInterestButtonPressed();
+
+    void onMeaningfulRepliesReceived(int amount);
 
 signals:
     void initSearch(const QVector<QUrl>& urls);
     void updateVacanciesList(const QStringList& data);
 
     void openProgressDialog(const unsigned& maxVacancies);
-    void closeProgressDialog();
 
 protected:
     void syncVacanciesToShow();
-
-    void updateIsAllFinished();
 
     void applyStatusFilter();
     void applyFiltering();
     void applySorting();
     void updateModelData();
 
-
+    // TODO: bad class for this
     void sortByRelevance();
     void sortByTitle();
     void sortByCompany();
@@ -115,14 +106,16 @@ private:
     ResultViewOptionsPresenter& resultViewOptionsPresenter;
 
 private:
+    AppController& controller;
+
     MainWindow& mainWindow;
     ProgressDialog& progressDialog;
 
     RequestManager& requestManager;
-    QThread* networkThread = nullptr;   // TODO: why is it pointers?
+    QThread& networkThread;
 
-    HTMLparser* parser = nullptr;       // TODO: why is it pointers?
-    QThread* parserThread = nullptr;    // TODO: why is it pointers?
+    HTMLparser& parser;
+    QThread& parserThread;
 
     AppState state;
 
@@ -138,10 +131,4 @@ private:
     unsigned maxVacancies;
 
     QTime searchStartTime;
-
-    bool isRequestsFinished;
-    bool isBriefsFinished;
-    bool isAllDetailsFinished;
-
-    bool isAllFinished;
 };

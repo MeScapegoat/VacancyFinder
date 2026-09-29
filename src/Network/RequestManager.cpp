@@ -1,11 +1,11 @@
 #include "RequestManager.h"
 
 #include <QNetworkAccessManager>
-#include <QNetworkCookieJar>
 #include <QNetworkCookie>
+#include <QNetworkCookieJar>
 
 
-Q_LOGGING_CATEGORY(NetworkLog, "network");
+Q_LOGGING_CATEGORY(RequestManagerLog, "network.requestManager");
 
 RequestManager::RequestManager(QObject* parent) :
     QObject(parent),
@@ -66,6 +66,8 @@ void RequestManager::reset()
 
 void RequestManager::addUrls(const QList<QUrl>& urls)
 {
+    emit urlsEnqueued(urls.size());
+
     for (const QUrl& url : urls)
     {
         urlsQueue.enqueue(url);
@@ -79,6 +81,8 @@ void RequestManager::addUrls(const QList<QUrl>& urls)
 
 void RequestManager::addUrl(const QUrl& url)
 {
+    emit urlsEnqueued();
+
     urlsQueue.enqueue(url);
 
     if (!requestTimer.isActive())
@@ -89,7 +93,7 @@ void RequestManager::addUrl(const QUrl& url)
 
 void RequestManager::onInterrupt()
 {
-    qCDebug(NetworkLog) << "Interrupted";
+    qCDebug(RequestManagerLog) << "Interrupted";
 
     isInterrupted = true;
 
@@ -100,7 +104,7 @@ void RequestManager::onFinished(QNetworkReply* reply)
 {
     if (isInterrupted)
     {
-        qCDebug(NetworkLog) << "Interrupted";
+        qCDebug(RequestManagerLog) << "Interrupted";
 
         reply->deleteLater();
         return;
@@ -116,7 +120,7 @@ void RequestManager::onFinished(QNetworkReply* reply)
     {
         const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
-        qCWarning(NetworkLog) << "statusCode:" << statusCode;
+        qCWarning(RequestManagerLog) << "statusCode:" << statusCode;
 
         reply->deleteLater();
 
@@ -131,10 +135,11 @@ void RequestManager::onFinished(QNetworkReply* reply)
             }
             default:
             {
-                qCWarning(NetworkLog) << "something to do with other codes..."; // TODO
+                qCWarning(RequestManagerLog) << "something to do with other codes..."; // TODO
             }
         }
 
+        emit meaninglessRepliesReceived();
         return;
     }
 
@@ -146,14 +151,15 @@ void RequestManager::onFinished(QNetworkReply* reply)
         if (!cookies.isEmpty())
         {
             cookiesInitialized = true;
-            qCInfo(NetworkLog) << "Cookies initialized:" << cookies.size();
+            qCInfo(RequestManagerLog) << "Cookies initialized:" << cookies.size();
         }
         else
         {
-            qCInfo(NetworkLog) << "No cookies received.";
+            qCInfo(RequestManagerLog) << "No cookies received.";
         }
     }
 
+    emit meaningfulRepliesReceived();
     emit receivedReply(reply->readAll(), url);
 
     reply->deleteLater();
@@ -163,17 +169,15 @@ void RequestManager::startNext()
 {
     if (urlsQueue.isEmpty() && activeReplies.isEmpty())
     {
-        qCDebug(NetworkLog) << "Requesting is done!";
+        qCDebug(RequestManagerLog) << "Requesting is done!";
 
         stopTimers();
-
-        emit requestsFinished();
         return;
     }
 
     if (isInterrupted)
     {
-        qCDebug(NetworkLog) << "Interrupted";
+        qCDebug(RequestManagerLog) << "Interrupted";
         return;
     }
 
@@ -184,8 +188,11 @@ void RequestManager::startNext()
 
     if (!urlsQueue.isEmpty() && activeReplies.size() < _maxConcurrent)
     {
+        emit requestsStarted();
+        emit urlsDequeued();
+
         const QUrl url = urlsQueue.dequeue();
-        qCDebug(NetworkLog) << url;
+        qCDebug(RequestManagerLog) << url;
 
         QNetworkRequest request(url);
         request.setRawHeader("Accept-Language", "en-US,en;q=0.9");
@@ -211,13 +218,17 @@ void RequestManager::stopTimers()
 
 void RequestManager::cancelReplies()
 {
+    emit requestsFinished(activeReplies.size());
     for (QNetworkReply* reply : activeReplies)
+    {
         reply->abort();
+    }
 
     activeReplies.clear();
 }
 
 void RequestManager::clearQueue()
 {
+    emit urlsDequeued(urlsQueue.size());
     urlsQueue.clear();
 }

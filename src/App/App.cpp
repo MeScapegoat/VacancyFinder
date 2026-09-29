@@ -1,26 +1,21 @@
 #include "App.h"
 
-
-#include <QButtonGroup>
-#include <QCheckBox>
-#include <QComboBox>
-#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
-#include <QLineEdit>
 #include <QListView>
-#include <QSpinBox>
-#include <QTextBrowser>
-#include <QUrlQuery>
 #include <QStackedLayout>
+#include <QTextBrowser>
+#include <QThread>
+#include <QUrlQuery>
 
-
-#include <RequestManager.h>
-#include <Vacancy.h>
+#include "AppController.h"
+#include <HTMLparser.h>
+#include <MainWindow.h>
 #include <ProgressDialog.h>
-
 #include <QueryParametersPresenter.h>
+#include <RequestManager.h>
 #include <ResultViewOptionsPresenter.h>
+#include <Vacancy.h>
 
 namespace
 {
@@ -33,34 +28,33 @@ App::App(QObject* parent) :
     QObject(parent),
     queryParametersPresenter(*new QueryParametersPresenter(this)),
     resultViewOptionsPresenter(*new ResultViewOptionsPresenter(this)),
+    controller(*new AppController(this)),
     mainWindow(*new MainWindow(queryParametersPresenter.getView().widget(), resultViewOptionsPresenter.getView().widget())),
     progressDialog(*new ProgressDialog(&mainWindow)),
     requestManager(*new RequestManager),
-    networkThread(new QThread(this)),
-    parser(new HTMLparser),
-    parserThread(new QThread(this))
+    networkThread(*new QThread(this)),
+    parser(*new HTMLparser),
+    parserThread(*new QThread(this))
 {
 
     // Threads
-    networkThread->setObjectName("networkThread");
-    requestManager.moveToThread(networkThread);
+    networkThread.setObjectName("networkThread");
+    requestManager.moveToThread(&networkThread);
 
-    parserThread->setObjectName("parserThread");
-    parser->moveToThread(parserThread);
+    parserThread.setObjectName("parserThread");
+    parser.moveToThread(&parserThread);
 
-    QObject::connect(networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
-    QObject::connect(parserThread, &QThread::finished, parser, &HTMLparser::deleteLater);
+    QObject::connect(&networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
+    QObject::connect(&parserThread, &QThread::finished, &parser, &HTMLparser::deleteLater);
 
 
-    // Query Parameters
+    // QueryParameters
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::loadInterestedRequested, this, &App::loadInterested);
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::resetRequested, this, &App::reset);
 
-    QueryParametersModel& QPModel = queryParametersPresenter.getModel();
 
-
-    // Result View Options
+    // ResultViewOptions
     ResultViewOptionsModel& RVOModel = resultViewOptionsPresenter.getModel();
 
     QObject::connect(&RVOModel.currentSortMode,   &Observable<int>::valueChanged,     this, &App::updateDescriptionList);
@@ -72,29 +66,34 @@ App::App(QObject* parent) :
     QObject::connect(&RVOModel.isIgnoredVisible,    &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
     QObject::connect(&RVOModel.isInterestedVisible, &Observable<bool>::valueChanged, this, &App::updateDescriptionList);
 
+    // RequestManager
+    QObject::connect(&requestManager, &RequestManager::requestsStarted, &controller, &AppController::workStarted);
+    QObject::connect(&requestManager, &RequestManager::requestsFinished, &controller, &AppController::workFinished);
 
-    // Request Manager
-    QObject::connect(&requestManager, &RequestManager::requestsFinished, this, &App::onRequestsFinished);
-    QObject::connect(&requestManager, &RequestManager::requestsFinished, parser, &HTMLparser::onRequestsFinished);
-
-    QObject::connect(&requestManager, &RequestManager::receivedReply, parser, &HTMLparser::processHTML);
+    //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &App::onMeaningfulRepliesReceived); // -1 network work + 1 parsing work, so actually does nothing
+    QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &controller, &AppController::workFinished);
+    
+    QObject::connect(&requestManager, &RequestManager::receivedReply, &parser, &HTMLparser::processHTML);
     QObject::connect(&requestManager, &RequestManager::replyError, &progressDialog, &ProgressDialog::updateError);
+
+    QObject::connect(&requestManager, &RequestManager::urlsEnqueued, &controller, &AppController::workStarted);
+    QObject::connect(&requestManager, &RequestManager::urlsDequeued, &controller, &AppController::workFinished);
 
 
     // Parser
-    QObject::connect(parser, &HTMLparser::sendRequest, &requestManager, &RequestManager::addUrl);
+    QObject::connect(&parser, &HTMLparser::sendRequest, &requestManager, &RequestManager::addUrl);
 
-    QObject::connect(parser, &HTMLparser::briefReady, this, &App::onBriefReady);
-    QObject::connect(parser, &HTMLparser::briefReady, &progressDialog, &ProgressDialog::updateBrief);
+    QObject::connect(&parser, &HTMLparser::briefReady, this, &App::onBriefReady);
+    QObject::connect(&parser, &HTMLparser::briefReady, &progressDialog, &ProgressDialog::updateBrief);
 
-    QObject::connect(parser, &HTMLparser::detailsReady, this, &App::onDetailsReady);
-    QObject::connect(parser, &HTMLparser::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
+    QObject::connect(&parser, &HTMLparser::detailsReady, this, &App::onDetailsReady);
+    QObject::connect(&parser, &HTMLparser::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
 
-    QObject::connect(parser, &HTMLparser::briefsFinished, this, &App::onBriefsFinished);
-    QObject::connect(parser, &HTMLparser::allDetailsFinished, this, &App::onAllDetailsFinished);
+    //QObject::connect(&parser, &HTMLparser::parsingStarted, &controller, &AppController::workStarted); // Actually adds this work at RequestManager::meaningfulRepliesReceived
+    QObject::connect(&parser, &HTMLparser::parsingFinished, &controller, &AppController::workFinished);
 
 
-    // Main Window
+    // MainWindow
     QObject::connect(&mainWindow.vacanciesList,        &QListView::clicked,    this, &App::openVacancyDescription);
 
     QObject::connect(&mainWindow.ignoreButton,         &QPushButton::released, this, &App::onIgnoreButtonPressed);
@@ -106,41 +105,45 @@ App::App(QObject* parent) :
 
     // ProgressDialog
     QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::onInterrupt);
-    QObject::connect(&progressDialog.stopButton, &QPushButton::released, parser, &HTMLparser::onInterrupt);
+    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &parser, &HTMLparser::onInterrupt);
 
+    // AppController
+    QObject::connect(&controller, &AppController::allActiveWorkFinished, this, &App::updateDescriptionList);
+    QObject::connect(&controller, &AppController::allActiveWorkFinished, &progressDialog, &ProgressDialog::accept);
 
     // This
     QObject::connect(this, &App::initSearch, &requestManager, &RequestManager::addUrls);    
     QObject::connect(this, &App::updateVacanciesList, &mainWindow, &MainWindow::updateVacanciesList);
     QObject::connect(this, &App::openProgressDialog, &progressDialog, &ProgressDialog::start);
-    QObject::connect(this, &App::closeProgressDialog, &progressDialog, &ProgressDialog::accept);
 
     
     loadState();
 
     closeVacancyDescription();
 
-    networkThread->start();
-    parserThread->start();
+    networkThread.start();
+    parserThread.start();
 }
 
 App::~App()
 {
     saveState();
 
-    networkThread->quit();
-    networkThread->wait();
+    networkThread.quit();
+    networkThread.wait();
 
-    parserThread->quit();
-    parserThread->wait();
+    parserThread.quit();
+    parserThread.wait();
 }
 
 void App::reset()
 {
     vacancies.clear();
     vacanciesToShow.clear();
+
+    controller.reset();
     requestManager.reset();
-    parser->reset();
+    parser.reset();
 }
 
 void App::loadInterested()
@@ -157,9 +160,7 @@ void App::sendSearchRequest()
 {    
     updateMaxVacancies(queryParametersPresenter.getModel().maxResults());
 
-    isRequestsFinished = false;
-    isBriefsFinished = false;
-    isAllDetailsFinished = false;
+    controller.reset();
 
     keywords = queryParametersPresenter.getModel().keywords();
     location = queryParametersPresenter.getModel().location();
@@ -168,28 +169,17 @@ void App::sendSearchRequest()
 
     QVector<QUrl> urls;
 
-    if (maxVacancies > 10)
+    for (auto n = 0; n < maxVacancies; n += 10)
     {
-        for (auto n = 0; n < maxVacancies; n += 10)
-        {
-            QUrl url(BaseUrl);
-            QUrlQuery query;
-            query.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-            query.addQueryItem("location", QUrl::toPercentEncoding(location));
-            query.addQueryItem("start", QString::number(n));
-            url.setQuery(query);
+        QUrl url(BaseUrl);
+        QUrlQuery query;
+        query.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
+        query.addQueryItem("location", QUrl::toPercentEncoding(location));
+        query.addQueryItem("start", QString::number(n));
+        url.setQuery(query);
 
-            urls.append(url);
-        }
+        urls.append(url);
     }
-
-    QUrl url(BaseUrl);
-    QUrlQuery query;
-    query.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-    query.addQueryItem("location", QUrl::toPercentEncoding(location));
-    query.addQueryItem("start", QString::number(maxVacancies));
-    url.setQuery(query);
-    urls.append(url);
 
     searchStartTime = QTime::currentTime();
 
@@ -341,24 +331,6 @@ void App::onDetailsReady(const Vacancy& vacancy)
     }
 }
 
-void App::onBriefsFinished()
-{
-    isBriefsFinished = true;
-    updateIsAllFinished();
-}
-
-void App::onAllDetailsFinished()
-{
-    isAllDetailsFinished = true;
-    updateIsAllFinished();
-}
-
-void App::onRequestsFinished()
-{
-    isRequestsFinished = true;
-    updateIsAllFinished();
-}
-
 void App::onIgnoreButtonPressed()
 {
     const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
@@ -411,6 +383,14 @@ void App::onRemoveInterestButtonPressed()
     closeVacancyDescription();
 }
 
+void App::onMeaningfulRepliesReceived(int amount)
+{
+    //controller.parsingWorkStarted(amount);
+    //controller.networkWorkFinished(amount);
+    controller.workStarted(amount);
+    controller.workFinished(amount);
+}
+
 QString App::loadTitleFromFile(const QString& path)
 {
     QFile file(path);
@@ -461,22 +441,6 @@ void App::syncVacanciesToShow()
     {
         vacanciesToShow.push_back(&vacancy);
     }
-}
-
-void App::updateIsAllFinished()
-{
-    isAllFinished = isRequestsFinished && isBriefsFinished && isAllDetailsFinished;
-
-    if (!isAllFinished)
-    {
-        return;
-    }
-
-    qCInfo(AppLog) << "Time spent for" << vacancies.size() << "vacancies is" << searchStartTime.secsTo(QTime::currentTime()) << "seconds";
-
-    updateDescriptionList();
-
-    emit closeProgressDialog();
 }
 
 void App::applyStatusFilter()

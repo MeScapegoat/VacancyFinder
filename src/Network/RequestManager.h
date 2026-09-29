@@ -8,7 +8,7 @@
 #include <QTimer>
 #include <QNetworkReply>
 
-Q_DECLARE_LOGGING_CATEGORY(NetworkLog);
+Q_DECLARE_LOGGING_CATEGORY(RequestManagerLog);
 
 class SharedContext;
 
@@ -36,9 +36,17 @@ public slots:
     void onInterrupt();
 
 signals:
+    void urlsEnqueued(int amount = 1);
+    void urlsDequeued(int amount = 1);
+
+    void requestsStarted(int amount = 1);
+    void requestsFinished(int amount = 1);
+
+    void meaningfulRepliesReceived(int amount = 1);
+    void meaninglessRepliesReceived(int amount = 1);
+
     void receivedReply(const QString& html, const QUrl& url);
     void replyError(const QNetworkReply::NetworkError& error);
-    void requestsFinished();
 
 protected slots:
     void onFinished(QNetworkReply* reply);
