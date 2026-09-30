@@ -1,4 +1,6 @@
 #include "BenchmarkCommonData.h"
+
+#include <AppController.h>
 #include <RequestManager.h>
 
 #include <QCoreApplication>
@@ -12,6 +14,7 @@
 #include <QList>
 #include <QString>
 #include <QTimer>
+
 
 static constexpr qint64 waitBetweenTestsMs = 60 * 1000;
 static constexpr qint64 linksAmount = 100;
@@ -106,14 +109,24 @@ private:
             results.append({config, {}});
 
         requestManager = new RequestManager(this);
+        controller = new AppController(this);
+
+        QObject::connect(requestManager, &RequestManager::urlsEnqueued, controller, &AppController::workStarted);
+        QObject::connect(requestManager, &RequestManager::urlsDequeued, controller, &AppController::workFinished);
+
+        QObject::connect(requestManager, &RequestManager::requestsStarted, controller, &AppController::workStarted);
+        QObject::connect(requestManager, &RequestManager::requestsFinished, controller, &AppController::workFinished);
+
+        QObject::connect(requestManager, &RequestManager::meaningfulRepliesReceived, controller, &AppController::workFinished);
+        QObject::connect(requestManager, &RequestManager::meaninglessRepliesReceived, controller, &AppController::workFinished);
 
         requestManager->setMaxConcurrent(config.maxConcurrent);
         requestManager->setRequestsPerSecond(config.requestsPerSecond);
         requestManager->setRequestCooldownMs(config.requestCooldownMs);
 
-        connect(requestManager, &RequestManager::requestsFinished, this, [this]()
+        connect(controller, &AppController::allActiveWorkFinished, this, [this]()
         {
-            static_assert(false); // TODO: Update this to match the new workflow
+            finishCurrentBenchmark();
         });
 
         timer.start();
@@ -147,6 +160,9 @@ private:
 
         requestManager->deleteLater();
         requestManager = nullptr;
+        
+        controller->deleteLater();
+        controller = nullptr;
 
         if (runIndex < totalRuns)
         {
@@ -175,6 +191,8 @@ private:
     }
 
 private:
+    AppController* controller = nullptr;
+
     QList<BenchmarkConfig> configurations;
     QList<BenchmarkResult> results;
 
