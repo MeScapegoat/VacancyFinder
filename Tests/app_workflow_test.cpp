@@ -6,8 +6,9 @@
 #include <QRandomGenerator>
 
 #include <AppController.h>
-#include <HTMLparser.h>
+#include <Parser.h>
 #include <RequestManager.h>
+#include <LinkedInParserStrategy/LinkedInParserStrategy.h>
 
 
 class AppWorkFlowTest : public QObject, public ::testing::Test
@@ -16,10 +17,15 @@ protected:
     AppWorkFlowTest() :
         requestManager(*new RequestManager),
         networkThread(*new QThread(this)),
-        parser(*new HTMLparser),
+        parser(*new Parser),
         parserThread(*new QThread(this)),
-        controllerSpy(&controller, &AppController::allActiveWorkFinished)
+        parserStrategy(new LinkedInParserStrategy),
+        controllerSpy(&controller, &AppController::allActiveWorkFinished),
+        parserBriefSpy(&parser, &Parser::briefParsed),
+        parserDetailsSpy(&parser, &Parser::detailsParsed)
     {
+        parser.setStrategy(parserStrategy.get());
+
         networkThread.setObjectName("networkThread");
         requestManager.moveToThread(&networkThread);
 
@@ -27,7 +33,7 @@ protected:
         parser.moveToThread(&parserThread);
 
         QObject::connect(&networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
-        QObject::connect(&parserThread, &QThread::finished, &parser, &HTMLparser::deleteLater);
+        QObject::connect(&parserThread, &QThread::finished, &parser, &Parser::deleteLater);
 
         // RequestManager
         QObject::connect(&requestManager, &RequestManager::requestsStarted, &controller, &AppController::workStarted);
@@ -36,15 +42,15 @@ protected:
         //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &App::onMeaningfulRepliesReceived); // does +1 and then -1 active work, so actually does nothing, hence commented
         QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &controller, &AppController::workFinished);
 
-        QObject::connect(&requestManager, &RequestManager::receivedReply, &parser, &HTMLparser::processHTML);
-        QObject::connect(&requestManager, &RequestManager::urlsEnqueued, &controller, &AppController::workStarted);
-        QObject::connect(&requestManager, &RequestManager::urlsDequeued, &controller, &AppController::workFinished);
+        QObject::connect(&requestManager, &RequestManager::receivedReply, &parser,     &Parser::processPage);
+        QObject::connect(&requestManager, &RequestManager::urlsEnqueued,  &controller, &AppController::workStarted);
+        QObject::connect(&requestManager, &RequestManager::urlsDequeued,  &controller, &AppController::workFinished);
 
 
         // Parser
-        QObject::connect(&parser, &HTMLparser::sendRequest, &requestManager, &RequestManager::addUrl);
+        QObject::connect(&parser, &Parser::requestDetails, &requestManager, &RequestManager::addUrl);
         //QObject::connect(&parser, &HTMLparser::parsingStarted, &controller, &AppController::workStarted);
-        QObject::connect(&parser, &HTMLparser::parsingFinished, &controller, &AppController::workFinished);
+        QObject::connect(&parser, &Parser::pageParsingFinished, &controller, &AppController::workFinished);
 
         networkThread.start();
         parserThread.start();
@@ -65,7 +71,7 @@ protected:
     {
         QMetaObject::invokeMethod(&parser, [this]()
         {
-            parser.onInterrupt();
+            parser.interrupt();
         });
 
         QMetaObject::invokeMethod(&requestManager, [this]()
@@ -107,10 +113,13 @@ protected:
     RequestManager& requestManager;
     QThread& networkThread;
 
-    HTMLparser& parser;
+    Parser& parser;
     QThread& parserThread;
+    std::unique_ptr<AbstractParserStrategy> parserStrategy;
 
     QSignalSpy controllerSpy;
+    QSignalSpy parserBriefSpy;
+    QSignalSpy parserDetailsSpy;
 };
 
 TEST_F(AppWorkFlowTest, SmallSearch)
@@ -122,7 +131,8 @@ TEST_F(AppWorkFlowTest, SmallSearch)
     ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish";
 
     EXPECT_EQ(controllerSpy.count(), 1);
-    EXPECT_GE(parser.processedDetails().size(), maxVacancies);
+    EXPECT_GE(parserBriefSpy.count(), maxVacancies);
+    EXPECT_EQ(parserBriefSpy.count(), parserDetailsSpy.count());
 }
 
 TEST_F(AppWorkFlowTest, MediumSearch)
@@ -134,7 +144,8 @@ TEST_F(AppWorkFlowTest, MediumSearch)
     ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish";
 
     EXPECT_EQ(controllerSpy.count(), 1);
-    EXPECT_GE(parser.processedDetails().size(), maxVacancies);
+    EXPECT_GE(parserBriefSpy.count(), maxVacancies);
+    EXPECT_EQ(parserBriefSpy.count(), parserDetailsSpy.count());
 }
 
 TEST_F(AppWorkFlowTest, BigSearch)
@@ -146,12 +157,13 @@ TEST_F(AppWorkFlowTest, BigSearch)
     ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish";
 
     EXPECT_EQ(controllerSpy.count(), 1);
-    EXPECT_GE(parser.processedDetails().size(), maxVacancies);
+    EXPECT_GE(parserBriefSpy.count(), maxVacancies);
+    EXPECT_EQ(parserBriefSpy.count(), parserDetailsSpy.count());
 }
 
 TEST_F(AppWorkFlowTest, InterruptFinishesAllWorkExactlyOnce)
 {
-    const int maxVacancies = QRandomGenerator::global()->bounded(10, 100);
+    const int maxVacancies = QRandomGenerator::global()->bounded(50, 100);
 
     initSearch(maxVacancies);
 
@@ -172,7 +184,7 @@ TEST_F(AppWorkFlowTest, InterruptFinishesAllWorkExactlyOnce)
 
 TEST_F(AppWorkFlowTest, InterruptStopsFurtherParsing)
 {
-    const int maxVacancies = QRandomGenerator::global()->bounded(10, 100);
+    const int maxVacancies = QRandomGenerator::global()->bounded(50, 100);
 
     initSearch(maxVacancies);
 
@@ -184,10 +196,12 @@ TEST_F(AppWorkFlowTest, InterruptStopsFurtherParsing)
 
     ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish after interrupt";
 
-    const int parsedAfterInterrupt = parser.processedDetails().count();
+    const int parsedBriefsAfterInterrupt = parserBriefSpy.count();
+    const int parsedDetailsAfterInterrupt = parserDetailsSpy.count();
 
     QTest::qWait(1000);
 
     EXPECT_EQ(controllerSpy.count(), 1);
-    EXPECT_EQ(parser.processedDetails().count(), parsedAfterInterrupt);
+    EXPECT_EQ(parserBriefSpy.count(), parsedBriefsAfterInterrupt);
+    EXPECT_EQ(parserDetailsSpy.count(), parsedDetailsAfterInterrupt);
 }

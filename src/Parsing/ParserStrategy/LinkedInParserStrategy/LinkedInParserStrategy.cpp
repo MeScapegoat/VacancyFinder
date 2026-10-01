@@ -1,151 +1,29 @@
-#include "HTMLparser.h"
+#include "LinkedInParserStrategy.h"
 
-// Qt
-#include <QThread>
 #include <QRegularExpression>
-#include <QJSonDocument>
-#include <QJsonObject>
-#include <QUrlQuery>
+#include <QJsonDocument>
+#include <QDebug>
 
-// custom
-
-// this is development code
-#include <QDir>
-#include <QFile>
-
-const QString TitleFolder = "DEBUG_TITLES";
-const QString DescriptionFolder = "DEBUG_DESCRIPTIONS";
+#include <Utils.hpp>
 
 
-Q_LOGGING_CATEGORY(ParserLog, "parser");
+Q_LOGGING_CATEGORY(LinkedInParserStrategyLog, "parsing.linkedInParserStrategy");
 
 
-HTMLparser::HTMLparser(QObject* parent) :
-    QObject(parent),
-    m_processedBriefs(),
-    m_processedDetails(),
-    isInterrupted(false)
+PageType LinkedInParserStrategy::classifyPage(const QString& html) const
 {
-}
-
-void HTMLparser::reset()
-{
-    m_processedBriefs.clear();
-    m_processedDetails.clear();
-
-    isInterrupted = false;
-}
-
-const QSet<QUrl>& HTMLparser::processedBriefs() const
-{
-    return m_processedBriefs;
-}
-
-const QSet<QUrl>& HTMLparser::processedDetails() const
-{
-    return m_processedDetails;
-}
-
-void HTMLparser::processHTML(const QString& html, const QUrl& url)
-{
-    if (isInterrupted)
-    {
-        qCDebug(ParserLog) << "Interrupted";
-        return;
-    }
-
-    emit parsingStarted();
-
-    qCInfo(ParserLog) << url;
-
     if (html.contains("description"))
-    {
-        processDetails(html, url);
-    }
-    else
-    {
-        const int id = QUrlQuery(url).queryItemValue("start").toInt();
+        return PageType::Details;
 
-        processBriefs(html, id);
-    }
-
-    emit parsingFinished();
+    return PageType::Brief;
 }
 
-void HTMLparser::onInterrupt()
-{
-    isInterrupted = true;
-
-    qCDebug(ParserLog) << "Interrupted";
-}
-
-QString HTMLparser::removeSpaces(QString str)
-{
-    static const QRegularExpression emptyLinesRegex(R"((?m)^[ \t]*\r?\n)");
-    static const QRegularExpression multipleSpacesTabsRegex(R"([ \t]+)");
-
-    str.remove(emptyLinesRegex);
-    str.replace(multipleSpacesTabsRegex, " ");
-
-    return str;
-}
-
-QString HTMLparser::extract(const QString& html, const QString& pattern)
-{
-    const QRegularExpression regex(pattern, QRegularExpression::DotMatchesEverythingOption);
-
-    const QRegularExpressionMatch match = regex.match(html);
-
-    if (match.hasMatch())
-    {
-        return decodeHtml(match.captured(1).trimmed());
-    }
-
-    return QString();
-}
-
-QStringList HTMLparser::extractAll(const QString& data, const QString& pattern)
-{
-    const QRegularExpression regex(pattern, QRegularExpression::DotMatchesEverythingOption);
-
-    QStringList result;
-
-    QRegularExpressionMatchIterator it = regex.globalMatch(data);
-
-    while (it.hasNext())
-    {
-        const QRegularExpressionMatch match = it.next();
-        result.append(decodeHtml(match.captured(1).trimmed()));
-    }
-
-    return result;
-}
-
-QString HTMLparser::decodeHtml(QString text)
-{
-    text.replace("&amp;", "&");
-    text.replace("&quot;", "\"");
-    text.replace("&#39;", "'");
-    text.replace("&lt;", "<");
-    text.replace("&gt;", ">");
-    text.replace("&nbsp;", " ");
-
-    return text;
-}
-
-void HTMLparser::processBriefs(const QString& html, const int id)
+QList<Vacancy> LinkedInParserStrategy::parseBriefs(const QString& html) const
 {
     static const QRegularExpression vacancyRegex(R"(<li\b[^>]*>(.*?)</li>)", QRegularExpression::DotMatchesEverythingOption);
 
-    if (isInterrupted)
-    {
-        qCDebug(ParserLog) << "Interrupted";
-        return;
-    }
 
     const QString cleanHtml = removeSpaces(html);
-
-    saveToFile(cleanHtml, QString::number(id), TitleFolder);
 
     QRegularExpressionMatchIterator it = vacancyRegex.globalMatch(cleanHtml);
     QStringList data;
@@ -157,44 +35,40 @@ void HTMLparser::processBriefs(const QString& html, const int id)
         data.emplaceBack(match.captured(1));
     }
 
-    if (data.isEmpty())
+
+    QList<Vacancy> vacancies;
+    vacancies.reserve(data.size());
+
+    for (const QString& html : data)
     {
-        qCDebug(ParserLog) << "EMPTY:" << id;
-        return;
+        vacancies.push_back(parseBrief(html));
     }
 
-    for (const QString& title : data)
-    {
-        parseBrief(title);
-    }
+    return vacancies;
 }
 
-void HTMLparser::processDetails(const QString& html, const QUrl& url)
+Vacancy LinkedInParserStrategy::parseDetails(const QString& html, const QUrl& url) const
 {
-    if (isInterrupted)
-    {
-        qCDebug(ParserLog) << "Interrupted";
-        return;
-    }
+    const QString cleanHtml = removeSpaces(html);
+    const QJsonObject json = extractJsonObject(cleanHtml);
 
-    if (m_processedDetails.contains(url))
+    qCDebug(LinkedInParserStrategyLog) << json;
+
+    Vacancy vacancy;
+
+    if (!json.isEmpty())
     {
-        qCDebug(ParserLog) << "Already processed details:" << url;
-        return;
+        vacancy = parseDetailsByJson(json, url);
     }
     else
     {
-        m_processedDetails.insert(url);
+        vacancy = parseDetailsByHtml(cleanHtml, url);
     }
 
-    const QString cleanHtml = removeSpaces(html);
-
-    saveToFile(cleanHtml, QString::number(m_processedDetails.size()), DescriptionFolder);
-
-    parseDetails(cleanHtml, url);
+    return vacancy;
 }
 
-void HTMLparser::parseBrief(const QString& html)
+Vacancy parseBrief(const QString& html)
 {
     static constexpr const char* titlePattern = R"(<h3\b[^>]*class="base-search-card__title"[^>]*>(.*?)</h3>)";
     static constexpr const char* linkPattern = R"REGEX(<a\b[^>]*class="base-card__full-link[^"]*"[^>]*href="([^"]+)")REGEX";
@@ -207,9 +81,11 @@ void HTMLparser::parseBrief(const QString& html)
     static constexpr const char* datePattern = R"REGEX(<time\b[^>]*datetime="([^"]+)")REGEX";
 
 
-    static constexpr const char* dateFormat = "dd-MM-yyyy";
+    //static constexpr const char* dateFormat = "dd-MM-yyyy";
+
 
     Vacancy vacancy;
+
     vacancy.title = extract(html, titlePattern);
 
     vacancy.link = extract(html, linkPattern);
@@ -228,47 +104,24 @@ void HTMLparser::parseBrief(const QString& html)
     vacancy.companyLink = companyLink;
 
     vacancy.location = extract(html, locationPattern);
+    
+    // employmentType;
+    // skills;
+    // description;
 
     const QString date = extract(html, datePattern);
     vacancy.date = QDate::fromString(date, Qt::ISODate);
 
-    if (m_processedBriefs.contains(vacancy.link)) // TODO: move out of this function
-    {
-        qCDebug(ParserLog) << "Already processed brief:" << vacancy.link;
-        return;
-    }
-    else
-    {
-        m_processedBriefs.insert(vacancy.link);
-    }
-    vacancy.id = m_processedBriefs.size();
+    // industry;
+    // level;
+    // experience;
+    // education;
+    // expirationDate;
 
-    emit briefReady(vacancy);
-    emit sendRequest(vacancy.link);
+    return vacancy;
 }
 
-void HTMLparser::parseDetails(const QString& html, const QUrl& url)
-{
-    static constexpr const char* jsonDataPattern = R"REGEX(<script\b[^>]*type="application/ld\+json"[^>]*>(.*?)</script>)REGEX";
-
-    const QString jsonText = extract(html, jsonDataPattern);
-    const QJsonDocument document = QJsonDocument::fromJson(jsonText.toUtf8());
-
-    Vacancy vacancy;
-
-    if (!document.isNull() && document.isObject())
-    {
-        vacancy = parseDetailsByJson(document.object(), url);
-    }
-    else
-    {
-        vacancy = parseDetailsByHtml(html, url);
-    }
-
-    emit detailsReady(vacancy);
-}
-
-Vacancy HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& url)
+Vacancy parseDetailsByJson(const QJsonObject& object, const QUrl& url)
 {
     static constexpr const char* titleFieldName = "title";
 
@@ -297,10 +150,9 @@ Vacancy HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& ur
 
     static constexpr const char* descriptionTypeFieldName = "description";
 
+    qCDebug(LinkedInParserStrategyLog) << object;
 
     Vacancy vacancy;
-
-    vacancy.id = m_processedDetails.size();
 
     vacancy.title = object[titleFieldName].toString();
     vacancy.link = url;
@@ -321,16 +173,16 @@ Vacancy HTMLparser::parseDetailsByJson(const QJsonObject& object, const QUrl& ur
     //vacancy.level;
     vacancy.experience = object[experienceFieldName][experienceMonthsFieldName].toInt();
     vacancy.education = object[educationFieldName][educationCategoryFieldName].toString();
-    vacancy.expirationDate = QDate::fromString(object[expirationDateFieldName].toString(), Qt::ISODate);;
-    
+    vacancy.expirationDate = QDate::fromString(object[expirationDateFieldName].toString(), Qt::ISODate);
+
 
     return vacancy;
 }
 
-Vacancy HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
+Vacancy parseDetailsByHtml(const QString& html, const QUrl& url)
 {
     static constexpr const char* titlePattern = R"REGEX(<h1\b[^>]*class="top-card-layout__title[^"]*"[^>]*>(.*?)</h1>)REGEX";
-    static constexpr const char* linkPattern = R"REGEX(<link\b[^>]*rel="canonical"[^>]*href="([^"]+)")REGEX";
+    //static constexpr const char* linkPattern = R"REGEX(<link\b[^>]*rel="canonical"[^>]*href="([^"]+)")REGEX";
 
     static constexpr const char* companyNamePattern = R"REGEX(<a\b[^>]*class="topcard__org-name-link[^"]*"[^>]*>(.*?)</a>)REGEX";
     static constexpr const char* companyLinkPattern = R"REGEX(<a\b[^>]*class="topcard__org-name-link[^"]*"[^>]*href="([^"]+)")REGEX";
@@ -341,13 +193,11 @@ Vacancy HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
 
     static constexpr const char* jobCriteriaPattern = R"REGEX(<span\b[^>]*class="description__job-criteria-text[^"]*description__job-criteria-text--criteria[^"]*"[^>]*>(.*?)</span>)REGEX";
 
-    //static constexpr const char* isClosedJobStr = "closed-job";
+    //static constexpr const char* сlosedJobStr = "closed-job";
 
     const QStringList jobCriteriaList = extractAll(html, jobCriteriaPattern);
 
     Vacancy vacancy;
-
-    vacancy.id = m_processedDetails.size();
 
     vacancy.title = extract(html, titlePattern);
     vacancy.link = url;
@@ -359,35 +209,24 @@ Vacancy HTMLparser::parseDetailsByHtml(const QString& html, const QUrl& url)
     vacancy.location = extract(html, locationPattern);
 
     if (jobCriteriaList.size() > 1) vacancy.employmentType = jobCriteriaList[1];
-    //skills;
+    // skills;
     vacancy.description = extract(html, descriptionPattern);
-    //date;
+    // date;
     if (jobCriteriaList.size() > 3) vacancy.industry = jobCriteriaList[3];
     if (jobCriteriaList.size() > 0) vacancy.level = jobCriteriaList[0];
-    //experience;
-    //education;
-    //expirationDate;
+    // experience;
+    // education;
+    // expirationDate;
 
     return vacancy;
 }
 
-
-
-
-void saveToFile(const QString& html, const QString& name, const QString& folder)
+QJsonObject extractJsonObject(const QString& html)
 {
-    QDir dir;
-    dir.mkdir(folder);
-    QFile file;
+    static constexpr auto jsonObjectPattern = R"REGEX(<script\b[^>]*type="application/ld\+json"[^>]*>(.*?)</script>)REGEX";
 
-    file.setFileName(dir.absolutePath() + "/" + folder + "/" + name + ".html");
+    const QString jsonText = extract(html, jsonObjectPattern);
+    const QJsonDocument document = QJsonDocument::fromJson(jsonText.toUtf8());
 
-    if (file.open(QFile::WriteOnly))
-        file.write(html.toUtf8());
-    else
-    {
-        qInfo() << "couldnt open file!" << file.fileName();
-        return;
-    }
-    file.close();
+    return document.object();
 }

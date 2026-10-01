@@ -1,6 +1,6 @@
 #include "Vacancy.h"
 
-#include "../utils/Utils.h"
+#include <Utils.hpp>
 
 
 Q_LOGGING_CATEGORY(VacancyLog, "vacancy");

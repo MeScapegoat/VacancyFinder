@@ -10,4 +10,6 @@ target_include_directories(Domain PUBLIC
 target_link_libraries(Domain
     PUBLIC 
         Qt6::Core
+    PRIVATE
+        Utils
 )

@@ -10,13 +10,13 @@
 
 class AppController;
 class RequestManager;
-class HTMLparser;
+class Parser;
 class QueryParametersPresenter;
 class ResultViewOptionsPresenter;
 class ProgressDialog;
 class MainWindow;
-class HTMLparser;
 class QNetworkReply;
+class AbstractParserStrategy;
 
 Q_DECLARE_LOGGING_CATEGORY(AppLog);
 
@@ -114,7 +114,7 @@ private:
     RequestManager& requestManager;
     QThread& networkThread;
 
-    HTMLparser& parser;
+    Parser& parser;
     QThread& parserThread;
 
     AppState state;
@@ -131,4 +131,6 @@ private:
     unsigned maxVacancies;
 
     QTime searchStartTime;
+
+    std::unique_ptr<AbstractParserStrategy> parserStrategy;
 };

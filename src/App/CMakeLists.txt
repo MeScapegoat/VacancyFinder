@@ -5,6 +5,7 @@ add_library(App
     AppState.h
     AppState.cpp
 
+    # TODO: make separate class
     AppController.h
     AppController.cpp
 )
@@ -18,7 +19,9 @@ target_link_libraries(App
         Qt6::Core
     #PRIVATE # TODO: retrieve
         Domain
-        Parsing
+        Parser
+        $<$<CONFIG:Release>:LinkedInParserStrategy>
+        $<$<CONFIG:Debug>:LinkedInPageCollector>
         UI
         ResultViewOptions
         Network

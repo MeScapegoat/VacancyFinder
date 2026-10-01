@@ -12,7 +12,7 @@ target_include_directories(RequestManagerBenchmark
 
 target_link_libraries(RequestManagerBenchmark
     PRIVATE
-        App
+        App #TODO: change to AppController
         Network
         Qt6::Core
         Qt6::Network

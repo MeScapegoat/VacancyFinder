@@ -34,10 +34,12 @@ add_executable(AppWorkflow_test
 
 target_link_libraries(AppWorkflow_test
 	PRIVATE
-		App
+		App # TODO: change to AppController
 		Network
-		Parsing
+		Parser
+		LinkedInParserStrategy
 		GTest::gtest
+		Qt6::Widgets
 		Qt6::Test
 )
 

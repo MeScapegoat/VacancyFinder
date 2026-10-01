@@ -9,13 +9,19 @@
 #include <QUrlQuery>
 
 #include "AppController.h"
-#include <HTMLparser.h>
 #include <MainWindow.h>
 #include <ProgressDialog.h>
 #include <QueryParametersPresenter.h>
 #include <RequestManager.h>
 #include <ResultViewOptionsPresenter.h>
 #include <Vacancy.h>
+#include <Parser.h>
+#ifdef NDEBUG
+#include <LinkedInParserStrategy/LinkedInParserStrategy.h>
+#else
+#include <LinkedInParserStrategy/LinkedInPageCollector.h>
+#endif
+
 
 namespace
 {
@@ -33,9 +39,15 @@ App::App(QObject* parent) :
     progressDialog(*new ProgressDialog(&mainWindow)),
     requestManager(*new RequestManager),
     networkThread(*new QThread(this)),
-    parser(*new HTMLparser),
-    parserThread(*new QThread(this))
+    parser(*new Parser),
+    parserThread(*new QThread(this)),
+#ifdef NDEBUG
+    parserStrategy(new LinkedInParserStrategy)
+#else
+    parserStrategy(new LinkedInPageCollector)
+#endif
 {
+    parser.setStrategy(parserStrategy.get());
 
     // Threads
     networkThread.setObjectName("networkThread");
@@ -45,7 +57,7 @@ App::App(QObject* parent) :
     parser.moveToThread(&parserThread);
 
     QObject::connect(&networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
-    QObject::connect(&parserThread, &QThread::finished, &parser, &HTMLparser::deleteLater);
+    QObject::connect(&parserThread, &QThread::finished, &parser, &Parser::deleteLater);
 
 
     // QueryParameters
@@ -70,10 +82,10 @@ App::App(QObject* parent) :
     QObject::connect(&requestManager, &RequestManager::requestsStarted, &controller, &AppController::workStarted);
     QObject::connect(&requestManager, &RequestManager::requestsFinished, &controller, &AppController::workFinished);
 
-    //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &App::onMeaningfulRepliesReceived); // -1 network work + 1 parsing work, so actually does nothing
+    //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &App::onMeaningfulRepliesReceived); // -1 network work +1 parsing work, so the total work remains unchanged
     QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &controller, &AppController::workFinished);
     
-    QObject::connect(&requestManager, &RequestManager::receivedReply, &parser, &HTMLparser::processHTML);
+    QObject::connect(&requestManager, &RequestManager::receivedReply, &parser, &Parser::processPage);
     QObject::connect(&requestManager, &RequestManager::replyError, &progressDialog, &ProgressDialog::updateError);
 
     QObject::connect(&requestManager, &RequestManager::urlsEnqueued, &controller, &AppController::workStarted);
@@ -81,16 +93,16 @@ App::App(QObject* parent) :
 
 
     // Parser
-    QObject::connect(&parser, &HTMLparser::sendRequest, &requestManager, &RequestManager::addUrl);
+    QObject::connect(&parser, &Parser::requestDetails, &requestManager, &RequestManager::addUrl);
 
-    QObject::connect(&parser, &HTMLparser::briefReady, this, &App::onBriefReady);
-    QObject::connect(&parser, &HTMLparser::briefReady, &progressDialog, &ProgressDialog::updateBrief);
+    QObject::connect(&parser, &Parser::briefParsed, this, &App::onBriefReady);
+    QObject::connect(&parser, &Parser::briefParsed, &progressDialog, &ProgressDialog::updateBrief);
 
-    QObject::connect(&parser, &HTMLparser::detailsReady, this, &App::onDetailsReady);
-    QObject::connect(&parser, &HTMLparser::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
+    QObject::connect(&parser, &Parser::detailsParsed, this, &App::onDetailsReady);
+    QObject::connect(&parser, &Parser::detailsParsed, &progressDialog, &ProgressDialog::updateDetails);
 
-    //QObject::connect(&parser, &HTMLparser::parsingStarted, &controller, &AppController::workStarted); // Actually adds this work at RequestManager::meaningfulRepliesReceived
-    QObject::connect(&parser, &HTMLparser::parsingFinished, &controller, &AppController::workFinished);
+    //QObject::connect(&parser, &Parser::pageParsingStarted,  &controller, &AppController::workStarted); // Work is actually added in App::onMeaningfulRepliesReceived
+    QObject::connect(&parser, &Parser::pageParsingFinished, &controller, &AppController::workFinished);
 
 
     // MainWindow
@@ -105,7 +117,7 @@ App::App(QObject* parent) :
 
     // ProgressDialog
     QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::onInterrupt);
-    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &parser, &HTMLparser::onInterrupt);
+    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &parser, &Parser::interrupt);
 
     // AppController
     QObject::connect(&controller, &AppController::allActiveWorkFinished, this, &App::updateDescriptionList);
@@ -385,8 +397,6 @@ void App::onRemoveInterestButtonPressed()
 
 void App::onMeaningfulRepliesReceived(int amount)
 {
-    //controller.parsingWorkStarted(amount);
-    //controller.networkWorkFinished(amount);
     controller.workStarted(amount);
     controller.workFinished(amount);
 }
