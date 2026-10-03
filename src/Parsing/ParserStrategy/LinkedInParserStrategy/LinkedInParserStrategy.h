@@ -22,11 +22,3 @@ public: // AbstractParserStrategy
     virtual QList<Vacancy> parseBriefs(const QString& html) const override;
     virtual Vacancy parseDetails(const QString& html, const QUrl& url) const override;
 };
-
-
-Vacancy parseBrief(const QString& html);
-
-Vacancy parseDetailsByJson(const QJsonObject& object, const QUrl& url);
-Vacancy parseDetailsByHtml(const QString& html, const QUrl& url);
-
-QJsonObject extractJsonObject(const QString& html);

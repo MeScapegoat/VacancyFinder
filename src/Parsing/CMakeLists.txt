@@ -12,9 +12,9 @@ target_include_directories(Parser PUBLIC
 target_link_libraries(Parser 
     PUBLIC 
         Qt6::Core
+        Domain
     PRIVATE
         AbstractParserStrategy
-        Domain
         Utils
 )
 

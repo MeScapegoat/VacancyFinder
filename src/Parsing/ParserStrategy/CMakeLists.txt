@@ -19,6 +19,15 @@ set_target_properties(AbstractParserStrategy PROPERTIES FOLDER "Parsing")
 add_library(LinkedInParserStrategy
     LinkedInParserStrategy/LinkedInParserStrategy.h
     LinkedInParserStrategy/LinkedInParserStrategy.cpp
+
+    LinkedInParserStrategy/LinkedInBriefVacancyExtractor.h
+    LinkedInParserStrategy/LinkedInBriefVacancyExtractor.cpp
+
+    LinkedInParserStrategy/LinkedInDetailsHtmlVacancyExtractor.h
+    LinkedInParserStrategy/LinkedInDetailsHtmlVacancyExtractor.cpp
+
+    LinkedInParserStrategy/LinkedInDetailsJsonVacancyExtractor.h
+    LinkedInParserStrategy/LinkedInDetailsJsonVacancyExtractor.cpp
 )
 
 target_include_directories(LinkedInParserStrategy PUBLIC

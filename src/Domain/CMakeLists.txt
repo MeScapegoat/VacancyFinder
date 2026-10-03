@@ -1,6 +1,9 @@
 add_library(Domain
     Vacancy.h
     Vacancy.cpp
+
+    VacancyExtractor.h
+    VacancyExtractor.cpp
 )
 
 target_include_directories(Domain PUBLIC
