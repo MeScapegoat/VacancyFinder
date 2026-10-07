@@ -1,3 +1,7 @@
+add_subdirectory(NetworkManager)
+
+
+
 add_library(Network
     RequestManager.h
     RequestManager.cpp
@@ -13,3 +17,5 @@ target_link_libraries(Network
     PRIVATE
         Qt6::Network
 )
+
+set_target_properties(Network PROPERTIES FOLDER "Network")
