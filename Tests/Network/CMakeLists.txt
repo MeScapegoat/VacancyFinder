@@ -4,8 +4,9 @@ add_executable(RequestManager_test
 
 target_link_libraries(RequestManager_test
 	PRIVATE
-		Network
+		RequestManager
 		AbstractRequestStrategy
+		FakeNetworkManager
 		main_for_qt_tests
 		GTest::gtest
 		Qt6::Core
@@ -50,3 +51,22 @@ target_link_libraries(FakeNetworkManager_test
 set_target_properties(FakeNetworkManager_test PROPERTIES FOLDER "Tests/Network")
 
 gtest_discover_tests(FakeNetworkManager_test)
+
+
+
+add_executable(LinkedInRequestStrategy_test
+	LinkedInRequestStrategy_test.cpp
+)
+
+target_link_libraries(LinkedInRequestStrategy_test
+	PRIVATE
+		main_for_qt_tests
+		LinkedInRequestStrategy
+		FakeNetworkManager
+		GTest::gtest
+		Qt6::Test
+)
+
+set_target_properties(LinkedInRequestStrategy_test PROPERTIES FOLDER "Tests/Network")
+
+gtest_discover_tests(LinkedInRequestStrategy_test)

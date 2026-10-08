@@ -20,11 +20,13 @@ target_link_libraries(App
     #PRIVATE # TODO: retrieve
         Domain
         Parser
+        LinkedInRequestStrategy
         $<$<CONFIG:Release>:LinkedInParserStrategy>
         $<$<CONFIG:Debug>:LinkedInPageCollector>
         UI
         ResultViewOptions
-        Network
+        RequestManager
+        NetworkManager
         QueryParameters
         ResultViewOptions
 )

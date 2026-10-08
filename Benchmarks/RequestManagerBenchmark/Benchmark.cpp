@@ -1,8 +1,5 @@
 #include "BenchmarkCommonData.h"
 
-#include <AppController.h>
-#include <RequestManager.h>
-
 #include <QCoreApplication>
 #include <QDebug>
 #include <QElapsedTimer>
@@ -15,6 +12,10 @@
 #include <QString>
 #include <QTimer>
 
+#include <AppController.h>
+#include <RequestManager.h>
+#include <NetworkManager.h>
+#include <RequestStrategy/LinkedInRequestStrategy.h>
 
 static constexpr qint64 waitBetweenTestsMs = 60 * 1000;
 static constexpr qint64 linksAmount = 100;
@@ -107,8 +108,9 @@ private:
 
         if (runIndex == 0)
             results.append({config, {}});
-
-        requestManager = new RequestManager(this);
+        networkManager = new NetworkManager(this);
+        strategy = new LinkedInRequestStrategy(networkManager, config.requestsPerSecond, config.requestCooldownMs, config.maxConcurrent, this);
+        requestManager = new RequestManager(strategy, this);
         controller = new AppController(this);
 
         QObject::connect(requestManager, &RequestManager::urlsEnqueued, controller, &AppController::workStarted);
@@ -119,10 +121,6 @@ private:
 
         QObject::connect(requestManager, &RequestManager::meaningfulRepliesReceived, controller, &AppController::workFinished);
         QObject::connect(requestManager, &RequestManager::meaninglessRepliesReceived, controller, &AppController::workFinished);
-
-        requestManager->setMaxConcurrent(config.maxConcurrent);
-        requestManager->setRequestsPerSecond(config.requestsPerSecond);
-        requestManager->setRequestCooldownMs(config.requestCooldownMs);
 
         connect(controller, &AppController::allActiveWorkFinished, this, [this]()
         {
@@ -139,7 +137,6 @@ private:
     void finishCurrentBenchmark()
     {
         const qint64 elapsedMs = timer.elapsed();
-        const qint64 errorCount = requestManager->getErrorCount();
         const BenchmarkConfig config = configurations[configurationIndex];
 
         ++runIndex;
@@ -149,14 +146,20 @@ private:
         qInfo() << "  MaxConcurrent:     " << config.maxConcurrent;
         qInfo() << "  RequestsPerSecond: " << config.requestsPerSecond;
         qInfo() << "  RequestCooldownMs: " << config.requestCooldownMs;
-        qInfo() << "  errorCount:        " << errorCount;
         qInfo() << "  Elapsed:           " << elapsedMs / 1000 << "secs";
 
-        const BenchmarkRun currentRun{runIndex, elapsedMs, errorCount};
+        const BenchmarkRun currentRun{runIndex, elapsedMs};
 
         results.last().runs.append(currentRun);
 
         saveResults(results, fileName);
+
+
+        networkManager->deleteLater();
+        networkManager = nullptr;
+
+        strategy->deleteLater();
+        strategy = nullptr;
 
         requestManager->deleteLater();
         requestManager = nullptr;
@@ -178,13 +181,13 @@ private:
 
     QList<QUrl> testUrls()
     {
-        static constexpr char const* baseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=C%2B%2B&location=Serbia&start=";
+        static const QString baseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=C%2B%2B&location=Serbia&start=%1";
 
         QList<QUrl> urls;
 
         for (unsigned n = 0; n < linksAmount; n++)
         {
-            urls.append(baseUrl + QString::number(n));
+            urls.append(baseUrl.arg(n));
         }
 
         return urls;
@@ -193,10 +196,15 @@ private:
 private:
     AppController* controller = nullptr;
 
+
+    NetworkManager* networkManager = nullptr;
+    LinkedInRequestStrategy* strategy = nullptr;
+    RequestManager* requestManager = nullptr;
+
     QList<BenchmarkConfig> configurations;
     QList<BenchmarkResult> results;
 
-    RequestManager* requestManager = nullptr;
+    
     QElapsedTimer timer;
     qsizetype configurationIndex = 0;
     qsizetype runIndex = 0;

@@ -51,9 +51,11 @@ target_link_libraries(app_workflow_test
 	PRIVATE
 		main_for_qt_tests
 		App # TODO: change to AppController
-		Network
+		NetworkManager
+		RequestManager
 		Parser
 		LinkedInParserStrategy
+		LinkedInRequestStrategy
 		GTest::gtest
 		Qt6::Widgets
 		Qt6::Test
@@ -68,4 +70,5 @@ gtest_discover_tests(app_workflow_test)
 add_subdirectory(App)
 add_subdirectory(Presentation)
 add_subdirectory(Parsing)
+add_subdirectory(Utils)
 add_subdirectory(Network)

@@ -39,6 +39,12 @@ ProgressDialog::ProgressDialog(QWidget* parent) :
     QObject::connect(&stopButton, &QPushButton::released, this, &ProgressDialog::accept);
 }
 
+void ProgressDialog::updateVacancyCount(int count)
+{
+    briefsProgressBar.setMaximum(count);
+    allDetailsProgressBar.setMaximum(count);
+}
+
 void ProgressDialog::updateBrief(const Vacancy& vacancy)
 {
     static constexpr const char* briefPattern = "Processed brief: #%1, %2 by %3";

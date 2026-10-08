@@ -22,6 +22,7 @@ public:
     ~ProgressDialog() = default;
 
 public slots:
+    void updateVacancyCount(int count);
     void updateBrief(const Vacancy& vacancy);
     void updateDetails(const Vacancy& vacancy);
     void updateError(QNetworkReply::NetworkError);

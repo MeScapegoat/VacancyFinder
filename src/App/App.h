@@ -17,6 +17,7 @@ class ProgressDialog;
 class MainWindow;
 class QNetworkReply;
 class AbstractParserStrategy;
+class AbstractRequestStrategy;
 
 Q_DECLARE_LOGGING_CATEGORY(AppLog);
 
@@ -111,6 +112,7 @@ private:
     MainWindow& mainWindow;
     ProgressDialog& progressDialog;
 
+    AbstractRequestStrategy* requestStrategy;
     RequestManager& requestManager;
     QThread& networkThread;
 

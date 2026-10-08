@@ -3,37 +3,36 @@
 #include <QObject>
 
 #include <QLoggingCategory>
-#include <QQueue>
-#include <QSet>
-#include <QTimer>
-#include <QNetworkReply>
+#include <QUrl>
+
+#include <ConnectionGroup.h>
+
 
 Q_DECLARE_LOGGING_CATEGORY(RequestManagerLog);
 
-class SharedContext;
+
+class AbstractRequestStrategy;
 
 class RequestManager : public QObject
 {
     Q_OBJECT
 
 public:
-    RequestManager(QObject* parent = nullptr);
+    explicit RequestManager(AbstractRequestStrategy* const strategy, QObject* parent = nullptr);
     ~RequestManager() = default;
 
 public:
-    void setRequestsPerSecond(unsigned int requestsPerSecond);
-    void setMaxConcurrent(const unsigned int maxConcurrent);
-    void setRequestCooldownMs(const unsigned int cooldown);
+    void setStrategy(AbstractRequestStrategy* const strategy);
+    const AbstractRequestStrategy* const strategy() const;
 
-    quint64 getErrorCount() const;
-
+public:
     void reset();
 
 public slots:
     void addUrls(const QList<QUrl>& urls);
     void addUrl(const QUrl& url);
 
-    void onInterrupt();
+    void interrupt();
 
 signals:
     void urlsEnqueued(int amount = 1);
@@ -45,38 +44,15 @@ signals:
     void meaningfulRepliesReceived(int amount = 1);
     void meaninglessRepliesReceived(int amount = 1);
 
-    void receivedReply(const QString& html, const QUrl& url);
-    void replyError(const QNetworkReply::NetworkError& error);
+    void vacancyCountDetermined(int count);
 
-protected slots:
-    void onFinished(QNetworkReply* reply);
+    void receivedReply(const QString& html, const QUrl& url);
 
 protected:
-    void startNext();
-    void cancelAll();
-
-    void stopTimers();
-    void cancelReplies();
-    void clearQueue();
+    void connectStrategy();
+    void disconnectStrategy();
 
 private:
-    QNetworkAccessManager& networkManager;
-
-    QQueue<QUrl> urlsQueue;
-    QSet<QNetworkReply*> activeReplies;
-
-    bool cookiesInitialized;
-    bool isInterrupted;
-
-
-    QTimer requestTimer;
-    unsigned requestsPerSecond;
-    unsigned requestIntervalMs;
-
-    QTimer requestCooldownTimer;
-    unsigned requestCooldown;
-
-    unsigned maxConcurrent;
-
-    quint64 errorCount = 0;
+    AbstractRequestStrategy* m_strategy;
+    ConnectionGroup connections;
 };

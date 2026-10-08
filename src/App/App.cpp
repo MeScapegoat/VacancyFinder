@@ -10,12 +10,15 @@
 
 #include "AppController.h"
 #include <MainWindow.h>
+#include <NetworkManager.h>
+#include <Parser.h>
 #include <ProgressDialog.h>
 #include <QueryParametersPresenter.h>
 #include <RequestManager.h>
+#include <RequestStrategy/LinkedInRequestStrategy.h>
 #include <ResultViewOptionsPresenter.h>
 #include <Vacancy.h>
-#include <Parser.h>
+
 #ifdef NDEBUG
 #include <LinkedInParserStrategy/LinkedInParserStrategy.h>
 #else
@@ -37,7 +40,8 @@ App::App(QObject* parent) :
     controller(*new AppController(this)),
     mainWindow(*new MainWindow(queryParametersPresenter.getView().widget(), resultViewOptionsPresenter.getView().widget())),
     progressDialog(*new ProgressDialog(&mainWindow)),
-    requestManager(*new RequestManager),
+    requestStrategy(new LinkedInRequestStrategy(new NetworkManager)),
+    requestManager(*new RequestManager(requestStrategy)),
     networkThread(*new QThread(this)),
     parser(*new Parser),
     parserThread(*new QThread(this)),
@@ -47,6 +51,7 @@ App::App(QObject* parent) :
     parserStrategy(new LinkedInPageCollector)
 #endif
 {
+    requestStrategy->setParent(&requestManager); // TODO: improve ownership
     parser.setStrategy(parserStrategy.get());
 
     // Threads
@@ -86,7 +91,7 @@ App::App(QObject* parent) :
     QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &controller, &AppController::workFinished);
     
     QObject::connect(&requestManager, &RequestManager::receivedReply, &parser, &Parser::processPage);
-    QObject::connect(&requestManager, &RequestManager::replyError, &progressDialog, &ProgressDialog::updateError);
+    QObject::connect(&requestManager, &RequestManager::vacancyCountDetermined, &progressDialog, &ProgressDialog::updateVacancyCount);
 
     QObject::connect(&requestManager, &RequestManager::urlsEnqueued, &controller, &AppController::workStarted);
     QObject::connect(&requestManager, &RequestManager::urlsDequeued, &controller, &AppController::workFinished);
@@ -116,7 +121,7 @@ App::App(QObject* parent) :
 
 
     // ProgressDialog
-    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::onInterrupt);
+    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::interrupt);
     QObject::connect(&progressDialog.stopButton, &QPushButton::released, &parser, &Parser::interrupt);
 
     // AppController

@@ -1,5 +1,3 @@
-#include "BenchmarkCommonData.h"
-
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -11,6 +9,7 @@
 
 #include <algorithm>
 
+#include "BenchmarkCommonData.h"
 
 
 
@@ -34,7 +33,6 @@ static QList<BenchmarkRun> readRuns(const QJsonArray& array)
         runs.append({
             object["run"].toInt(),
             object["elapsedMs"].toInteger(),
-            object["errorCount"].toInteger(),
                     });
     }
 
@@ -88,15 +86,14 @@ int main(int argc, char* argv[])
         bool ok = false;
         const int value = QString::fromLocal8Bit(argv[1]).toInt(&ok);
 
-        if (!ok || value < 1 || value > 5)
+        if (!ok || value < 1 || value > 4)
         {
             qWarning() << "Invalid sorting column.";
-            qWarning() << "Usage: BenchmarkAnalyzer [1-5]";
+            qWarning() << "Usage: BenchmarkAnalyzer [1-4]";
             qWarning() << "  1 - MaxConcurrent";
             qWarning() << "  2 - RPS";
             qWarning() << "  3 - Cooldown";
-            qWarning() << "  4 - Errors";
-            qWarning() << "  5 - ElapsedMs";
+            qWarning() << "  4 - ElapsedMs";
             return 1;
         }
 

@@ -1,234 +1,80 @@
 #include "RequestManager.h"
 
-#include <QNetworkAccessManager>
-#include <QNetworkCookie>
-#include <QNetworkCookieJar>
+#include "RequestStrategy/AbstractRequestStrategy.h"
 
 
 Q_LOGGING_CATEGORY(RequestManagerLog, "network.requestManager");
 
-RequestManager::RequestManager(QObject* parent) :
+RequestManager::RequestManager(AbstractRequestStrategy* const strategy, QObject* parent) :
     QObject(parent),
-    networkManager(*new QNetworkAccessManager(this)),
-    urlsQueue(),
-    activeReplies(),
-    cookiesInitialized(false),
-    isInterrupted(false),
-    requestTimer(this),
-    requestsPerSecond(8),
-    requestIntervalMs(1000 / requestsPerSecond),
-    requestCooldownTimer(this),
-    requestCooldown(5000),
-    maxConcurrent(8)
+    m_strategy(strategy),
+    connections()
 {
-    QObject::connect(&networkManager, &QNetworkAccessManager::finished, this, &RequestManager::onFinished);
+    Q_ASSERT_X(strategy, __FUNCTION__, "Strategy is nullptr");
+    Q_ASSERT_X(strategy->thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as RequestManager");
 
-    requestCooldownTimer.setSingleShot(true);
-
-    connect(&requestTimer, &QTimer::timeout, this, &RequestManager::startNext);
+    connectStrategy();
 }
 
-void RequestManager::setRequestsPerSecond(unsigned int _requestsPerSecond)
+void RequestManager::setStrategy(AbstractRequestStrategy* const strategy)
 {
-    requestsPerSecond = std::max(1u, _requestsPerSecond);
-    requestIntervalMs = 1000 / requestsPerSecond;
+    Q_ASSERT_X(strategy, __FUNCTION__, "Strategy is nullptr");
+    Q_ASSERT_X(strategy->thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as RequestManager");
 
-    if (requestTimer.isActive())
-    {
-        requestTimer.start(requestIntervalMs);
-    }
+    if (m_strategy == strategy)
+        return;
+
+    qCInfo(RequestManagerLog) << "New RequestStrategy:" << strategy;
+
+    disconnectStrategy();
+
+    m_strategy = strategy;
+
+    connectStrategy();
 }
 
-void RequestManager::setMaxConcurrent(const unsigned int _maxConcurrent)
+const AbstractRequestStrategy* const RequestManager::strategy() const
 {
-    maxConcurrent = std::max(1u, _maxConcurrent);
-}
-
-void RequestManager::setRequestCooldownMs(const unsigned int cooldown)
-{
-    requestCooldown = cooldown;
-}
-
-quint64 RequestManager::getErrorCount() const
-{
-    return errorCount;
+    return m_strategy;
 }
 
 void RequestManager::reset()
 {
-    isInterrupted = false;
-
-    cancelAll();
-
-    networkManager.setCookieJar(new QNetworkCookieJar(&networkManager));
-    cookiesInitialized = false;
+    m_strategy->reset();
 }
 
 void RequestManager::addUrls(const QList<QUrl>& urls)
 {
-    emit urlsEnqueued(urls.size());
-
-    for (const QUrl& url : urls)
-    {
-        urlsQueue.enqueue(url);
-    }
-
-    if (!requestTimer.isActive())
-    {
-        requestTimer.start(requestIntervalMs);
-    }
+    m_strategy->addUrls(urls);
 }
 
 void RequestManager::addUrl(const QUrl& url)
 {
-    emit urlsEnqueued();
-
-    urlsQueue.enqueue(url);
-
-    if (!requestTimer.isActive())
-    {
-        requestTimer.start(requestIntervalMs);
-    }
+    m_strategy->addUrl(url);
 }
 
-void RequestManager::onInterrupt()
+void RequestManager::interrupt()
 {
-    qCDebug(RequestManagerLog) << "Interrupted";
-
-    isInterrupted = true;
-
-    cancelAll();
+    m_strategy->interrupt();
 }
 
-void RequestManager::onFinished(QNetworkReply* reply)
+void RequestManager::connectStrategy()
 {
-    if (isInterrupted)
-    {
-        qCDebug(RequestManagerLog) << "Interrupted";
+    connections += QObject::connect(m_strategy, &AbstractRequestStrategy::urlsEnqueued, this, &RequestManager::urlsEnqueued);
+    connections += QObject::connect(m_strategy, &AbstractRequestStrategy::urlsDequeued, this, &RequestManager::urlsDequeued);
 
-        reply->deleteLater();
-        return;
-    }
+    connections += QObject::connect(m_strategy, &AbstractRequestStrategy::requestsStarted, this, &RequestManager::requestsStarted);
+    connections += QObject::connect(m_strategy, &AbstractRequestStrategy::requestsFinished, this, &RequestManager::requestsFinished);
 
-    activeReplies.remove(reply);
+    connections += QObject::connect(m_strategy, &AbstractRequestStrategy::meaningfulRepliesReceived, this, &RequestManager::meaningfulRepliesReceived);
+    connections += QObject::connect(m_strategy, &AbstractRequestStrategy::meaninglessRepliesReceived, this, &RequestManager::meaninglessRepliesReceived);
 
-    const QNetworkReply::NetworkError errorState = reply->error();
-    const QUrl url = reply->url();
+    connections += QObject::connect(m_strategy, &AbstractRequestStrategy::vacancyCountDetermined, this, &RequestManager::vacancyCountDetermined);
 
-    emit replyError(errorState);
-    if (errorState != QNetworkReply::NoError)
-    {
-        const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-        qCWarning(RequestManagerLog) << "statusCode:" << statusCode;
-
-        reply->deleteLater();
-
-        switch (statusCode)
-        {
-            case 429:
-            {
-                errorCount++;
-                requestCooldownTimer.start(requestCooldown);
-                addUrl(url);
-                break;
-            }
-            default:
-            {
-                qCWarning(RequestManagerLog) << "something to do with other codes..."; // TODO
-            }
-        }
-
-        emit meaninglessRepliesReceived();
-        return;
-    }
-
-
-    const QList<QNetworkCookie> cookies = networkManager.cookieJar()->cookiesForUrl(url);
-
-    if (!cookiesInitialized)
-    {
-        if (!cookies.isEmpty())
-        {
-            cookiesInitialized = true;
-            qCInfo(RequestManagerLog) << "Cookies initialized:" << cookies.size();
-        }
-        else
-        {
-            qCInfo(RequestManagerLog) << "No cookies received.";
-        }
-    }
-
-    emit meaningfulRepliesReceived();
-    emit receivedReply(reply->readAll(), url);
-
-    reply->deleteLater();
+    connections += QObject::connect(m_strategy, &AbstractRequestStrategy::receivedReply, this, &RequestManager::receivedReply);
 }
 
-void RequestManager::startNext()
+void RequestManager::disconnectStrategy()
 {
-    if (urlsQueue.isEmpty() && activeReplies.isEmpty())
-    {
-        qCDebug(RequestManagerLog) << "Requesting is done!";
-
-        stopTimers();
-        return;
-    }
-
-    if (isInterrupted)
-    {
-        qCDebug(RequestManagerLog) << "Interrupted";
-        return;
-    }
-
-    if (requestCooldownTimer.isActive())
-        return;
-
-    const unsigned _maxConcurrent = cookiesInitialized ? maxConcurrent : 1;
-
-    if (!urlsQueue.isEmpty() && activeReplies.size() < _maxConcurrent)
-    {
-        emit requestsStarted();
-        emit urlsDequeued();
-
-        const QUrl url = urlsQueue.dequeue();
-        qCDebug(RequestManagerLog) << url;
-
-        QNetworkRequest request(url);
-        request.setRawHeader("Accept-Language", "en-US,en;q=0.9");
-
-        QNetworkReply* reply = networkManager.get(request);
-
-        activeReplies.insert(reply);
-    }
-}
-
-void RequestManager::cancelAll()
-{
-    stopTimers();
-    cancelReplies();
-    clearQueue();
-}
-
-void RequestManager::stopTimers()
-{
-    requestTimer.stop();
-    requestCooldownTimer.stop();
-}
-
-void RequestManager::cancelReplies()
-{
-    emit requestsFinished(activeReplies.size());
-    for (QNetworkReply* reply : activeReplies)
-    {
-        reply->abort();
-    }
-
-    activeReplies.clear();
-}
-
-void RequestManager::clearQueue()
-{
-    emit urlsDequeued(urlsQueue.size());
-    urlsQueue.clear();
+    connections.disconnect();
 }

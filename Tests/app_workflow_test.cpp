@@ -1,21 +1,26 @@
 #include <gtest/gtest.h>
 
-#include <QSignalSpy>
-#include <QUrlQuery>
-#include <QTest>
 #include <QRandomGenerator>
+#include <QSignalSpy>
+#include <QTest>
+#include <QUrlQuery>
 
 #include <AppController.h>
+#include <LinkedInParserStrategy/LinkedInParserStrategy.h>
+#include <NetworkManager.h>
 #include <Parser.h>
 #include <RequestManager.h>
-#include <LinkedInParserStrategy/LinkedInParserStrategy.h>
+#include <RequestStrategy/LinkedInRequestStrategy.h>
 
+// TODO: Extract this functionality into a class and test that class instead.
 
 class AppWorkFlowTest : public QObject, public ::testing::Test
 {
 protected:
     AppWorkFlowTest() :
-        requestManager(*new RequestManager),
+        networkManager(*new NetworkManager(this)),
+        strategy(*new LinkedInRequestStrategy(&networkManager)),
+        requestManager(*new RequestManager(&strategy)),
         networkThread(*new QThread(this)),
         parser(*new Parser),
         parserThread(*new QThread(this)),
@@ -25,6 +30,7 @@ protected:
         parserDetailsSpy(&parser, &Parser::detailsParsed)
     {
         parser.setStrategy(parserStrategy.get());
+        strategy.setParent(&requestManager);
 
         networkThread.setObjectName("networkThread");
         requestManager.moveToThread(&networkThread);
@@ -76,7 +82,7 @@ protected:
 
         QMetaObject::invokeMethod(&requestManager, [this]()
         {
-            requestManager.onInterrupt();
+            requestManager.interrupt();
         });
     }
 
@@ -110,6 +116,8 @@ protected:
 protected:
     AppController controller;
 
+    NetworkManager& networkManager;
+    LinkedInRequestStrategy& strategy;
     RequestManager& requestManager;
     QThread& networkThread;
 
@@ -124,11 +132,11 @@ protected:
 
 TEST_F(AppWorkFlowTest, SmallSearch)
 {
-    const int maxVacancies = QRandomGenerator::global()->bounded(1, 10);
+    const int maxVacancies = 10;
 
     initSearch(maxVacancies);
 
-    ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish";
+    ASSERT_TRUE(controllerSpy.wait(120'000)) << "Timed out waiting for all active work to finish";
 
     EXPECT_EQ(controllerSpy.count(), 1);
     EXPECT_GE(parserBriefSpy.count(), maxVacancies);
@@ -137,11 +145,11 @@ TEST_F(AppWorkFlowTest, SmallSearch)
 
 TEST_F(AppWorkFlowTest, MediumSearch)
 {
-    const int maxVacancies = QRandomGenerator::global()->bounded(10, 50);
+    const int maxVacancies = 35;
 
     initSearch(maxVacancies);
 
-    ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish";
+    ASSERT_TRUE(controllerSpy.wait(120'000)) << "Timed out waiting for all active work to finish";
 
     EXPECT_EQ(controllerSpy.count(), 1);
     EXPECT_GE(parserBriefSpy.count(), maxVacancies);
@@ -150,11 +158,11 @@ TEST_F(AppWorkFlowTest, MediumSearch)
 
 TEST_F(AppWorkFlowTest, BigSearch)
 {
-    const int maxVacancies = QRandomGenerator::global()->bounded(50, 100);
+    const int maxVacancies = 100;
 
     initSearch(maxVacancies);
 
-    ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish";
+    ASSERT_TRUE(controllerSpy.wait(240'000)) << "Timed out waiting for all active work to finish";
 
     EXPECT_EQ(controllerSpy.count(), 1);
     EXPECT_GE(parserBriefSpy.count(), maxVacancies);
@@ -163,17 +171,18 @@ TEST_F(AppWorkFlowTest, BigSearch)
 
 TEST_F(AppWorkFlowTest, InterruptFinishesAllWorkExactlyOnce)
 {
-    const int maxVacancies = QRandomGenerator::global()->bounded(50, 100);
+    const int maxVacancies = 35;
 
     initSearch(maxVacancies);
 
-    const int interruptDelay = QRandomGenerator::global()->bounded(1000, 10'000);
+    const int interruptDelay = 5'000;
 
     QTest::qWait(interruptDelay);
 
     interrupt();
 
-    ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish after interrupt";
+    if (controllerSpy.count() == 0)
+        ASSERT_TRUE(controllerSpy.wait(120'000)) << "Timed out waiting for all active work to finish after interrupt";
 
     EXPECT_EQ(controllerSpy.count(), 1);
 
@@ -184,17 +193,18 @@ TEST_F(AppWorkFlowTest, InterruptFinishesAllWorkExactlyOnce)
 
 TEST_F(AppWorkFlowTest, InterruptStopsFurtherParsing)
 {
-    const int maxVacancies = QRandomGenerator::global()->bounded(50, 100);
+    const int maxVacancies = 35;
 
     initSearch(maxVacancies);
 
-    const int interruptDelay = QRandomGenerator::global()->bounded(1000, 10'000);
+    const int interruptDelay = 5'000;
 
     QTest::qWait(interruptDelay);
 
     interrupt();
 
-    ASSERT_TRUE(controllerSpy.wait(480'000)) << "Timed out waiting for all active work to finish after interrupt";
+    if (controllerSpy.count() == 0)
+        ASSERT_TRUE(controllerSpy.wait(120'000)) << "Timed out waiting for all active work to finish after interrupt";
 
     const int parsedBriefsAfterInterrupt = parserBriefSpy.count();
     const int parsedDetailsAfterInterrupt = parserDetailsSpy.count();

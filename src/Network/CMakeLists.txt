@@ -1,21 +1,23 @@
 add_subdirectory(NetworkManager)
+add_subdirectory(RequestStrategy)
 
 
 
-add_library(Network
+add_library(RequestManager
     RequestManager.h
     RequestManager.cpp
 )
 
-target_include_directories(Network PUBLIC
+target_include_directories(RequestManager PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(Network 
+target_link_libraries(RequestManager 
     PUBLIC 
         Qt6::Core
+        ConnectionGroup
     PRIVATE
-        Qt6::Network
+        AbstractRequestStrategy
 )
 
-set_target_properties(Network PROPERTIES FOLDER "Network")
+set_target_properties(RequestManager PROPERTIES FOLDER "Network")
