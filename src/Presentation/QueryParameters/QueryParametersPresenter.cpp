@@ -52,6 +52,8 @@ void QueryParametersPresenter::onKeywordsChanged()
     const QueryParametersView& view = getView();
 
     view.keywordsInput.setText(model.keywords());
+
+    emit keywordsChanged(model.keywords());
 }
 
 void QueryParametersPresenter::onLocationChanged()

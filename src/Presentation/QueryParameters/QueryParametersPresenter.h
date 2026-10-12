@@ -25,6 +25,9 @@ signals:
     void loadInterestedRequested();
     void resetRequested();
 
+    //TODO: TMP CODE, REMOVE
+    void keywordsChanged(QString);
+
 private slots:
     void onMaxResultsChanged();
     void onKeywordsChanged();

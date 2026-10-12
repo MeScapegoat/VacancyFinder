@@ -1,4 +1,6 @@
 add_library(ResultViewOptions
+    ResultViewOptionsEnums.h
+
     ResultViewOptionsModel.h
     ResultViewOptionsModel.cpp
 

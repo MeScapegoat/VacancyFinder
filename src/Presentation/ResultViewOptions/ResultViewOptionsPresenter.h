@@ -8,6 +8,9 @@
 #include <QLoggingCategory>
 #include <QObject>
 
+// TODO: TMP CODE, REMOVE
+#include "ResultViewOptionsEnums.h"
+
 
 Q_DECLARE_LOGGING_CATEGORY(RVOPLog);
 
@@ -19,6 +22,18 @@ class ResultViewOptionsPresenter : public Presenter<ResultViewOptionsView, Resul
 public:
     ResultViewOptionsPresenter(QObject* parent = nullptr);
     ~ResultViewOptionsPresenter() = default;
+
+signals:
+    void resultViewOptionsChanged();
+
+    //TODO: TMP CODE, REMOVE
+    void sortModeChanged(SortMode);
+    void filterModeChanged(FilterMode);
+    void filterWordsChanged(QString);
+
+    void isUnreviewedVsisibleChanged(bool);
+    void isIgnoredVsisibleChanged(bool);
+    void isInterestedVsisibleChanged(bool);
 
 private slots:
     void onCurrentSortIndexChanged();

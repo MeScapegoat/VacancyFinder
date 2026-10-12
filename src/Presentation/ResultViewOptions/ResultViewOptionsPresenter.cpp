@@ -36,6 +36,14 @@ ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) :
 
     connect(&view.interestedCheckBox, &QCheckBox::checkStateChanged, &model.isInterestedVisible, &Observable<bool>::setValue);
     connect(&model.isInterestedVisible, &Observable<bool>::valueChanged, this, &ResultViewOptionsPresenter::onInterestedVisibleChanged);
+
+
+    QObject::connect(&model.currentSortMode,     &Observable<int>::valueChanged,     this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model.currentFilterMode,   &Observable<int>::valueChanged,     this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model.filterText,          &Observable<QString>::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model.isUnreviewedVisible, &Observable<bool>::valueChanged,    this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model.isIgnoredVisible,    &Observable<bool>::valueChanged,    this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model.isInterestedVisible, &Observable<bool>::valueChanged,    this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
 }
 
 void ResultViewOptionsPresenter::onCurrentSortIndexChanged()
@@ -46,6 +54,8 @@ void ResultViewOptionsPresenter::onCurrentSortIndexChanged()
     const ResultViewOptionsView& view = getView();
 
     view.sortMode.setCurrentIndex(model.currentSortMode());
+
+    emit sortModeChanged(static_cast<SortMode>(model.currentSortMode()));
 }
 
 void ResultViewOptionsPresenter::onCurrentFilterIndexChanged()
@@ -56,6 +66,8 @@ void ResultViewOptionsPresenter::onCurrentFilterIndexChanged()
     const ResultViewOptionsView& view = getView();
 
     view.filterMode.setCurrentIndex(model.currentFilterMode());
+
+    emit filterModeChanged(static_cast<FilterMode>(model.currentFilterMode()));
 }
 
 void ResultViewOptionsPresenter::onFilterTextChanged()
@@ -66,6 +78,8 @@ void ResultViewOptionsPresenter::onFilterTextChanged()
     const ResultViewOptionsView& view = getView();
 
     view.filterLineEdit.setText(model.filterText());
+
+    emit filterWordsChanged(model.filterText());
 }
 
 void ResultViewOptionsPresenter::onUnreviewedVisibleChanged()
@@ -76,6 +90,8 @@ void ResultViewOptionsPresenter::onUnreviewedVisibleChanged()
     const ResultViewOptionsView& view = getView();
 
     view.unreviewedCheckBox.setChecked(model.isUnreviewedVisible());
+
+    emit isUnreviewedVsisibleChanged(model.isUnreviewedVisible());
 }
 
 void ResultViewOptionsPresenter::onIgnoredVisibleChanged()
@@ -86,6 +102,8 @@ void ResultViewOptionsPresenter::onIgnoredVisibleChanged()
     const ResultViewOptionsView& view = getView();
 
     view.ignoredCheckBox.setChecked(model.isIgnoredVisible());
+
+    emit isIgnoredVsisibleChanged(model.isIgnoredVisible());
 }
 
 void ResultViewOptionsPresenter::onInterestedVisibleChanged()
@@ -96,4 +114,6 @@ void ResultViewOptionsPresenter::onInterestedVisibleChanged()
     const ResultViewOptionsView& view = getView();
 
     view.interestedCheckBox.setChecked(model.isInterestedVisible());
+
+    emit isInterestedVsisibleChanged(model.isInterestedVisible());
 }

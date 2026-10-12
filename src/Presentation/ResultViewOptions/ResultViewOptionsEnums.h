@@ -36,14 +36,3 @@ enum class FilterMode
 
     COUNT
 };
-
-enum class VacancyStatus
-{
-    Unreviewed = 0,
-
-    Interested,
-    Ignored,
-
-
-    COUNT
-};
