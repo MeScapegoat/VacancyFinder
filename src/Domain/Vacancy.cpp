@@ -17,6 +17,11 @@ qsizetype Vacancy::count(const QString& str, Qt::CaseSensitivity cs) const noexc
     return counted;
 }
 
+bool Vacancy::contains(const QString& str, Qt::CaseSensitivity cs) const noexcept
+{
+    return title.contains(str, cs) || description.contains(str, cs);
+}
+
 void Vacancy::fillEmptyFrom(Vacancy other) noexcept
 {
     // cringe alarm

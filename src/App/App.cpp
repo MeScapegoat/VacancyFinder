@@ -71,6 +71,7 @@ App::App(QObject* parent) :
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::loadInterestedRequested, this, &App::loadInterested);
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::resetRequested, this, &App::reset);
+    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::keywordsChanged, &resultViewOptionsPresenter, &ResultViewOptionsPresenter::setKeywords);
 
 
     // ResultViewOptions
@@ -249,14 +250,15 @@ void App::saveState()
 
     state.setLimit(queryParametersPresenter.getModel().maxResults());
 
-    state.setFilterMode(resultViewOptionsPresenter.getModel().currentFilterMode());
-    state.setFilters(resultViewOptionsPresenter.getModel().filterText());
 
-    state.setSortMode(resultViewOptionsPresenter.getModel().currentSortMode());
+    state.setFilterMode(resultViewOptionsPresenter.filterMode());
+    state.setFilters(resultViewOptionsPresenter.filterWords());
 
-    state.setIsUnreviewedVisible(resultViewOptionsPresenter.getModel().isUnreviewedVisible());
-    state.setIsIgnoredVisible(resultViewOptionsPresenter.getModel().isIgnoredVisible());
-    state.setIsInterestedVisible(resultViewOptionsPresenter.getModel().isInterestedVisible());
+    state.setSortMode(resultViewOptionsPresenter.sortMode());
+
+    state.setIsUnreviewedVisible(resultViewOptionsPresenter.isUnreviewedVisible());
+    state.setIsIgnoredVisible(resultViewOptionsPresenter.isIgnoredVisible());
+    state.setIsInterestedVisible(resultViewOptionsPresenter.isInterestedVisible());
 
 
     state.saveState();
@@ -274,13 +276,13 @@ void App::loadState()
 
     queryParametersPresenter.getModel().maxResults = state.getLimit();
 
-    resultViewOptionsPresenter.getModel().currentFilterMode = state.getFilterMode();
-    resultViewOptionsPresenter.getModel().filterText = state.getFilters();
 
-    resultViewOptionsPresenter.getModel().currentSortMode = state.getSortMode();
+    resultViewOptionsPresenter.setFilterMode(state.getFilterMode());
+    resultViewOptionsPresenter.setFilterWords(state.getFilters());
 
+    resultViewOptionsPresenter.setSortMode(state.getSortMode());
 
-    resultViewOptionsPresenter.getModel().isUnreviewedVisible = state.getIsUnreviewedVisible();
-    resultViewOptionsPresenter.getModel().isIgnoredVisible = state.getIsIgnoredVisible();
-    resultViewOptionsPresenter.getModel().isInterestedVisible = state.getIsInterestedVisible();
+    resultViewOptionsPresenter.setIsUnreviewedVisible(state.getIsUnreviewedVisible());
+    resultViewOptionsPresenter.setIsIgnoredVisible(state.getIsIgnoredVisible());
+    resultViewOptionsPresenter.setIsInterestedVisible(state.getIsInterestedVisible());
 }

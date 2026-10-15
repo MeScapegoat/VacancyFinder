@@ -1,73 +1,258 @@
+
 #include <gtest/gtest.h>
 
-#include <ResultViewOptionsPresenter.h>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QLineEdit>
+#include <QSignalSpy>
+
+#include "ResultViewOptionsPresenter.h"
+#include <CallableComboBox.hpp>
+#include <QtTestPrinters.h>
 #include <ResultViewOptionsEnums.h>
-#include <test_helpers.hpp>
 
-
-void testObservableAndComboBox(Observable<int>& model, QComboBox& view, int modesAmount)
+class ResultViewOptionsPresenterTest : public testing::Test, public ResultViewOptionsPresenter
 {
-    EXPECT_EQ(view.count(), modesAmount) << "Not all available modes are reflected in UI";
-    EXPECT_EQ(model(), view.currentIndex()) << "Initial value of model and view differs";
+protected:
+    ResultViewOptionsPresenterTest() :
+        resultViewOptionsChangedSpy(this, &ResultViewOptionsPresenter::resultViewOptionsChanged),
+        vacancySortComparatorChangedSpy(this, &ResultViewOptionsPresenter::vacancySortComparatorChanged),
+        vacancyFilterChangedSpy(this, &ResultViewOptionsPresenter::vacancyFilterChanged),
+        visibleStatusesChangedSpy(this, &ResultViewOptionsPresenter::visibleStatusesChanged)
+    {}
 
-    model = (model() + 1) & modesAmount;
-    EXPECT_EQ(model(), view.currentIndex());
+    QSignalSpy resultViewOptionsChangedSpy;
+    QSignalSpy vacancySortComparatorChangedSpy;
+    QSignalSpy vacancyFilterChangedSpy;
+    QSignalSpy visibleStatusesChangedSpy;
+};
 
-    view.setCurrentIndex((view.currentIndex() + 1) % modesAmount);
-    EXPECT_EQ(model(), view.currentIndex());
+
+TEST_F(ResultViewOptionsPresenterTest, InitialViewStateMatchesModelState)
+{
+    EXPECT_EQ(getView().filterMode.currentIndex(), filterMode());
+    EXPECT_EQ(getView().sortMode.currentIndex(), sortMode());
+    EXPECT_EQ(getView().filterLineEdit.text(), filterWords());
+
+    EXPECT_EQ(getView().unreviewedCheckBox.isChecked(), isUnreviewedVisible());
+    EXPECT_EQ(getView().ignoredCheckBox.isChecked(), isIgnoredVisible());
+    EXPECT_EQ(getView().interestedCheckBox.isChecked(), isInterestedVisible());
 }
 
 
-TEST(ResultViewOptions, SortModeSync)
+TEST_F(ResultViewOptionsPresenterTest, FilterComboBoxContainsEveryFilterMode)
 {
-    ResultViewOptionsPresenter presenter;
-    auto& model = presenter.getModel().currentSortMode;
-    auto& view = presenter.getView().sortMode;
-
-    testModelAndViewSync(model, view, static_cast<int>(SortMode::COUNT));
+    EXPECT_EQ(getView().filterMode.count(), static_cast<int>(FilterMode::COUNT));
 }
 
-TEST(ResultViewOptions, FilterModeSync)
+TEST_F(ResultViewOptionsPresenterTest, SortComboBoxContainsEverySortMode)
 {
-    ResultViewOptionsPresenter presenter;
-    auto& model = presenter.getModel().currentFilterMode;
-    auto& view = presenter.getView().filterMode;
-
-    testModelAndViewSync(model, view, static_cast<int>(FilterMode::COUNT));
+    EXPECT_EQ(getView().sortMode.count(), static_cast<int>(SortMode::COUNT));
 }
 
-TEST(ResultViewOptions, FilterTextSync)
+TEST_F(ResultViewOptionsPresenterTest, ChangingFilterModeSynchronizesViewAndModel)
 {
-    ResultViewOptionsPresenter presenter;
-    auto& model = presenter.getModel().filterText;
-    auto& view = presenter.getView().filterLineEdit;
+    const int index1 = (filterMode() + 1) % static_cast<int>(FilterMode::COUNT);
 
-    testModelAndViewSync(model, view);
+    setFilterMode(index1);
+    EXPECT_EQ(filterMode(), index1);
+    EXPECT_EQ(getModel().currentFilterMode(), index1);
+    EXPECT_EQ(getView().filterMode.currentIndex(), index1);
+    EXPECT_EQ(vacancyFilterChangedSpy.count(), 1);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 1);
+
+    const int index2 = (index1 + 1) % static_cast<int>(FilterMode::COUNT);
+
+    getView().filterMode.setCurrentIndex(index2);
+    EXPECT_EQ(filterMode(), index2);
+    EXPECT_EQ(getModel().currentFilterMode(), index2);
+    EXPECT_EQ(getView().filterMode.currentIndex(), index2);
+    EXPECT_EQ(vacancyFilterChangedSpy.count(), 2);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 2);
 }
 
-TEST(ResultViewOptions, UnreviewedStateSync)
+TEST_F(ResultViewOptionsPresenterTest, ChangingFilterWordsSynchronizesViewAndModel)
 {
-    ResultViewOptionsPresenter presenter;
-    auto& model = presenter.getModel().isUnreviewedVisible;
-    auto& view = presenter.getView().unreviewedCheckBox;
+    const QString filterWords1 = "C++, Qt, developer";
+    const QStringList filterWordList1 = QStringList({"C++", "Qt", "developer"});
 
-    testModelAndViewSync(model, view);
+    setFilterWords(filterWords1);
+    EXPECT_EQ(filterWords(), filterWords1);
+    EXPECT_EQ(getModel().filterWordList(), filterWordList1);
+    EXPECT_EQ(getView().filterLineEdit.text(), filterWords1);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 1);
+
+
+    const QString filterWords2 = "Python, Rust";
+    const QStringList filterWordList2 = QStringList({"Python", "Rust"});
+
+    getView().filterLineEdit.setText(filterWords2);
+    EXPECT_EQ(filterWords(), filterWords2);
+    EXPECT_EQ(getModel().filterWordList(), filterWordList2);
+    EXPECT_EQ(getView().filterLineEdit.text(), filterWords2);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 2);
+}
+TEST_F(ResultViewOptionsPresenterTest, ChangingSortModeSynchronizesViewAndModel)
+{
+    const int index1 = (sortMode() + 1) % static_cast<int>(SortMode::COUNT);
+
+    setSortMode(index1);
+    EXPECT_EQ(sortMode(), index1);
+    EXPECT_EQ(getModel().currentSortMode(), index1);
+    EXPECT_EQ(getView().sortMode.currentIndex(), index1);
+    EXPECT_EQ(vacancySortComparatorChangedSpy.count(), 1);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 1);
+
+
+    const int index2 = (index1 + 1) % static_cast<int>(SortMode::COUNT);
+
+    getView().sortMode.setCurrentIndex(index2);
+    EXPECT_EQ(sortMode(), index2);
+    EXPECT_EQ(getModel().currentSortMode(), index2);
+    EXPECT_EQ(getView().sortMode.currentIndex(), index2);
+    EXPECT_EQ(vacancySortComparatorChangedSpy.count(), 2);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 2);
 }
 
-TEST(ResultViewOptions, IgnoredStateSync)
+TEST_F(ResultViewOptionsPresenterTest, ChangingUnreviewedVisibilitySynchronizesViewAndModel)
 {
-    ResultViewOptionsPresenter presenter;
-    auto& model = presenter.getModel().isIgnoredVisible;
-    auto& view = presenter.getView().ignoredCheckBox;
+    const bool value1 = !isUnreviewedVisible();
+    setIsUnreviewedVisible(value1);
+    EXPECT_EQ(isUnreviewedVisible(), value1);
+    EXPECT_EQ(getView().unreviewedCheckBox.isChecked(), value1);
+    EXPECT_EQ(getModel().isUnreviewedVisible(), value1);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 1);
 
-    testModelAndViewSync(model, view);
+
+    const bool value2 = !value1;
+    getView().unreviewedCheckBox.setChecked(value2);
+    EXPECT_EQ(isUnreviewedVisible(), value2);
+    EXPECT_EQ(getView().unreviewedCheckBox.isChecked(), value2);
+    EXPECT_EQ(getModel().isUnreviewedVisible(), value2);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 2);
 }
 
-TEST(ResultViewOptions, InterestedStateSync)
+TEST_F(ResultViewOptionsPresenterTest, ChangingIgnoredVisibilitySynchronizesViewAndModel)
 {
-    ResultViewOptionsPresenter presenter;
-    auto& model = presenter.getModel().isInterestedVisible;
-    auto& view = presenter.getView().interestedCheckBox;
+    const bool value1 = !isIgnoredVisible();
+    setIsIgnoredVisible(value1);
+    EXPECT_EQ(isIgnoredVisible(), value1);
+    EXPECT_EQ(getModel().isIgnoredVisible(), value1);
+    EXPECT_EQ(getView().ignoredCheckBox.isChecked(), value1);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 1);
 
-    testModelAndViewSync(model, view);
+
+    const bool value2 = !value1;
+    getView().ignoredCheckBox.setChecked(value2);
+    EXPECT_EQ(isIgnoredVisible(), value2);
+    EXPECT_EQ(getModel().isIgnoredVisible(), value2);
+    EXPECT_EQ(getView().ignoredCheckBox.isChecked(), value2);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 2);
+}
+
+TEST_F(ResultViewOptionsPresenterTest, ChangingInterestedVisibilitySynchronizesViewAndModel)
+{
+    const bool value1 = !isInterestedVisible();
+    setIsInterestedVisible(value1);
+    EXPECT_EQ(isInterestedVisible(), value1);
+    EXPECT_EQ(getModel().isInterestedVisible(), value1);
+    EXPECT_EQ(getView().interestedCheckBox.isChecked(), value1);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 1);
+
+
+    const bool value2 = !value1;
+    getView().interestedCheckBox.setChecked(!isInterestedVisible());
+    EXPECT_EQ(isInterestedVisible(), value2);
+    EXPECT_EQ(getModel().isInterestedVisible(), value2);
+    EXPECT_EQ(getView().interestedCheckBox.isChecked(), value2);
+    EXPECT_EQ(resultViewOptionsChangedSpy.count(), 2);
+}
+
+TEST_F(ResultViewOptionsPresenterTest, ChangingFilterModeUpdatesVacancyFilter)
+{
+    setFilterMode(static_cast<int>(FilterMode::COUNT) - 1);
+    vacancyFilterChangedSpy.clear();
+
+    for (int i = 0; i < static_cast<int>(FilterMode::COUNT); ++i)
+    {
+        setFilterMode(i);
+
+        EXPECT_EQ(&getView().filterMode.currentFunction(), &vacancyFilter());
+        EXPECT_TRUE(vacancyFilter());
+    }
+
+    EXPECT_EQ(vacancyFilterChangedSpy.count(), static_cast<int>(FilterMode::COUNT));
+}
+
+TEST_F(ResultViewOptionsPresenterTest, ChangingSortModeUpdatesVacancySortComparator)
+{
+    setSortMode(static_cast<int>(SortMode::COUNT) - 1);
+    vacancySortComparatorChangedSpy.clear();
+
+    for (int i = 0; i < static_cast<int>(SortMode::COUNT); ++i)
+    {
+        setSortMode(i);
+
+        EXPECT_EQ(&getView().sortMode.currentFunction(), &vacancySortComparator());
+
+        if (i == static_cast<int>(SortMode::Off))
+            EXPECT_FALSE(vacancySortComparator());
+        else
+            EXPECT_TRUE(vacancySortComparator());
+    }
+
+    EXPECT_EQ(vacancySortComparatorChangedSpy.count(), static_cast<int>(SortMode::COUNT));
+}
+
+TEST_F(ResultViewOptionsPresenterTest, VisibleStatusesMatchVisibilitySettings)
+{
+    for (int mask = 0; mask < 8; ++mask)
+    {
+        const bool unreviewed = mask & 1;
+        const bool interested = mask & 2;
+        const bool ignored = mask & 4;
+
+        setIsUnreviewedVisible(unreviewed);
+        setIsInterestedVisible(interested);
+        setIsIgnoredVisible(ignored);
+
+        QList<VacancyStatus> expected;
+        if (unreviewed) expected.push_back(VacancyStatus::Unreviewed);
+        if (ignored) expected.push_back(VacancyStatus::Ignored);
+        if (interested) expected.push_back(VacancyStatus::Interested);
+
+        EXPECT_EQ(visibleStatuses(), expected);
+    }
+}
+
+TEST_F(ResultViewOptionsPresenterTest, SettingKeywordsUpdatesModel)
+{
+    const QString keywords = "C++ Qt developer";
+    setKeywords(keywords);
+    EXPECT_EQ(getModel().keywords(), keywords);
+}
+
+TEST(ResultViewOptionsFreeFunctionsTest, FilterWordsToStringJoinsWordsWithCommaAndSpace)
+{
+    EXPECT_EQ(filterWordsToString({"C++", "Qt", "developer"}), QString("C++, Qt, developer"));
+}
+
+TEST(ResultViewOptionsFreeFunctionsTest, FilterWordsToListSplitsAndTrimsWords)
+{
+    EXPECT_EQ(filterWordsToList(" C++, Qt , developer "), (QStringList{"C++", "Qt", "developer"}));
+}
+
+TEST(ResultViewOptionsFreeFunctionsTest, FilterWordsToStringReturnsEmptyStringForEmptyList)
+{
+    EXPECT_EQ(filterWordsToString({}), QString(""));
+}
+
+TEST(ResultViewOptionsFreeFunctionsTest, FilterWordsToListPreservesEmptyElements)
+{
+    EXPECT_EQ(filterWordsToList("C++,,Qt"), (QStringList{"C++", "", "Qt"}));
+}
+
+TEST(ResultViewOptionsFreeFunctionsTest, FilterWordsToListTrimsWhitespaceAroundEmptyElements)
+{
+    EXPECT_EQ(filterWordsToList(" C++ , , Qt "), (QStringList{"C++", "", "Qt"}));
 }

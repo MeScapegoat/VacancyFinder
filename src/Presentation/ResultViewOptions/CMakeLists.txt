@@ -19,4 +19,10 @@ target_link_libraries(ResultViewOptions
     PUBLIC
         Presentation
         Utils
+        FunctionTypes
+        VacancyStatus
+    PRIVATE
+        CallableComboBox
+        VacancyOperations
+        Domain
 )

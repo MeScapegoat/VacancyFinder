@@ -4,7 +4,10 @@
 
 #include <QWidget>
 
-class QComboBox;
+#include <FunctionTypes.h>
+
+template<typename T>
+class CallableComboBox;
 class QLineEdit;
 class QCheckBox;
 
@@ -22,10 +25,10 @@ public:
     const QWidget& widget() const override;
 
 public:
-    QComboBox& sortMode;
-
-    QComboBox& filterMode;
+    CallableComboBox<VacancyFilter>& filterMode;
     QLineEdit& filterLineEdit;
+
+    CallableComboBox<VacancySortComparator>& sortMode;
 
     QCheckBox& unreviewedCheckBox;
     QCheckBox& ignoredCheckBox;

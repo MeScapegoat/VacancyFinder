@@ -25,6 +25,22 @@ set_target_properties(test_helpers PROPERTIES FOLDER "Tests")
 
 
 
+add_library(QtTestPrinters
+	QtTestPrinters.h)
+
+target_link_libraries(QtTestPrinters
+	INTERFACE
+		Qt6::Core
+)
+
+target_include_directories(QtTestPrinters INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+set_target_properties(QtTestPrinters PROPERTIES FOLDER "Tests")
+
+
+
 # main.cpp for qt tests
 
 add_library(main_for_qt_tests
@@ -72,3 +88,4 @@ add_subdirectory(Presentation)
 add_subdirectory(Parsing)
 add_subdirectory(Utils)
 add_subdirectory(Network)
+add_subdirectory(Domain)

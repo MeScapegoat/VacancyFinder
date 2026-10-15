@@ -12,12 +12,19 @@ public:
     ~ResultViewOptionsModel() = default;
 
 public:
+    void setKeywords(const QString& keywords);
+    const QString& keywords() const;
+
+public:
     Observable<int> currentSortMode;
 
     Observable<int> currentFilterMode;
-    Observable<QString> filterText;
+    Observable<QStringList> filterWordList;
 
     Observable<bool> isUnreviewedVisible;
     Observable<bool> isIgnoredVisible;
     Observable<bool> isInterestedVisible;
+
+private:
+    QString m_keywords;
 };

@@ -6,7 +6,8 @@ target_link_libraries(ResultViewOptions_test
 	PRIVATE
 		main_for_qt_tests
 		ResultViewOptions
-		test_helpers
+		QtTestPrinters
+		Qt::Test
 )
 
 set_target_properties(ResultViewOptions_test PROPERTIES FOLDER "Tests/Presentation")

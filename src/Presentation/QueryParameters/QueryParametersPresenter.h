@@ -25,8 +25,7 @@ signals:
     void loadInterestedRequested();
     void resetRequested();
 
-    //TODO: TMP CODE, REMOVE
-    void keywordsChanged(QString);
+    void keywordsChanged(const QString& keywords);
 
 private slots:
     void onMaxResultsChanged();

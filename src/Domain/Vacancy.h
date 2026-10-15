@@ -21,6 +21,7 @@ public:
 
 public:
     qsizetype count(const QString& str, Qt::CaseSensitivity cs = Qt::CaseInsensitive) const noexcept;
+    bool contains(const QString& str, Qt::CaseSensitivity cs = Qt::CaseSensitive) const noexcept;
 
     void fillEmptyFrom(Vacancy other) noexcept;
 
@@ -28,7 +29,7 @@ public:
     size_t id = 0;
 
     QString title;
-    QUrl link;
+    QUrl link; // TODO: rename to url
 
     QString companyName;
     QUrl companyLink;

@@ -11,3 +11,13 @@ target_link_libraries(Core
     PUBLIC 
         Qt6::Core
 )
+
+
+
+add_library(FunctionTypes
+    FunctionTypes.h
+)
+
+target_include_directories(FunctionTypes INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)

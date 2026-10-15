@@ -2,17 +2,18 @@
 
 #include <QBoxLayout>
 #include <QCheckBox>
-#include <QComboBox>
-#include <QDebug>
 #include <QLabel>
 #include <QLineEdit>
 
-#include "ResultViewOptionsEnums.h"
+#include <CallableComboBox.hpp>
+
+
+class Vacancy;
 
 ResultViewOptionsView::ResultViewOptionsView(QWidget* parent) :
     QWidget(parent),
-    sortMode(*new QComboBox),
-    filterMode(*new QComboBox),
+    filterMode(*new CallableComboBox<VacancyFilter>()),
+    sortMode(*new CallableComboBox<VacancySortComparator>()),
     filterLineEdit(*new QLineEdit),
     unreviewedCheckBox(*new QCheckBox),
     ignoredCheckBox(*new QCheckBox),
@@ -23,10 +24,6 @@ ResultViewOptionsView::ResultViewOptionsView(QWidget* parent) :
 
     // Filter Layout
     QVBoxLayout& filterLayout = *new QVBoxLayout;
-
-    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Off), QObject::tr("Off"));
-    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Include), QObject::tr("Include"));
-    filterMode.insertItem(static_cast<qsizetype>(FilterMode::Exclude), QObject::tr("Exclude"));
 
     QLabel& filterLabel = *new QLabel(tr("Filter (separate with \",\"):"));
 
@@ -41,19 +38,6 @@ ResultViewOptionsView::ResultViewOptionsView(QWidget* parent) :
     QVBoxLayout& sortLayout = *new QVBoxLayout;
 
     QLabel& sortLabel = *new QLabel(tr("Sort by:"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Off), tr("Off"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Relevance), tr("Relevance"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Title), tr("Title"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Company), tr("Company"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Time), tr("Time"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::EmploymentType), tr("EmploymentType"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Level), tr("Level"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Experience), tr("Experience"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Education), tr("Education"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Skills), tr("Skills"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::Industry), tr("Industry"));
-    sortMode.insertItem(static_cast<qsizetype>(SortMode::ExpirationDate), tr("ExpirationDate"));
-
     sortLayout.addWidget(&sortLabel);
     sortLayout.addWidget(&sortMode);
 

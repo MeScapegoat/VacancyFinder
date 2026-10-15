@@ -30,8 +30,12 @@ enum class FilterMode
 {
     Off = 0,
 
-    Include,
-    Exclude,
+    ContainsAny,
+    ContainsAll,
+    
+    ExcludesAny,
+    ExcludesAll,
+    
 
 
     COUNT
