@@ -8,7 +8,7 @@
 VacancyBrowserView::VacancyBrowserView(QWidget* parent) :
     QWidget(parent),
     View(),
-    m_vacancyList(*new QListView),
+    m_vacancyList(*new VacancyList),
     m_vacancyDetails(*new VacancyDetails)
 {
     QHBoxLayout& mainLayout = *new QHBoxLayout;
@@ -29,12 +29,12 @@ const QWidget& VacancyBrowserView::widget() const
     return *this;
 }
 
-const QListView& VacancyBrowserView::vacancyList() const
+const VacancyBrowserView::VacancyList& VacancyBrowserView::vacancyList() const
 {
     return m_vacancyList;
 }
 
-QListView& VacancyBrowserView::vacancyList()
+VacancyBrowserView::VacancyList& VacancyBrowserView::vacancyList()
 {
     return m_vacancyList;
 }

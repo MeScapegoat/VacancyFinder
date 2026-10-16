@@ -1,6 +1,4 @@
 add_library(VacancyBrowser
-    VacancyBrowserEnums.h
-
     VacancyBrowserModel.h
     VacancyBrowserModel.cpp
 
@@ -21,6 +19,7 @@ target_include_directories(VacancyBrowser PUBLIC
 target_link_libraries(VacancyBrowser
     PUBLIC
         Presentation
-    PRIVATE
         Domain
+        FunctionTypes
+        VacancyStatus
 )

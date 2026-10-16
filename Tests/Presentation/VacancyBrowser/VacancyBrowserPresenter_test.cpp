@@ -1,0 +1,104 @@
+#include <gtest/gtest.h>
+
+#include <QUrl>
+#include <QListView>
+#include <QStringListModel>
+
+#include "VacancyBrowserPresenter.h"
+#include "VacancyBrowserModel.h"
+#include "VacancyBrowserView.h"
+
+class VacancyBrowserPresenterTest : public testing::Test, public VacancyBrowserPresenter
+{
+protected:
+    VacancyBrowserPresenterTest()
+    {
+        setVisibleStatuses({VacancyStatus::Unreviewed, VacancyStatus::Ignored, VacancyStatus::Interested});
+        setVacancyFilter([](const Vacancy*)
+        {
+            return true;
+        });
+    }
+    static Vacancy makeVacancy(const QString& title, const QUrl& link)
+    {
+        Vacancy vacancy{};
+        vacancy.title = title;
+        vacancy.link = link;
+        return vacancy;
+    }
+};
+
+TEST_F(VacancyBrowserPresenterTest, ConstructorAssignsModelToVacancyList)
+{
+    EXPECT_EQ(getView().vacancyList().model(), &getModel().vacancyListModel());
+}
+
+TEST_F(VacancyBrowserPresenterTest, IgnoredVacanciesGetterAndSetter)
+{
+    const QSet<QUrl> expected{
+        QUrl("url1"),
+        QUrl("url2")
+    };
+
+    setIgnoredVacancies(expected);
+    EXPECT_EQ(ignoredVacancies(), expected);
+
+    setIgnoredVacancies({});
+    EXPECT_TRUE(ignoredVacancies().isEmpty());
+}
+
+TEST_F(VacancyBrowserPresenterTest, InterestedVacanciesGetterAndSetter)
+{
+    const QSet<QUrl> expected{
+        QUrl("url1"),
+        QUrl("url2")
+    };
+
+    setInterestedVacancies(expected);
+    EXPECT_EQ(interestedVacancies(), expected);
+
+    setInterestedVacancies({});
+    EXPECT_TRUE(interestedVacancies().isEmpty());
+}
+
+TEST_F(VacancyBrowserPresenterTest, BriefAndDetailsReadyAddVacancies)
+{
+    const QUrl briefUrl("brief");
+    const QUrl detailsUrl("details");
+
+    onBriefReady(makeVacancy("Brief", briefUrl));
+    onDetailsReady(makeVacancy("Details", detailsUrl));
+
+    EXPECT_TRUE(getModel().vacancyByUrl().contains(briefUrl));
+    EXPECT_TRUE(getModel().vacancyByUrl().contains(detailsUrl));
+}
+
+TEST_F(VacancyBrowserPresenterTest, UpdateVisibleVacanciesUpdatesListModel)
+{
+    const Vacancy vacancy = makeVacancy("Developer", QUrl("url"));
+    getModel().addVacancy(vacancy);
+
+    updateVisibleVacancies();
+
+    EXPECT_EQ(getView().vacancyList().model()->rowCount(), 1);
+}
+
+TEST_F(VacancyBrowserPresenterTest, ResetClearsWorkflowAndPreservesMetadata)
+{
+    const QUrl vacancyUrl("current");
+    const QUrl ignoredUrl("ignored");
+    const QUrl interestedUrl("interested");
+
+    getModel().addVacancy(makeVacancy("Current", vacancyUrl));
+    updateVisibleVacancies();
+
+    setIgnoredVacancies({ignoredUrl});
+    setInterestedVacancies({interestedUrl});
+
+    reset();
+
+    EXPECT_TRUE(getModel().vacancyByUrl().isEmpty());
+    EXPECT_TRUE(getModel().visibleVacancies().isEmpty());
+    EXPECT_EQ(ignoredVacancies(), QSet<QUrl>{ignoredUrl});
+    EXPECT_EQ(interestedVacancies(), QSet<QUrl>{interestedUrl});
+}

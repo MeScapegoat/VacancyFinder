@@ -73,10 +73,10 @@ protected:
 
     int limit;
 
-    int filterMode; // TODO: make enum
+    int filterMode;
     QString filters;
 
-    int sortMode; // TODO: make enum
+    int sortMode;
 
     bool isUnreviewedVisible;
     bool isIgnoredVisible;

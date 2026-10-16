@@ -75,17 +75,16 @@ App::App(QObject* parent) :
 
 
     // ResultViewOptions
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::resultViewOptionsChanged, &vacancyBrowserPresenter, &VacancyBrowserPresenter::updateVisibleVacancies);
+    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::vacancyFilterChanged,         &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVacancyFilter);
+    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::visibleStatusesChanged,       &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVisibleStatuses);
+    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::vacancySortComparatorChanged, &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVacancySortComparator);
 
-    // TODO: TMP CODE, REMOVE
-    auto& VBM = vacancyBrowserPresenter.getModel();
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::sortModeChanged,              &VBM, &VacancyBrowserModel::setSortMode);
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::filterModeChanged,            &VBM, &VacancyBrowserModel::setFilterMode);
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::filterWordsChanged,           &VBM, &VacancyBrowserModel::setFilterWords);
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::isUnreviewedVsisibleChanged,  &VBM, &VacancyBrowserModel::setIsUnreviewedVisible);
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::isIgnoredVsisibleChanged,     &VBM, &VacancyBrowserModel::setIsIgnoredVisible);
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::isInterestedVsisibleChanged,  &VBM, &VacancyBrowserModel::setIsInterestedVisible);
-    QObject::connect(&queryParametersPresenter,   &QueryParametersPresenter::keywordsChanged,                &VBM, &VacancyBrowserModel::setKeywords);
+    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::resultViewOptionsChanged,     &vacancyBrowserPresenter, &VacancyBrowserPresenter::updateVisibleVacancies);
+
+    vacancyBrowserPresenter.setVacancyFilter(resultViewOptionsPresenter.vacancyFilter());
+    vacancyBrowserPresenter.setVisibleStatuses(resultViewOptionsPresenter.visibleStatuses());
+    vacancyBrowserPresenter.setVacancySortComparator(resultViewOptionsPresenter.vacancySortComparator());
+
 
     // RequestManager
     QObject::connect(&requestManager, &RequestManager::requestsStarted, &controller, &AppController::workStarted);
@@ -148,10 +147,7 @@ App::~App()
 
 void App::reset()
 {
-    VacancyBrowserModel& model = vacancyBrowserPresenter.getModel();
-
-    model.vacancyByUrl().clear();
-    model.visibleVacancies().clear();
+    vacancyBrowserPresenter.reset();
 
     controller.reset();
     requestManager.reset();
@@ -160,7 +156,7 @@ void App::reset()
 
 void App::loadInterested()
 {
-    const auto& interestedVacancies = vacancyBrowserPresenter.getModel().interestedVacancies();
+    const auto& interestedVacancies = vacancyBrowserPresenter.interestedVacancies();
 
     updateMaxVacancies(interestedVacancies.size());
 
@@ -242,8 +238,9 @@ QString App::loadDescriptionFromFile(const QString& path)
 
 void App::saveState()
 {
-    state.setIgnored(vacancyBrowserPresenter.getModel().ignoredVacancies());
-    state.setInterested(vacancyBrowserPresenter.getModel().interestedVacancies());
+    state.setIgnored(vacancyBrowserPresenter.ignoredVacancies());
+    state.setInterested(vacancyBrowserPresenter.interestedVacancies());
+
 
     state.setKeywords(queryParametersPresenter.getModel().keywords());
     state.setLocation(queryParametersPresenter.getModel().location());
@@ -268,8 +265,9 @@ void App::loadState()
 {
     state.loadState();
 
-    vacancyBrowserPresenter.getModel().setIgnoredVacancies(state.getIgnored());
-    vacancyBrowserPresenter.getModel().setInterestedVacancies(state.getInterested());
+    vacancyBrowserPresenter.setIgnoredVacancies(state.getIgnored());
+    vacancyBrowserPresenter.setInterestedVacancies(state.getInterested());
+
 
     queryParametersPresenter.getModel().keywords = state.getKeywords();
     queryParametersPresenter.getModel().location = state.getLocation();

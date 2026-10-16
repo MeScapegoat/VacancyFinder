@@ -2,21 +2,26 @@
 
 #include <Model.h>
 
-#include <QHash>
-#include <QSet>
-#include <QString>
 #include <QUrl>
-#include <QVector>
+#include <QLoggingCategory>
 
-#include "VacancyBrowserEnums.h"
+#include <FunctionTypes.h>
+#include <VacancyStatus.h>
 #include <Vacancy.h>
-//#include <Observable.hpp>
-#include <ResultViewOptions/ResultViewOptionsEnums.h>
+
+
+Q_DECLARE_LOGGING_CATEGORY(VBMlog);
+
+
+using constVacancyRef = std::reference_wrapper<const Vacancy>;
 
 class QStringListModel;
 
 class VacancyBrowserModel : public Model
 {
+public:
+    using VacancyListModel = QStringListModel; // TODO: make pretty
+
 public:
     VacancyBrowserModel(QObject* parent = nullptr);
     ~VacancyBrowserModel() = default;
@@ -30,24 +35,37 @@ public:
 
     QSet<QUrl>& ignoredVacancies();
     const QSet<QUrl>& ignoredVacancies() const;
-
     void setIgnoredVacancies(const QSet<QUrl>& ignoredVacancies);
-
 
     QSet<QUrl>& interestedVacancies();
     const QSet<QUrl>& interestedVacancies() const;
-
     void setInterestedVacancies(const QSet<QUrl>& interestedVacancies);
 
-    QStringListModel& vacancyListModel();
-    const QStringListModel& vacancyListModel() const;
+    VacancyListModel& vacancyListModel();
+    const VacancyListModel& vacancyListModel() const;
 
 public:
-    const Vacancy* const getVisibleVacancy(size_t id) const;
+    void addVacancy(const Vacancy& vacancy);
+
+    void setVisibleStatuses(QList<VacancyStatus> statuses);
+    void setVacancyFilter(const VacancyFilter& filter);
+    void setVacancySortComparator(const VacancySortComparator& sortComparator);
+
+public:
+    std::optional<constVacancyRef> getVisibleVacancy(size_t id) const;
     VacancyStatus getVacancyStatus(const Vacancy& vacancy) const;
 
 public:
     void updateVisibleVacancies();
+
+private:
+    void syncVisibleVacancies();
+    void applyFiltering();
+    void applySorting();
+    void updateVacancyListModel();
+
+private:
+    bool passesFilterStatus(const Vacancy* vacancy);
 
 private:
     QHash<QUrl, Vacancy> m_vacancyByUrl;
@@ -56,40 +74,10 @@ private:
     QSet<QUrl> m_ignoredVacancies;
     QSet<QUrl> m_interestedVacancies;
 
-    QStringListModel& m_vacancyListModel;
+    VacancyListModel& m_vacancyListModel;
 
-    // TODO: TMP CODE, REMOVE
-    void syncVisibleVacancies();
-    void applyStatusFilter();
-    void applyFiltering();
-    void applySorting();
+    QList<VacancyStatus> m_visibleStatuses;
+    VacancyFilter passesWordFilter;
 
-    void sortByRelevance();
-    void sortByTitle();
-    void sortByCompany();
-    void sortByTime();
-    void sortByEmploymentType();
-    void sortByLevel();
-    void sortByExperience();
-    void sortByEducation();
-    void sortBySkills();
-    void sortByIndustry();
-    void sortByExpirationDate();
-
-    SortMode m_sortMode;
-    FilterMode m_filterMode;
-    bool m_isUnreviewedVisible = false;
-    bool m_isIgnoredVisible = false;
-    bool m_isInterestedVisible = false;
-    QString m_keywords;
-    QString m_filterWords;
-
-public slots:
-    void setSortMode(SortMode sortMode) {m_sortMode = sortMode;};
-    void setFilterMode(FilterMode filterMode) {m_filterMode = filterMode;};
-    void setIsUnreviewedVisible(bool isUnreviewedVisible) {m_isUnreviewedVisible = isUnreviewedVisible;};
-    void setIsIgnoredVisible(bool isIgnoredVisible) {m_isIgnoredVisible = isIgnoredVisible;};
-    void setIsInterestedVisible(bool isInterestedVisible) {m_isInterestedVisible = isInterestedVisible;};
-    void setKeywords(QString keywords) {m_keywords = keywords;};
-    void setFilterWords(QString filterWords) {m_filterWords = filterWords;};
+    VacancySortComparator sortPredicate;
 };

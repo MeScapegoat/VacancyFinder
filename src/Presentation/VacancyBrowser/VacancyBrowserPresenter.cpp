@@ -1,14 +1,6 @@
 #include "VacancyBrowserPresenter.h"
 
-#include <QDate>
-#include <QDebug>
-#include <QLabel>
-#include <QModelIndex>
-#include <QStackedLayout>
-#include <QString>
-#include <QTextBrowser>
 #include <QListView>
-#include <QPushButton>
 #include <QStringListModel>
 
 #include "VacancyDetails.h"
@@ -22,268 +14,173 @@ VacancyBrowserPresenter::VacancyBrowserPresenter(QObject* parent) :
 {
     VacancyBrowserView& view = getView();
 
-    QObject::connect(&view.vacancyList(), &QListView::clicked, this, &VacancyBrowserPresenter::openVacancyDetails);
+    QObject::connect(&view.vacancyList(), &VacancyBrowserView::VacancyList::clicked, this, &VacancyBrowserPresenter::openVacancyDetails);
 
-    QObject::connect(&view.vacancyDetails().ignoreButton,     &QPushButton::released, this, &VacancyBrowserPresenter::onIgnoreButtonPressed);
-    QObject::connect(&view.vacancyDetails().interestedButton, &QPushButton::released, this, &VacancyBrowserPresenter::onInterestButtonPressed);
+    QObject::connect(&view.vacancyDetails(), &VacancyDetails::ignoreButtonPressed,     this, &VacancyBrowserPresenter::onIgnoreButtonPressed);
+    QObject::connect(&view.vacancyDetails(), &VacancyDetails::interestedButtonPressed, this, &VacancyBrowserPresenter::onInterestButtonPressed);
 
-    QObject::connect(&view.vacancyDetails().removeIgnoreButton,     &QPushButton::released, this, &VacancyBrowserPresenter::onRemoveIgnoreButtonPressed);
-    QObject::connect(&view.vacancyDetails().removeInterestedButton, &QPushButton::released, this, &VacancyBrowserPresenter::onRemoveInterestButtonPressed);
+    QObject::connect(&view.vacancyDetails(), &VacancyDetails::removeIgnoreButtonPressed,     this, &VacancyBrowserPresenter::onRemoveIgnoreButtonPressed);
+    QObject::connect(&view.vacancyDetails(), &VacancyDetails::removeInterestedButtonPressed, this, &VacancyBrowserPresenter::onRemoveInterestButtonPressed);
 
     getView().vacancyList().setModel(&getModel().vacancyListModel());
 
-    closeVacancyDetails();
+    getView().vacancyDetails().close();
 }
 
-void VacancyBrowserPresenter::openVacancyDetails(const QModelIndex& index)
+const QSet<QUrl>& VacancyBrowserPresenter::ignoredVacancies() const
 {
-    VacancyDetails& vacancyDetails = getView().vacancyDetails();
-    const VacancyBrowserModel& model = getModel();
-
-    const int id = index.row();
-    const Vacancy& vacancy = *model.getVisibleVacancy(id);
-
-    const VacancyStatus status = model.getVacancyStatus(vacancy);
-    vacancyDetails.statusButtonsLayout.setCurrentIndex(static_cast<int>(status));
-
-    const QString& title = vacancy.title;
-    const QString& description = vacancy.description;
-    const std::optional<QString>& level = vacancy.level;
-    const std::optional<Months>& experience = vacancy.experience;
-    const std::optional<QString>& industry = vacancy.industry;
-    const std::optional<QString>& education = vacancy.education;
-    const std::optional<QDate>& expirationDate = vacancy.expirationDate;
-    const QString& skills = vacancy.skills;
-    const QString& employmentType = vacancy.employmentType;
-    const QString& companyName = vacancy.companyName;
-    const QString& companyLink = vacancy.companyLink.toString();
-
-    qCInfo(VBPLog) << "Loading descrption:" << id << "." << title;
-
-    const QString linkPattern = "<a href='%1'>%2</a>";
-
-    vacancyDetails.titleLabel.setText(linkPattern.arg(vacancy.link.toString()).arg(title));
-    vacancyDetails.companyNameLabel.setText(linkPattern.arg(companyLink).arg(companyName));
-
-    vacancyDetails.employmentTypeLabel.setText("Employment type: " + employmentType);
-
-
-    vacancyDetails.levelLabel.setVisible(level.has_value());
-    if (level) vacancyDetails.levelLabel.setText("Level: " + *level);
-
-    vacancyDetails.experienceLabel.setVisible(experience.has_value());
-    if (experience) vacancyDetails.experienceLabel.setText("Experience: " + QString::number(*experience / 12.0) + " years");
-
-    vacancyDetails.educationLabel.setVisible(education.has_value());
-    if (education) vacancyDetails.educationLabel.setText("Education: " + *education);
-
-    vacancyDetails.skillsLabel.setVisible(!skills.isEmpty());
-    if (!skills.isEmpty()) vacancyDetails.skillsLabel.setText("Skills: " + skills);
-
-    vacancyDetails.industryLabel.setVisible(industry.has_value());
-    if (industry) vacancyDetails.industryLabel.setText("Industry: " + *industry);
-
-    vacancyDetails.expirationDateLabel.setVisible(expirationDate.has_value());
-    if (expirationDate) vacancyDetails.expirationDateLabel.setText("Expiration date: " + expirationDate->toString("dd-MM-yyyy"));
-
-    vacancyDetails.vacancyDesc.setHtml(description);
+    return getModel().ignoredVacancies();
 }
 
-void VacancyBrowserPresenter::closeVacancyDetails()
+void VacancyBrowserPresenter::setIgnoredVacancies(const QSet<QUrl>& ignoredVacancies)
 {
-    VacancyDetails& vacancyDetails = getView().vacancyDetails();
-
-    vacancyDetails.titleLabel.setText("Title");
-    vacancyDetails.companyNameLabel.setText("Company");
-
-    vacancyDetails.employmentTypeLabel.setText("Employment type");
-
-    vacancyDetails.levelLabel.setVisible(true);
-    vacancyDetails.levelLabel.setText("Level");
-
-    vacancyDetails.experienceLabel.setVisible(true);
-    vacancyDetails.experienceLabel.setText("Experience");
-
-    vacancyDetails.educationLabel.setVisible(true);
-    vacancyDetails.educationLabel.setText("Education");
-
-    vacancyDetails.skillsLabel.setVisible(true);
-    vacancyDetails.skillsLabel.setText("Skills");
-
-    vacancyDetails.industryLabel.setVisible(true);
-    vacancyDetails.industryLabel.setText("Industry");
-
-    vacancyDetails.expirationDateLabel.setVisible(true);
-    vacancyDetails.expirationDateLabel.setText("Expiration date");
-
-
-    vacancyDetails.vacancyDesc.setHtml(R"(
-        <!DOCTYPE html>
-        <html lang="en">
-        <body>
-            <header>
-                <h1>Choose vacancy from left list to see its description here</h1>
-            </header>
-        </body>
-        </html>)");
-
-    vacancyDetails.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
+    getModel().setIgnoredVacancies(ignoredVacancies);
 }
 
-void VacancyBrowserPresenter::onIgnoreButtonPressed()
+const QSet<QUrl>& VacancyBrowserPresenter::interestedVacancies() const
 {
-    VacancyBrowserModel& model = getModel();
-    VacancyDetails& details = getView().vacancyDetails();
-
-    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-    if (!vacancy)
-        return;
-
-    model.ignoredVacancies().insert(vacancy->get().link);
-
-    updateVisibleVacancies();
-    details.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Ignored));
-    closeVacancyDetails();
+    return getModel().interestedVacancies();
 }
 
-void VacancyBrowserPresenter::onInterestButtonPressed()
+void VacancyBrowserPresenter::setInterestedVacancies(const QSet<QUrl>& interestedVacancies)
 {
-    VacancyBrowserModel& model = getModel();
-    VacancyDetails& details = getView().vacancyDetails();
-
-    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-    if (!vacancy)
-        return;
-
-    model.interestedVacancies().insert(vacancy->get().link);
-
-    updateVisibleVacancies();
-    details.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Interested));
-    closeVacancyDetails();
+    getModel().setInterestedVacancies(interestedVacancies);
 }
 
-void VacancyBrowserPresenter::onRemoveIgnoreButtonPressed()
-{
-    VacancyBrowserModel& model = getModel();
-    VacancyDetails& details = getView().vacancyDetails();
-
-    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-    if (!vacancy)
-        return;
-
-    model.ignoredVacancies().remove(vacancy->get().link);
-
-    updateVisibleVacancies();
-    details.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
-    closeVacancyDetails();
-}
-
-void VacancyBrowserPresenter::onRemoveInterestButtonPressed()
-{
-    VacancyBrowserModel& model = getModel();
-    VacancyDetails& details = getView().vacancyDetails();
-
-    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-    if (!vacancy)
-        return;
-
-    model.interestedVacancies().remove(vacancy->get().link);
-
-    updateVisibleVacancies();
-    details.statusButtonsLayout.setCurrentIndex(static_cast<int>(VacancyStatus::Unreviewed));
-    closeVacancyDetails();
-}
-
-void VacancyBrowserPresenter::onBriefReady(const Vacancy& vacancy)
-{
-    VacancyBrowserModel& model = getModel();
-    auto& vacancyByUrl = model.vacancyByUrl();
-
-    auto it = vacancyByUrl.find(vacancy.link);
-    if (it == vacancyByUrl.end())
-    {
-        vacancyByUrl.emplace(vacancy.link, vacancy);
-    }
-    else
-    {
-        Vacancy& foundVacancy = it.value();
-        foundVacancy.fillEmptyFrom(vacancy);
-
-        qCDebug(VBPLog) << foundVacancy.title;
-    }
-}
-
-void VacancyBrowserPresenter::onDetailsReady(const Vacancy& vacancy)
-{
-    VacancyBrowserModel& model = getModel();
-    auto& vacancyByUrl = model.vacancyByUrl();
-
-    auto it = vacancyByUrl.find(vacancy.link);
-    if (it == vacancyByUrl.end())
-    {
-        vacancyByUrl.emplace(vacancy.link, vacancy);
-    }
-    else
-    {
-        Vacancy& foundVacancy = it.value();
-        foundVacancy.fillEmptyFrom(vacancy);
-
-        qCDebug(VBPLog) << foundVacancy.title;
-    }
-}
-
-void VacancyBrowserPresenter::updateVacancyList(const QStringList& data)
+void VacancyBrowserPresenter::reset()
 {
     VacancyBrowserModel& model = getModel();
 
-    model.vacancyListModel().setStringList(data);
+    model.vacancyByUrl().clear();
+    model.visibleVacancies().clear();
 }
 
-void VacancyBrowserPresenter::clearVacancyList()
+void VacancyBrowserPresenter::onBriefReady(const Vacancy& brief)
 {
-    VacancyBrowserModel& model = getModel();
+    qCDebug(VBPLog) << "received brief of" << brief.title;
 
-    model.vacancyListModel().setStringList(QStringList());
+    getModel().addVacancy(brief);
+}
+
+void VacancyBrowserPresenter::onDetailsReady(const Vacancy& details)
+{
+    qCDebug(VBPLog) << "received details of" << details.title;
+
+    getModel().addVacancy(details);
 }
 
 void VacancyBrowserPresenter::updateVisibleVacancies()
 {
-    VacancyBrowserModel& model = getModel();
-
-    //clearVacancyList();
-
-    model.updateVisibleVacancies();
-
-    updateModelData();
+    getModel().updateVisibleVacancies();
 }
 
-void VacancyBrowserPresenter::updateModelData()
+void VacancyBrowserPresenter::setVisibleStatuses(QList<VacancyStatus> statuses)
 {
-    VacancyBrowserModel& model = getModel();
+    getModel().setVisibleStatuses(statuses);
+}
 
-    QStringList data;
+void VacancyBrowserPresenter::setVacancyFilter(const VacancyFilter& filter)
+{
+    getModel().setVacancyFilter(filter);
+}
 
-    for (const Vacancy* vacancy : model.visibleVacancies())
+void VacancyBrowserPresenter::setVacancySortComparator(const VacancySortComparator& sortComparator)
+{
+    getModel().setVacancySortComparator(sortComparator);
+}
+
+void VacancyBrowserPresenter::openVacancyDetails(const QModelIndex& index)
+{
+    const VacancyBrowserModel& model = getModel();
+
+    const int id = index.row();
+    auto vacancy = model.getVisibleVacancy(id);
+    if (!vacancy.has_value())
     {
-        const QString& id = QString::number(data.size() + 1);
-        const QString& title = vacancy->title;
-        const QString& companyName = vacancy->companyName;
-        const qsizetype& companyNameWidth = companyName.size() + 8;
-        const QString& age = QString::number(vacancy->date.daysTo(QDate::currentDate()));
-        const QString& location = vacancy->location;
-
-        data.append(QString("%1. %2\n%3\n%4\n%5 days ago")
-                    .arg(id.leftJustified(3))
-                    .arg(title)
-                    .arg(companyName)
-                    .arg(location)
-                    .arg(age));
+        return;
     }
 
-    updateVacancyList(data);
+    const VacancyStatus status = model.getVacancyStatus(vacancy.value());
+
+    getView().vacancyDetails().open(vacancy.value(), status);
 }
 
-std::optional<VacancyBrowserPresenter::constVacancyRef> VacancyBrowserPresenter::getCurrentVacancy() const
+void VacancyBrowserPresenter::onIgnoreButtonPressed()
+{
+    QSet<QUrl>& ignoredVacancies = getModel().ignoredVacancies();
+    const bool needUpdate = addCurrentVacancyToStatusList(ignoredVacancies);
+
+    if (needUpdate)
+    {
+        updateStatusButtons(VacancyStatus::Ignored);
+    }
+}
+
+void VacancyBrowserPresenter::onInterestButtonPressed()
+{
+    QSet<QUrl>& interestedVacancies = getModel().interestedVacancies();
+    const bool needUpdate = addCurrentVacancyToStatusList(interestedVacancies);
+
+    if (needUpdate)
+    {
+        updateStatusButtons(VacancyStatus::Interested);
+    }
+}
+
+void VacancyBrowserPresenter::onRemoveIgnoreButtonPressed()
+{
+    QSet<QUrl>& ignoredVacancies = getModel().ignoredVacancies();
+    const bool needUpdate = removeCurrentVacancyFromStatusList(ignoredVacancies);
+
+    if (needUpdate)
+    {
+        updateStatusButtons(VacancyStatus::Unreviewed);
+    }
+}
+
+void VacancyBrowserPresenter::onRemoveInterestButtonPressed()
+{
+    QSet<QUrl>& interestedVacancies = getModel().interestedVacancies();
+    const bool needUpdate = removeCurrentVacancyFromStatusList(interestedVacancies);
+
+    if (needUpdate)
+    {
+        updateStatusButtons(VacancyStatus::Unreviewed);
+    }
+}
+
+bool VacancyBrowserPresenter::addCurrentVacancyToStatusList(QSet<QUrl>& statusVacancyList)
+{
+    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
+    if (!vacancy)
+        return false;
+
+    const qsizetype oldSize = statusVacancyList.size();
+
+    statusVacancyList.insert(vacancy->get().link);
+
+    return oldSize != statusVacancyList.size();
+}
+
+bool VacancyBrowserPresenter::removeCurrentVacancyFromStatusList(QSet<QUrl>& statusVacancyList)
+{
+    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
+    if (!vacancy)
+        return false;
+
+    return statusVacancyList.remove(vacancy->get().link);
+}
+
+void VacancyBrowserPresenter::updateStatusButtons(VacancyStatus status)
+{
+    updateVisibleVacancies();
+
+    getView().vacancyDetails().updateCurrentStatusButton(status);
+
+    getView().vacancyDetails().close();
+}
+
+std::optional<constVacancyRef> VacancyBrowserPresenter::getCurrentVacancy() const
 {
     const QModelIndex& index = getView().vacancyList().currentIndex();
     const VacancyBrowserModel& model = getModel();
@@ -293,5 +190,5 @@ std::optional<VacancyBrowserPresenter::constVacancyRef> VacancyBrowserPresenter:
 
     const int id = index.row();
 
-    return *model.getVisibleVacancy(id);
+    return model.getVisibleVacancy(id);
 }

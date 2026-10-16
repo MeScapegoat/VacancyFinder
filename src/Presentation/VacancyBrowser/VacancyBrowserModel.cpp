@@ -2,9 +2,11 @@
 
 #include <QStringListModel>
 
+Q_LOGGING_CATEGORY(VBMlog, "vacancyBrowser.model")
+
 VacancyBrowserModel::VacancyBrowserModel(QObject* parent) :
     Model(parent),
-    m_vacancyListModel(*new QStringListModel)
+    m_vacancyListModel(*new VacancyListModel(this))
 {
 
 }
@@ -59,24 +61,53 @@ void VacancyBrowserModel::setInterestedVacancies(const QSet<QUrl>& interestedVac
     m_interestedVacancies = interestedVacancies;
 }
 
-QStringListModel& VacancyBrowserModel::vacancyListModel()
+VacancyBrowserModel::VacancyListModel& VacancyBrowserModel::vacancyListModel()
 {
     return m_vacancyListModel;
 }
 
-const QStringListModel& VacancyBrowserModel::vacancyListModel() const 
+const VacancyBrowserModel::VacancyListModel& VacancyBrowserModel::vacancyListModel() const
 {
     return m_vacancyListModel;
 }
 
-const Vacancy* const VacancyBrowserModel::getVisibleVacancy(size_t id) const
+void VacancyBrowserModel::addVacancy(const Vacancy& vacancy)
 {
-    if (id < m_visibleVacancies.size())
+    const auto it = m_vacancyByUrl.find(vacancy.link);
+    if (it == m_vacancyByUrl.end())
     {
-        return m_visibleVacancies[id];
+        m_vacancyByUrl.emplace(vacancy.link, vacancy);
+    }
+    else
+    {
+        Vacancy& foundVacancy = it.value();
+        foundVacancy.fillEmptyFrom(vacancy);
+    }
+}
+
+void VacancyBrowserModel::setVisibleStatuses(QList<VacancyStatus> statuses)
+{
+    m_visibleStatuses = statuses;
+}
+
+void VacancyBrowserModel::setVacancyFilter(const VacancyFilter& filter)
+{
+    passesWordFilter = filter;
+}
+
+void VacancyBrowserModel::setVacancySortComparator(const VacancySortComparator& sortComparator)
+{
+    sortPredicate = sortComparator;
+}
+
+std::optional<constVacancyRef> VacancyBrowserModel::getVisibleVacancy(size_t id) const
+{
+    if (m_visibleVacancies.size() > id)
+    {
+        return *m_visibleVacancies[id];
     }
 
-    return nullptr;
+    return std::nullopt;
 }
 
 VacancyStatus VacancyBrowserModel::getVacancyStatus(const Vacancy& vacancy) const
@@ -94,18 +125,18 @@ VacancyStatus VacancyBrowserModel::getVacancyStatus(const Vacancy& vacancy) cons
 
 void VacancyBrowserModel::updateVisibleVacancies()
 {
+    qCDebug(VBMlog) << __FUNCTION__;
+
     syncVisibleVacancies();
-
-    applyStatusFilter();
-
     applyFiltering();
-
     applySorting();
+    updateVacancyListModel();
 }
 
 void VacancyBrowserModel::syncVisibleVacancies()
 {
     m_visibleVacancies.clear();
+
     m_visibleVacancies.reserve(m_vacancyByUrl.size());
     for (const Vacancy& vacancy : m_vacancyByUrl)
     {
@@ -113,317 +144,53 @@ void VacancyBrowserModel::syncVisibleVacancies()
     }
 }
 
-void VacancyBrowserModel::applyStatusFilter()
-{
-    // TODO: std::erase_if
-    for (auto it = m_visibleVacancies.begin(); it != m_visibleVacancies.end(); /* EMPTY */)
-    {
-        const Vacancy& vacancy = **it;
-        const VacancyStatus status = getVacancyStatus(vacancy);
-        bool isRemoving = false;
-
-        switch (status)
-        {
-            case VacancyStatus::Ignored:
-            {
-                isRemoving = !m_isIgnoredVisible;
-                break;
-            }
-            case VacancyStatus::Interested:
-            {
-                isRemoving = !m_isInterestedVisible;
-                break;
-            }
-            case VacancyStatus::Unreviewed:
-            {
-                isRemoving = !m_isUnreviewedVisible;
-                break;
-            }
-        }
-
-        if (isRemoving)
-            it = m_visibleVacancies.erase(it);
-        else
-            ++it;
-    }
-}
-
 void VacancyBrowserModel::applyFiltering()
 {
-    QStringList filterWords = m_filterWords.split(',');
-    if (filterWords.isEmpty()) return;
+    Q_ASSERT_X(passesWordFilter, __FUNCTION__, "passesWordFilter function is not set");
 
-    for (QString& word : filterWords)
-        word = word.trimmed();
-
-    switch (m_filterMode)
+    auto shouldRemoveVacancy = [this](const Vacancy* vacancy) -> bool
     {
-        case FilterMode::Off:
-        {
-            return;
-        }
-        case FilterMode::Include:
-        {
-            // TODO: std::erase_if
-            //qCDebug(AppLog) << "Include filter mode, filter words:" << filterWords;
-            for (auto it = m_visibleVacancies.begin(); it != m_visibleVacancies.end(); /* EMPTY */)
-            {
-                const Vacancy& vacancy = **it;
-                bool isFilterOk = true;
-                for (const QString& word : filterWords)
-                {
-                    if (vacancy.count(word) == 0)
-                    {
-                        isFilterOk = false;
-                        break;
-                    }
-                }
+        return !passesWordFilter(vacancy) || !passesFilterStatus(vacancy);
+    };
 
-                if (!isFilterOk)
-                    it = m_visibleVacancies.erase(it);
-                else
-                    ++it;
-            }
-            break;
-        }
-        case FilterMode::Exclude:
-        {
-            // TODO: std::erase_if
-            //qCDebug(AppLog) << "Exclude filter mode, filter words:" << filterWords;
-            for (auto it = m_visibleVacancies.begin(); it != m_visibleVacancies.end(); /* EMPTY */)
-            {
-                const Vacancy& vacancy = **it;
-                bool isFilterOk = true;
-                for (const QString& word : filterWords)
-                {
-                    if (vacancy.count(word) != 0)
-                    {
-                        isFilterOk = false;
-                        break;
-                    }
-                }
-
-                if (!isFilterOk)
-                    it = m_visibleVacancies.erase(it);
-                else
-                    ++it;
-            }
-            break;
-        }
-    }
+    m_visibleVacancies.removeIf(shouldRemoveVacancy);
 }
 
 void VacancyBrowserModel::applySorting()
 {
-    switch (m_sortMode)
+    if (sortPredicate)
     {
-        case SortMode::Off:
-        {
-            return;
-        }
-        case SortMode::Relevance:
-        {
-            sortByRelevance();
-            break;
-        }
-        case SortMode::Title:
-        {
-            sortByTitle();
-            break;
-        }
-        case SortMode::Company:
-        {
-            sortByCompany();
-            break;
-        }
-        case SortMode::Time:
-        {
-            sortByTime();
-            break;
-        }
-        case SortMode::EmploymentType:
-        {
-            sortByEmploymentType();
-            break;
-        }
-        case SortMode::Level:
-        {
-            sortByLevel();
-            break;
-        }
-        case SortMode::Experience:
-        {
-            sortByExperience();
-            break;
-        }
-        case SortMode::Education:
-        {
-            sortByEducation();
-            break;
-        }
-        case SortMode::Skills:
-        {
-            sortBySkills();
-            break;
-        }
-        case SortMode::Industry:
-        {
-            sortByIndustry();
-            break;
-        }
-        case SortMode::ExpirationDate:
-        {
-            sortByExpirationDate();
-            break;
-        }
+        std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), sortPredicate);
     }
 }
 
-void VacancyBrowserModel::sortByRelevance()
+void VacancyBrowserModel::updateVacancyListModel()
 {
-    //qCDebug(AppLog) << "Sorting by relevance";
+    QStringList data;
 
-    auto compareByRelevance = [&](const Vacancy* left, const Vacancy* right)
+    for (const Vacancy* vacancy : m_visibleVacancies)
     {
-        return left->count(m_keywords) > right->count(m_keywords);
-    };
+        const QString& id = QString::number(data.size() + 1);
+        const QString& title = vacancy->title;
+        const QString& companyName = vacancy->companyName;
+        const qsizetype& companyNameWidth = companyName.size() + 8;
+        const QString& age = QString::number(vacancy->date.daysTo(QDate::currentDate()));
+        const QString& location = vacancy->location;
 
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByRelevance);
+        data.append(QString("%1. %2\n%3\n%4\n%5 days ago")
+                    .arg(id.leftJustified(3))
+                    .arg(title)
+                    .arg(companyName)
+                    .arg(location)
+                    .arg(age));
+    }
+
+    m_vacancyListModel.setStringList(data);
 }
 
-void VacancyBrowserModel::sortByTitle()
+bool VacancyBrowserModel::passesFilterStatus(const Vacancy* vacancy)
 {
-    //qCDebug(AppLog) << "Sorting by title";
+    const VacancyStatus status = getVacancyStatus(*vacancy);
 
-    auto compareByTitle = [](const Vacancy* left, const Vacancy* right)
-    {
-        return left->title < right->title;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByTitle);
-}
-
-void VacancyBrowserModel::sortByCompany()
-{
-    //qCDebug(AppLog) << "Sorting by company";
-
-    auto compareByCompany = [](const Vacancy* left, const Vacancy* right)
-    {
-        return left->companyName < right->companyName;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByCompany);
-}
-
-void VacancyBrowserModel::sortByTime()
-{
-    //qCDebug(AppLog) << "Sorting by time";
-
-    auto compareByTime = [](const Vacancy* left, const Vacancy* right)
-    {
-        return left->date > right->date;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByTime);
-}
-
-void VacancyBrowserModel::sortByEmploymentType()
-{
-    //qCDebug(AppLog) << "sorting by Employment Type";
-    auto compareByEmploymentType = [](const Vacancy* left, const Vacancy* right)
-    {
-        return left->employmentType > right->employmentType;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByEmploymentType);
-}
-
-void VacancyBrowserModel::sortByLevel()
-{
-    //qCDebug(AppLog) << "Sorting by level";
-
-    auto compareByLevel = [&](const Vacancy* left, const Vacancy* right)
-    {
-        if (!left->level.has_value()) return false;
-        if (!right->level.has_value()) return true;
-
-        return left->level < right->level;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByLevel);
-}
-
-void VacancyBrowserModel::sortByExperience()
-{
-    //qCDebug(AppLog) << "Sorting by experience";
-
-    auto compareByExperience = [&](const Vacancy* left, const Vacancy* right)
-    {
-        if (!left->experience.has_value()) return false;
-        if (!right->experience.has_value()) return true;
-
-        return left->experience < right->experience;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByExperience);
-}
-
-void VacancyBrowserModel::sortByEducation()
-{
-    //qCDebug(AppLog) << "Sorting by education";
-
-    auto compareByEducation = [&](const Vacancy* left, const Vacancy* right)
-    {
-        if (!left->education.has_value()) return false;
-        if (!right->education.has_value()) return true;
-
-        return left->education < right->education;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByEducation);
-}
-
-void VacancyBrowserModel::sortBySkills()
-{
-    //qCDebug(AppLog) << "Sorting by skills";
-
-    auto compareBySkills = [&](const Vacancy* left, const Vacancy* right)
-    {
-        if (left->skills.isEmpty()) return false;
-        if (right->skills.isEmpty()) return true;
-
-        return left->skills < right->skills;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareBySkills);
-}
-
-void VacancyBrowserModel::sortByIndustry()
-{
-    //qCDebug(AppLog) << "sorting by industry";
-
-    auto compareByIndustry = [&](const Vacancy* left, const Vacancy* right)
-    {
-        if (!left->industry.has_value()) return false;
-        if (!right->industry.has_value()) return true;
-
-        return left->industry < right->industry;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByIndustry);
-}
-
-void VacancyBrowserModel::sortByExpirationDate()
-{
-    //qCDebug(AppLog) << "sorting by Relevance";
-
-    auto compareByExpirationDate = [&](const Vacancy* left, const Vacancy* right)
-    {
-        if (!left->expirationDate.has_value()) return false;
-        if (!right->expirationDate.has_value()) return true;
-
-        return left->expirationDate < right->expirationDate;
-    };
-
-    std::sort(m_visibleVacancies.begin(), m_visibleVacancies.end(), compareByExpirationDate);
+    return m_visibleStatuses.contains(status);
 }
