@@ -12,102 +12,97 @@ Q_LOGGING_CATEGORY(VBPLog, "vacancyBrowser.presenter");
 VacancyBrowserPresenter::VacancyBrowserPresenter(QObject* parent) :
     Presenter(parent)
 {
-    VacancyBrowserView& view = getView();
 
-    QObject::connect(&view.vacancyList(), &VacancyBrowserView::VacancyList::clicked, this, &VacancyBrowserPresenter::openVacancyDetails);
+    QObject::connect(&view().vacancyList(), &VacancyBrowserView::VacancyList::clicked, this, &VacancyBrowserPresenter::openVacancyDetails);
 
-    QObject::connect(&view.vacancyDetails(), &VacancyDetails::ignoreButtonPressed,     this, &VacancyBrowserPresenter::onIgnoreButtonPressed);
-    QObject::connect(&view.vacancyDetails(), &VacancyDetails::interestedButtonPressed, this, &VacancyBrowserPresenter::onInterestButtonPressed);
+    QObject::connect(&view().vacancyDetails(), &VacancyDetails::ignoreButtonPressed,     this, &VacancyBrowserPresenter::onIgnoreButtonPressed);
+    QObject::connect(&view().vacancyDetails(), &VacancyDetails::interestedButtonPressed, this, &VacancyBrowserPresenter::onInterestButtonPressed);
 
-    QObject::connect(&view.vacancyDetails(), &VacancyDetails::removeIgnoreButtonPressed,     this, &VacancyBrowserPresenter::onRemoveIgnoreButtonPressed);
-    QObject::connect(&view.vacancyDetails(), &VacancyDetails::removeInterestedButtonPressed, this, &VacancyBrowserPresenter::onRemoveInterestButtonPressed);
+    QObject::connect(&view().vacancyDetails(), &VacancyDetails::removeIgnoreButtonPressed,     this, &VacancyBrowserPresenter::onRemoveIgnoreButtonPressed);
+    QObject::connect(&view().vacancyDetails(), &VacancyDetails::removeInterestedButtonPressed, this, &VacancyBrowserPresenter::onRemoveInterestButtonPressed);
 
-    getView().vacancyList().setModel(&getModel().vacancyListModel());
+    view().vacancyList().setModel(&model().vacancyListModel());
 
-    getView().vacancyDetails().close();
+    view().vacancyDetails().close();
 }
 
 const QSet<QUrl>& VacancyBrowserPresenter::ignoredVacancies() const
 {
-    return getModel().ignoredVacancies();
+    return model().ignoredVacancies();
 }
 
 void VacancyBrowserPresenter::setIgnoredVacancies(const QSet<QUrl>& ignoredVacancies)
 {
-    getModel().setIgnoredVacancies(ignoredVacancies);
+    model().setIgnoredVacancies(ignoredVacancies);
 }
 
 const QSet<QUrl>& VacancyBrowserPresenter::interestedVacancies() const
 {
-    return getModel().interestedVacancies();
+    return model().interestedVacancies();
 }
 
 void VacancyBrowserPresenter::setInterestedVacancies(const QSet<QUrl>& interestedVacancies)
 {
-    getModel().setInterestedVacancies(interestedVacancies);
+    model().setInterestedVacancies(interestedVacancies);
 }
 
 void VacancyBrowserPresenter::reset()
 {
-    VacancyBrowserModel& model = getModel();
-
-    model.vacancyByUrl().clear();
-    model.visibleVacancies().clear();
+    model().vacancyByUrl().clear();
+    model().visibleVacancies().clear();
 }
 
 void VacancyBrowserPresenter::onBriefReady(const Vacancy& brief)
 {
     qCDebug(VBPLog) << "received brief of" << brief.title;
 
-    getModel().addVacancy(brief);
+    model().addVacancy(brief);
 }
 
 void VacancyBrowserPresenter::onDetailsReady(const Vacancy& details)
 {
     qCDebug(VBPLog) << "received details of" << details.title;
 
-    getModel().addVacancy(details);
+    model().addVacancy(details);
 }
 
 void VacancyBrowserPresenter::updateVisibleVacancies()
 {
-    getModel().updateVisibleVacancies();
+    model().updateVisibleVacancies();
 }
 
 void VacancyBrowserPresenter::setVisibleStatuses(QList<VacancyStatus> statuses)
 {
-    getModel().setVisibleStatuses(statuses);
+    model().setVisibleStatuses(statuses);
 }
 
 void VacancyBrowserPresenter::setVacancyFilter(const VacancyFilter& filter)
 {
-    getModel().setVacancyFilter(filter);
+    model().setVacancyFilter(filter);
 }
 
 void VacancyBrowserPresenter::setVacancySortComparator(const VacancySortComparator& sortComparator)
 {
-    getModel().setVacancySortComparator(sortComparator);
+    model().setVacancySortComparator(sortComparator);
 }
 
 void VacancyBrowserPresenter::openVacancyDetails(const QModelIndex& index)
 {
-    const VacancyBrowserModel& model = getModel();
-
     const int id = index.row();
-    auto vacancy = model.getVisibleVacancy(id);
+    auto vacancy = model().getVisibleVacancy(id);
     if (!vacancy.has_value())
     {
         return;
     }
 
-    const VacancyStatus status = model.getVacancyStatus(vacancy.value());
+    const VacancyStatus status = model().getVacancyStatus(vacancy.value());
 
-    getView().vacancyDetails().open(vacancy.value(), status);
+    view().vacancyDetails().open(vacancy.value(), status);
 }
 
 void VacancyBrowserPresenter::onIgnoreButtonPressed()
 {
-    QSet<QUrl>& ignoredVacancies = getModel().ignoredVacancies();
+    QSet<QUrl>& ignoredVacancies = model().ignoredVacancies();
     const bool needUpdate = addCurrentVacancyToStatusList(ignoredVacancies);
 
     if (needUpdate)
@@ -118,7 +113,7 @@ void VacancyBrowserPresenter::onIgnoreButtonPressed()
 
 void VacancyBrowserPresenter::onInterestButtonPressed()
 {
-    QSet<QUrl>& interestedVacancies = getModel().interestedVacancies();
+    QSet<QUrl>& interestedVacancies = model().interestedVacancies();
     const bool needUpdate = addCurrentVacancyToStatusList(interestedVacancies);
 
     if (needUpdate)
@@ -129,7 +124,7 @@ void VacancyBrowserPresenter::onInterestButtonPressed()
 
 void VacancyBrowserPresenter::onRemoveIgnoreButtonPressed()
 {
-    QSet<QUrl>& ignoredVacancies = getModel().ignoredVacancies();
+    QSet<QUrl>& ignoredVacancies = model().ignoredVacancies();
     const bool needUpdate = removeCurrentVacancyFromStatusList(ignoredVacancies);
 
     if (needUpdate)
@@ -140,7 +135,7 @@ void VacancyBrowserPresenter::onRemoveIgnoreButtonPressed()
 
 void VacancyBrowserPresenter::onRemoveInterestButtonPressed()
 {
-    QSet<QUrl>& interestedVacancies = getModel().interestedVacancies();
+    QSet<QUrl>& interestedVacancies = model().interestedVacancies();
     const bool needUpdate = removeCurrentVacancyFromStatusList(interestedVacancies);
 
     if (needUpdate)
@@ -175,20 +170,19 @@ void VacancyBrowserPresenter::updateStatusButtons(VacancyStatus status)
 {
     updateVisibleVacancies();
 
-    getView().vacancyDetails().updateCurrentStatusButton(status);
+    view().vacancyDetails().updateCurrentStatusButton(status);
 
-    getView().vacancyDetails().close();
+    view().vacancyDetails().close();
 }
 
 std::optional<constVacancyRef> VacancyBrowserPresenter::getCurrentVacancy() const
 {
-    const QModelIndex& index = getView().vacancyList().currentIndex();
-    const VacancyBrowserModel& model = getModel();
+    const QModelIndex& index = view().vacancyList().currentIndex();
 
     if (!index.isValid())
         return std::nullopt;
 
     const int id = index.row();
 
-    return model.getVisibleVacancy(id);
+    return model().getVisibleVacancy(id);
 }

@@ -1,14 +1,14 @@
 #pragma once
 
-class QWidget;
+#include <QWidget>
 
-class View
+class View : public QWidget
 {
 public:
-    View() = default;
-    virtual ~View() = default;
+    View(QWidget* parent = nullptr) :
+        QWidget(parent)
+    {
+    };
 
-public:
-    virtual QWidget& widget() = 0;
-    virtual const QWidget& widget() const = 0;
+    virtual ~View() = default;
 };

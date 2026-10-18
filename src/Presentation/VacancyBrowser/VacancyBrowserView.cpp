@@ -6,8 +6,7 @@
 #include "VacancyDetails.h"
 
 VacancyBrowserView::VacancyBrowserView(QWidget* parent) :
-    QWidget(parent),
-    View(),
+    View(parent),
     m_vacancyList(*new VacancyList),
     m_vacancyDetails(*new VacancyDetails)
 {
@@ -17,16 +16,6 @@ VacancyBrowserView::VacancyBrowserView(QWidget* parent) :
     mainLayout.addWidget(&m_vacancyDetails);
 
     setLayout(&mainLayout);
-}
-
-QWidget& VacancyBrowserView::widget()
-{
-    return *this;
-}
-
-const QWidget& VacancyBrowserView::widget() const
-{
-    return *this;
 }
 
 const VacancyBrowserView::VacancyList& VacancyBrowserView::vacancyList() const

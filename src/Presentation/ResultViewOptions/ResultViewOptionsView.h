@@ -11,18 +11,13 @@ class CallableComboBox;
 class QLineEdit;
 class QCheckBox;
 
-class ResultViewOptionsView : public QWidget, public View
+class ResultViewOptionsView : public View
 {
     Q_OBJECT
 
 public:
     ResultViewOptionsView(QWidget* parent = nullptr);
     ~ResultViewOptionsView() = default;
-
-public:
-    // View
-    QWidget& widget() override;
-    const QWidget& widget() const override;
 
 public:
     CallableComboBox<VacancyFilter>& filterMode;

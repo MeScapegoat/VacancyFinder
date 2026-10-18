@@ -40,7 +40,7 @@ App::App(QObject* parent) :
     resultViewOptionsPresenter(*new ResultViewOptionsPresenter(this)),
     vacancyBrowserPresenter(*new VacancyBrowserPresenter(this)),
     controller(*new AppController(this)),
-    mainWindow(*new MainWindow(queryParametersPresenter.getView().widget(), resultViewOptionsPresenter.getView().widget(), vacancyBrowserPresenter.getView().widget())),
+    mainWindow(*new MainWindow(queryParametersPresenter.viewWidget(), resultViewOptionsPresenter.viewWidget(), vacancyBrowserPresenter.viewWidget())),
     progressDialog(*new ProgressDialog(&mainWindow)),
     requestStrategy(new LinkedInRequestStrategy(new NetworkManager)),
     requestManager(*new RequestManager(requestStrategy)),
@@ -168,12 +168,12 @@ void App::loadInterested()
 
 void App::sendSearchRequest()
 {    
-    updateMaxVacancies(queryParametersPresenter.getModel().maxResults());
+    updateMaxVacancies(queryParametersPresenter.model().maxResults());
 
     controller.reset();
 
-    keywords = queryParametersPresenter.getModel().keywords();
-    location = queryParametersPresenter.getModel().location();
+    keywords = queryParametersPresenter.model().keywords();
+    location = queryParametersPresenter.model().location();
 
     qCInfo(AppLog) << "keywords:" << keywords << "location:" << location;
 
@@ -236,16 +236,16 @@ QString App::loadDescriptionFromFile(const QString& path)
     return ret;
 }
 
-void App::saveState()
+void App::saveState() // TODO: refactor to not expose model
 {
     state.setIgnored(vacancyBrowserPresenter.ignoredVacancies());
     state.setInterested(vacancyBrowserPresenter.interestedVacancies());
 
 
-    state.setKeywords(queryParametersPresenter.getModel().keywords());
-    state.setLocation(queryParametersPresenter.getModel().location());
+    state.setKeywords(queryParametersPresenter.model().keywords());
+    state.setLocation(queryParametersPresenter.model().location());
 
-    state.setLimit(queryParametersPresenter.getModel().maxResults());
+    state.setLimit(queryParametersPresenter.model().maxResults());
 
 
     state.setFilterMode(resultViewOptionsPresenter.filterMode());
@@ -261,7 +261,7 @@ void App::saveState()
     state.saveState();
 }
 
-void App::loadState()
+void App::loadState() // TODO: refactor to not expose model
 {
     state.loadState();
 
@@ -269,10 +269,10 @@ void App::loadState()
     vacancyBrowserPresenter.setInterestedVacancies(state.getInterested());
 
 
-    queryParametersPresenter.getModel().keywords = state.getKeywords();
-    queryParametersPresenter.getModel().location = state.getLocation();
+    queryParametersPresenter.model().keywords = state.getKeywords();
+    queryParametersPresenter.model().location = state.getLocation();
 
-    queryParametersPresenter.getModel().maxResults = state.getLimit();
+    queryParametersPresenter.model().maxResults = state.getLimit();
 
 
     resultViewOptionsPresenter.setFilterMode(state.getFilterMode());

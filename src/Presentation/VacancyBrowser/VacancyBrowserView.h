@@ -6,7 +6,7 @@
 class QListView;
 class VacancyDetails;
 
-class VacancyBrowserView : public QWidget, public View
+class VacancyBrowserView : public View
 {
 public:
     using VacancyList = QListView; // TODO: make pretty
@@ -14,11 +14,6 @@ public:
 public:
     explicit VacancyBrowserView(QWidget* parent = nullptr);
     ~VacancyBrowserView() = default;
-
-public:
-    // View
-    QWidget& widget() override;
-    const QWidget& widget() const override;
 
 public:
     const VacancyList& vacancyList() const;

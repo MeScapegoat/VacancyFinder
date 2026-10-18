@@ -11,51 +11,55 @@ concept QObjectType = std::derived_from<T, QObject>;
 template<typename T>
 concept QWidgetType = std::derived_from<T, QWidget>;
 
-template<typename T>
-concept ViewType = QWidgetType<T> && requires(T& value, const T& constValue)
-{
-    { value.widget() } -> std::same_as<QWidget&>;
 
-    { constValue.widget() } -> std::same_as<const QWidget&>;
-};
-
-template<ViewType View, QObjectType Model>
+template<QWidgetType View, QObjectType Model>
 class Presenter : public QObject
 {
 public:
     Presenter(QObject* parent = nullptr) :
         QObject(parent),
-        view(*new View),
-        model(*new Model)
+        m_view(*new View),
+        m_model(*new Model)
     {
-        model.setParent(this);
+        m_model.setParent(this);
     }
 
     virtual ~Presenter() = default;
 
 public:
-    const View& getView() const
+    QWidget& viewWidget()
     {
-        return view;
+        return m_view;
+    }
+
+    const QWidget& viewWidget() const
+    {
+        return m_view;
+    }
+
+public: // TODO: move to protected and rename to view and model
+    const View& view() const
+    {
+        return m_view;
     };
 
-    View& getView()
+    View& view()
     {
-        return view;
+        return m_view;
     }
 
 
-    const Model& getModel() const
+    const Model& model() const
     {
-        return model;
+        return m_model;
     }
 
-    Model& getModel()
+    Model& model()
     {
-        return model;
+        return m_model;
     };
 
 private:
-    View& view;
-    Model& model;
+    View& m_view;
+    Model& m_model;
 };

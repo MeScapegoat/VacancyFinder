@@ -11,8 +11,8 @@
 TEST(QueryParameters, MaxResultsSync)
 {
     QueryParametersPresenter presenter;
-    auto& model = presenter.getModel().maxResults;
-    auto& view = presenter.getView().maxResultsInput;
+    auto& model = presenter.model().maxResults;
+    auto& view = presenter.view().maxResultsInput;
 
     testModelAndViewSync(model, view);
 }
@@ -20,8 +20,8 @@ TEST(QueryParameters, MaxResultsSync)
 TEST(QueryParameters, KeywordsSync)
 {
     QueryParametersPresenter presenter;
-    auto& model = presenter.getModel().keywords;
-    auto& view = presenter.getView().keywordsInput;
+    auto& model = presenter.model().keywords;
+    auto& view = presenter.view().keywordsInput;
 
     testModelAndViewSync(model, view);
 }
@@ -29,8 +29,8 @@ TEST(QueryParameters, KeywordsSync)
 TEST(QueryParameters, LocationSync)
 {
     QueryParametersPresenter presenter;
-    auto& model = presenter.getModel().location;
-    auto& view = presenter.getView().locationInput;
+    auto& model = presenter.model().location;
+    auto& view = presenter.view().locationInput;
 
     testModelAndViewSync(model, view);
 }
@@ -38,7 +38,7 @@ TEST(QueryParameters, LocationSync)
 TEST(QueryParameters, SearchRequest)
 {
     QueryParametersPresenter presenter;
-    auto& view = presenter.getView().searchButton;
+    auto& view = presenter.view().searchButton;
 
     testButtonSignalEmitted(presenter, &QueryParametersPresenter::searchRequested, view);
 }
@@ -46,7 +46,7 @@ TEST(QueryParameters, SearchRequest)
 TEST(QueryParameters, LoadInterestedRequested)
 {
     QueryParametersPresenter presenter;
-    auto& view = presenter.getView().searchInterestedButton;
+    auto& view = presenter.view().searchInterestedButton;
 
     testButtonSignalEmitted(presenter, &QueryParametersPresenter::loadInterestedRequested, view);
 }
@@ -54,7 +54,7 @@ TEST(QueryParameters, LoadInterestedRequested)
 TEST(QueryParameters, ResetRequest)
 {
     QueryParametersPresenter presenter;
-    auto& view = presenter.getView().resetButton;
+    auto& view = presenter.view().resetButton;
 
     testButtonSignalEmitted(presenter, &QueryParametersPresenter::resetRequested, view);
 }

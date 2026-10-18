@@ -9,16 +9,11 @@ class QLineEdit;
 class QSpinBox;
 class QPushButton;
 
-class QueryParametersView : public QWidget, public View
+class QueryParametersView : public View
 {
 public:
     QueryParametersView(QWidget* parent = nullptr);
     ~QueryParametersView() = default;
-
-public:
-    // View
-    QWidget& widget() override;
-    const QWidget& widget() const override;
 
 public:
     QLineEdit& keywordsInput;

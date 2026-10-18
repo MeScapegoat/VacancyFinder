@@ -11,7 +11,7 @@
 class Vacancy;
 
 ResultViewOptionsView::ResultViewOptionsView(QWidget* parent) :
-    QWidget(parent),
+    View(parent),
     filterMode(*new CallableComboBox<VacancyFilter>()),
     sortMode(*new CallableComboBox<VacancySortComparator>()),
     filterLineEdit(*new QLineEdit),
@@ -65,14 +65,4 @@ ResultViewOptionsView::ResultViewOptionsView(QWidget* parent) :
     
 
     setLayout(&mainLayout);
-}
-
-QWidget& ResultViewOptionsView::widget()
-{
-    return *this;
-}
-
-const QWidget& ResultViewOptionsView::widget() const
-{
-    return *this;
 }

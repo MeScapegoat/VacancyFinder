@@ -8,7 +8,7 @@
 #include <QSpinBox>
 
 QueryParametersView::QueryParametersView(QWidget* parent) :
-    QWidget(parent),
+    View(parent),
     keywordsInput(*new QLineEdit),
     locationInput(*new QLineEdit),
     maxResultsInput(*new QSpinBox),
@@ -42,14 +42,4 @@ QueryParametersView::QueryParametersView(QWidget* parent) :
     mainLayout.addWidget(&resetButton);
 
     setLayout(&mainLayout);
-}
-
-QWidget& QueryParametersView::widget()
-{
-    return *this;
-}
-
-const QWidget& QueryParametersView::widget() const
-{
-    return *this;
 }

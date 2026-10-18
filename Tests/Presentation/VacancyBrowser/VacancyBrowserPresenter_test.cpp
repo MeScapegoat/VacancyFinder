@@ -30,7 +30,7 @@ protected:
 
 TEST_F(VacancyBrowserPresenterTest, ConstructorAssignsModelToVacancyList)
 {
-    EXPECT_EQ(getView().vacancyList().model(), &getModel().vacancyListModel());
+    EXPECT_EQ(view().vacancyList().model(), &model().vacancyListModel());
 }
 
 TEST_F(VacancyBrowserPresenterTest, IgnoredVacanciesGetterAndSetter)
@@ -69,18 +69,18 @@ TEST_F(VacancyBrowserPresenterTest, BriefAndDetailsReadyAddVacancies)
     onBriefReady(makeVacancy("Brief", briefUrl));
     onDetailsReady(makeVacancy("Details", detailsUrl));
 
-    EXPECT_TRUE(getModel().vacancyByUrl().contains(briefUrl));
-    EXPECT_TRUE(getModel().vacancyByUrl().contains(detailsUrl));
+    EXPECT_TRUE(model().vacancyByUrl().contains(briefUrl));
+    EXPECT_TRUE(model().vacancyByUrl().contains(detailsUrl));
 }
 
 TEST_F(VacancyBrowserPresenterTest, UpdateVisibleVacanciesUpdatesListModel)
 {
     const Vacancy vacancy = makeVacancy("Developer", QUrl("url"));
-    getModel().addVacancy(vacancy);
+    model().addVacancy(vacancy);
 
     updateVisibleVacancies();
 
-    EXPECT_EQ(getView().vacancyList().model()->rowCount(), 1);
+    EXPECT_EQ(view().vacancyList().model()->rowCount(), 1);
 }
 
 TEST_F(VacancyBrowserPresenterTest, ResetClearsWorkflowAndPreservesMetadata)
@@ -89,7 +89,7 @@ TEST_F(VacancyBrowserPresenterTest, ResetClearsWorkflowAndPreservesMetadata)
     const QUrl ignoredUrl("ignored");
     const QUrl interestedUrl("interested");
 
-    getModel().addVacancy(makeVacancy("Current", vacancyUrl));
+    model().addVacancy(makeVacancy("Current", vacancyUrl));
     updateVisibleVacancies();
 
     setIgnoredVacancies({ignoredUrl});
@@ -97,8 +97,8 @@ TEST_F(VacancyBrowserPresenterTest, ResetClearsWorkflowAndPreservesMetadata)
 
     reset();
 
-    EXPECT_TRUE(getModel().vacancyByUrl().isEmpty());
-    EXPECT_TRUE(getModel().visibleVacancies().isEmpty());
+    EXPECT_TRUE(model().vacancyByUrl().isEmpty());
+    EXPECT_TRUE(model().visibleVacancies().isEmpty());
     EXPECT_EQ(ignoredVacancies(), QSet<QUrl>{ignoredUrl});
     EXPECT_EQ(interestedVacancies(), QSet<QUrl>{interestedUrl});
 }
