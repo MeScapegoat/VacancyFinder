@@ -1,10 +1,10 @@
 #pragma once
 
+#include <QDebug>
 #include <QLoggingCategory>
 #include <QSet>
-#include <QUrl>
 #include <QString>
-#include <QStringList>
+#include <QUrl>
 
 
 Q_DECLARE_LOGGING_CATEGORY(StateLog);
@@ -14,45 +14,44 @@ class AppState
 {
 public:
     AppState();
-    ~AppState();
 
 public:
-    const QSet<QUrl> getIgnored() const;
-    void setIgnored(const QSet<QUrl> ignored);
+    const QSet<QUrl> ignoredVacancies() const;
+    void setIgnoredVacancies(const QSet<QUrl> ignoredVacancies);
 
-    const QSet<QUrl> getInterested() const;
-    void setInterested(const QSet<QUrl>& interested);
+    const QSet<QUrl> interestedVacancies() const;
+    void setInterestedVacancies(const QSet<QUrl>& interestedVacancies);
 
 
-    const QString& getKeywords() const;
+    const QString& keywords() const;
     void setKeywords(const QString& keywords);
 
-    const QString& getLocation() const;
+    const QString& location() const;
     void setLocation(const QString& location);
 
 
-    const int getLimit() const;
-    void setLimit(const int limit);
+    int maxResults() const;
+    void setMaxResults(int maxResults);
 
 
-    const int getFilterMode() const;
+    const int filterMode() const;
     void setFilterMode(const int filterMode);
 
-    const QString& getFilters() const;
+    const QString& filters() const;
     void setFilters(const QString& filters);
 
 
-    const int getSortMode() const;
+    const int sortMode() const;
     void setSortMode(const int sortMode);
 
 
-    const bool getIsUnreviewedVisible() const;
+    const bool isUnreviewedVisible() const;
     void setIsUnreviewedVisible(const bool isUnreviewedVisible);
 
-    const bool getIsIgnoredVisible() const;
+    const bool isIgnoredVisible() const;
     void setIsIgnoredVisible(const bool isIgnoredVisible);
 
-    const bool getIsInterestedVisible() const;
+    const bool isInterestedVisible() const;
     void setIsInterestedVisible(const bool isInterestedVisible);
 
 public:
@@ -61,26 +60,22 @@ public:
     void loadState();
 
 protected:
-    QStringList toStringList(const QSet<QUrl>& qset);
-    QSet<QUrl> toUrlSet(const QStringList& stringList);
+    QSet<QUrl> m_ignoredVacancies;
+    QSet<QUrl> m_interestedVacancies;
 
-protected:
-    QSet<QUrl> ignored;
-    QSet<QUrl> interested;
+    QString m_keywords;
+    QString m_location;
 
-    QString keywords;
-    QString location;
+    int m_maxResults;
 
-    int limit;
+    int m_filterMode;
+    QString m_filters;
 
-    int filterMode;
-    QString filters;
+    int m_sortMode;
 
-    int sortMode;
-
-    bool isUnreviewedVisible;
-    bool isIgnoredVisible;
-    bool isInterestedVisible;
+    bool m_isUnreviewedVisible;
+    bool m_isIgnoredVisible;
+    bool m_isInterestedVisible;
 };
 
 QDebug operator<<(QDebug debug, const AppState& appState);

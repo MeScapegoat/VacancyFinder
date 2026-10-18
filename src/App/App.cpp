@@ -238,14 +238,14 @@ QString App::loadDescriptionFromFile(const QString& path)
 
 void App::saveState()
 {
-    state.setIgnored(vacancyBrowserPresenter.ignoredVacancies());
-    state.setInterested(vacancyBrowserPresenter.interestedVacancies());
+    state.setIgnoredVacancies(vacancyBrowserPresenter.ignoredVacancies());
+    state.setInterestedVacancies(vacancyBrowserPresenter.interestedVacancies());
 
 
     state.setKeywords(queryParametersPresenter.keywords());
     state.setLocation(queryParametersPresenter.location());
 
-    state.setLimit(queryParametersPresenter.maxResults());
+    state.setMaxResults(queryParametersPresenter.maxResults());
 
 
     state.setFilterMode(resultViewOptionsPresenter.filterMode());
@@ -265,22 +265,22 @@ void App::loadState()
 {
     state.loadState();
 
-    vacancyBrowserPresenter.setIgnoredVacancies(state.getIgnored());
-    vacancyBrowserPresenter.setInterestedVacancies(state.getInterested());
+    vacancyBrowserPresenter.setIgnoredVacancies(state.ignoredVacancies());
+    vacancyBrowserPresenter.setInterestedVacancies(state.interestedVacancies());
 
 
-    queryParametersPresenter.setKeywords(state.getKeywords());
-    queryParametersPresenter.setLocation(state.getLocation());
+    queryParametersPresenter.setKeywords(state.keywords());
+    queryParametersPresenter.setLocation(state.location());
 
-    queryParametersPresenter.setMaxResults(state.getLimit());
+    queryParametersPresenter.setMaxResults(state.maxResults());
 
 
-    resultViewOptionsPresenter.setFilterMode(state.getFilterMode());
-    resultViewOptionsPresenter.setFilterWords(state.getFilters());
+    resultViewOptionsPresenter.setFilterMode(state.filterMode());
+    resultViewOptionsPresenter.setFilterWords(state.filters());
 
-    resultViewOptionsPresenter.setSortMode(state.getSortMode());
+    resultViewOptionsPresenter.setSortMode(state.sortMode());
 
-    resultViewOptionsPresenter.setIsUnreviewedVisible(state.getIsUnreviewedVisible());
-    resultViewOptionsPresenter.setIsIgnoredVisible(state.getIsIgnoredVisible());
-    resultViewOptionsPresenter.setIsInterestedVisible(state.getIsInterestedVisible());
+    resultViewOptionsPresenter.setIsUnreviewedVisible(state.isUnreviewedVisible());
+    resultViewOptionsPresenter.setIsIgnoredVisible(state.isIgnoredVisible());
+    resultViewOptionsPresenter.setIsInterestedVisible(state.isInterestedVisible());
 }

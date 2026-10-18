@@ -30,4 +30,6 @@ target_link_libraries(App
         QueryParameters
         ResultViewOptions
         VacancyBrowser
+    PRIVATE
+        Utils
 )

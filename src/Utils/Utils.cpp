@@ -45,6 +45,30 @@ QStringList extractAll(const QString& data, const QString& pattern)
     return result;
 }
 
+QStringList toStringList(const QSet<QUrl>& urlSet)
+{
+    QStringList result;
+
+    for (const QUrl& url : urlSet)
+    {
+        result.append(url.toString());
+    }
+
+    return result;
+}
+
+QSet<QUrl> toUrlSet(const QStringList& stringList)
+{
+    QSet<QUrl> result;
+
+    for (const QString& string : stringList)
+    {
+        result.insert(string);
+    }
+
+    return result;
+}
+
 QString decodeHtml(QString text)
 {
     text.replace("&amp;", "&");

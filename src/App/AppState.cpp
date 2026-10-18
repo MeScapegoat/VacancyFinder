@@ -1,9 +1,13 @@
 #include "AppState.h"
 
-#include <QJsonArray>
-#include <QJsonObject>
+#include <QDebug>
 #include <QFile>
 #include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+
+#include <Utils.hpp>
 
 
 Q_LOGGING_CATEGORY(StateLog, "state");
@@ -13,13 +17,13 @@ namespace
 {
     inline constexpr const char* StateFileName = "app_state.json";
 
-    inline constexpr const char* InterestedKey = "interested";
-    inline constexpr const char* IgnoredKey = "ignored";
+    inline constexpr const char* InterestedVacanciesKey = "interestedVacancies";
+    inline constexpr const char* IgnoredVacanciesKey = "ignoredVacancies";
 
     inline constexpr const char* KeywordsKey = "keywords";
     inline constexpr const char* LocationKey = "location";
 
-    inline constexpr const char* LimitKey = "limit";
+    inline constexpr const char* MaxResultsKey = "maxResults";
 
     inline constexpr const char* FilterModeKey = "filterMode";
     inline constexpr const char* FiltersKey = "filters";
@@ -33,133 +37,128 @@ namespace
 
 
 AppState::AppState() :
-    interested(),
-    ignored(),
-    keywords(),
-    location(),
-    filterMode(0),
-    filters(),
-    sortMode(0),
-    isUnreviewedVisible(false),
-    isIgnoredVisible(false),
-    isInterestedVisible(false)
+    m_ignoredVacancies(),
+    m_interestedVacancies(),
+    m_keywords(),
+    m_location(),
+    m_maxResults(1),
+    m_filterMode(0),
+    m_filters(),
+    m_sortMode(0),
+    m_isUnreviewedVisible(false),
+    m_isIgnoredVisible(false),
+    m_isInterestedVisible(false)
 {
-    qCDebug(StateLog) << __FUNCTION__;
 }
 
-AppState::~AppState()
+const QSet<QUrl> AppState::ignoredVacancies() const
 {
-    qCDebug(StateLog) << __FUNCTION__;
+    return m_ignoredVacancies;
 }
 
-const QSet<QUrl> AppState::getIgnored() const
+void AppState::setIgnoredVacancies(const QSet<QUrl> ignoredVacancies)
 {
-    return ignored;
+    m_ignoredVacancies = ignoredVacancies;
 }
 
-void AppState::setIgnored(const QSet<QUrl> _ignored)
+const QSet<QUrl> AppState::interestedVacancies() const
 {
-    ignored = _ignored;
+    return m_interestedVacancies;
 }
 
-const QSet<QUrl> AppState::getInterested() const
+void AppState::setInterestedVacancies(const QSet<QUrl>& interestedVacancies)
 {
-    return interested;
+    m_interestedVacancies = interestedVacancies;
 }
 
-void AppState::setInterested(const QSet<QUrl>& _interested)
+const QString& AppState::keywords() const
 {
-    interested = _interested;
-}
-
-const QString& AppState::getKeywords() const
-{
-    return keywords;
+    return m_keywords;
 }
 
 void AppState::setKeywords(const QString& _keywords)
 {
-    keywords = _keywords;
+    m_keywords = _keywords;
 }
 
-const QString& AppState::getLocation() const
+const QString& AppState::location() const
 {
-    return location;
+    return m_location;
 }
 
 void AppState::setLocation(const QString& _location)
 {
-    location = _location;
+    m_location = _location;
 }
 
-const int AppState::getLimit() const
+int AppState::maxResults() const
 {
-    return limit;
+    return m_maxResults;
 }
 
-void AppState::setLimit(const int _limit)
+void AppState::setMaxResults(int maxResults)
 {
-    limit = _limit;
+    m_maxResults = maxResults;
 }
 
-const int AppState::getFilterMode() const
+const int AppState::filterMode() const
 {
-    return filterMode;
+    return m_filterMode;
 }
 
 void AppState::setFilterMode(const int _filterMode)
 {
-    filterMode = _filterMode;
+    m_filterMode = _filterMode;
 }
 
-const QString& AppState::getFilters() const
+const QString& AppState::filters() const
 {
-    return filters;
+    return m_filters;
 }
 
 void AppState::setFilters(const QString& _filters)
 {
-    filters = _filters;
+    m_filters = _filters;
 }
 
-const int AppState::getSortMode() const
+const int AppState::sortMode() const
 {
-    return sortMode;
+    return m_sortMode;
 }
 
 void AppState::setSortMode(const int _sortMode)
 {
-    sortMode = _sortMode;
+    m_sortMode = _sortMode;
 }
 
-const bool AppState::getIsUnreviewedVisible() const
+const bool AppState::isUnreviewedVisible() const
 {
-    return isUnreviewedVisible;
+    return m_isUnreviewedVisible;
 }
 
 void AppState::setIsUnreviewedVisible(const bool _isUnreviewedVisible)
 {
-    isUnreviewedVisible = _isUnreviewedVisible;
+    m_isUnreviewedVisible = _isUnreviewedVisible;
 }
 
-const bool AppState::getIsIgnoredVisible() const
+const bool AppState::isIgnoredVisible() const
 {
-    return isIgnoredVisible;
+    return m_isIgnoredVisible;
 }
 
 void AppState::setIsIgnoredVisible(const bool _isIgnoredVisible)
 {
-    isIgnoredVisible = _isIgnoredVisible;
+    m_isIgnoredVisible = _isIgnoredVisible;
 }
 
-const bool AppState::getIsInterestedVisible() const
+const bool AppState::isInterestedVisible() const
 {
-    return isInterestedVisible;
+    return m_isInterestedVisible;
 }
 
 void AppState::setIsInterestedVisible(const bool _isInterestedVisible)
 {
-    isInterestedVisible = _isInterestedVisible;
+    m_isInterestedVisible = _isInterestedVisible;
 }
 
 void AppState::saveState()
@@ -168,22 +167,22 @@ void AppState::saveState()
     qCDebug(StateLog) << *this;
 
     QJsonObject state;
-    state[InterestedKey] = QJsonArray::fromStringList(toStringList(interested));
-    state[IgnoredKey] = QJsonArray::fromStringList(toStringList(ignored));
+    state[InterestedVacanciesKey] = QJsonArray::fromStringList(toStringList(m_interestedVacancies));
+    state[IgnoredVacanciesKey] = QJsonArray::fromStringList(toStringList(m_ignoredVacancies));
 
-    state[KeywordsKey] = keywords;
-    state[LocationKey] = location;
+    state[KeywordsKey] = m_keywords;
+    state[LocationKey] = m_location;
 
-    state[LimitKey] = limit;
+    state[MaxResultsKey] = m_maxResults;
 
-    state[FilterModeKey] = filterMode;
-    state[FiltersKey] = filters;
+    state[FilterModeKey] = m_filterMode;
+    state[FiltersKey] = m_filters;
 
-    state[SortModeKey] = sortMode;
+    state[SortModeKey] = m_sortMode;
 
-    state[IsUnreviewedVisibleKey] = isUnreviewedVisible;
-    state[IsIgnoredVisibleKey] = isIgnoredVisible;
-    state[IsInterestedVisibleKey] = isInterestedVisible;
+    state[IsUnreviewedVisibleKey] = m_isUnreviewedVisible;
+    state[IsIgnoredVisibleKey] = m_isIgnoredVisible;
+    state[IsInterestedVisibleKey] = m_isInterestedVisible;
 
     QFile file(StateFileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
@@ -215,48 +214,24 @@ void AppState::loadState()
 
     const QJsonObject state = document.object();
 
-    interested = toUrlSet(state[InterestedKey].toVariant().toStringList());
-    ignored = toUrlSet(state[IgnoredKey].toVariant().toStringList());
+    m_interestedVacancies = toUrlSet(state[InterestedVacanciesKey].toVariant().toStringList());
+    m_ignoredVacancies = toUrlSet(state[IgnoredVacanciesKey].toVariant().toStringList());
 
-    keywords = state[KeywordsKey].toString();
-    location = state[LocationKey].toString();
+    m_keywords = state[KeywordsKey].toString();
+    m_location = state[LocationKey].toString();
 
-    limit = state[LimitKey].toInt();
+    m_maxResults = state[MaxResultsKey].toInt();
 
-    filterMode = state[FilterModeKey].toInt();
-    filters = state[FiltersKey].toString();
+    m_filterMode = state[FilterModeKey].toInt();
+    m_filters = state[FiltersKey].toString();
 
-    sortMode = state[SortModeKey].toInt();
+    m_sortMode = state[SortModeKey].toInt();
 
-    isUnreviewedVisible = state[IsUnreviewedVisibleKey].toBool();
-    isIgnoredVisible = state[IsIgnoredVisibleKey].toBool();
-    isInterestedVisible = state[IsInterestedVisibleKey].toBool();
+    m_isUnreviewedVisible = state[IsUnreviewedVisibleKey].toBool();
+    m_isIgnoredVisible = state[IsIgnoredVisibleKey].toBool();
+    m_isInterestedVisible = state[IsInterestedVisibleKey].toBool();
 
     qCDebug(StateLog) << *this;
-}
-
-QStringList AppState::toStringList(const QSet<QUrl>& set)
-{
-    QStringList result;
-
-    for (const QUrl& url : set)
-    {
-        result.append(url.toString());
-    }
-
-    return result;
-}
-
-QSet<QUrl> AppState::toUrlSet(const QStringList& stringList)
-{
-    QSet<QUrl> result;
-
-    for (const QString& string : stringList)
-    {
-        result.insert(string);
-    }
-
-    return result;
 }
 
 QDebug operator<<(QDebug debug, const AppState& appState)
@@ -264,17 +239,17 @@ QDebug operator<<(QDebug debug, const AppState& appState)
         QDebugStateSaver saver(debug);
 
         debug.nospace() << "AppState:" << "\n"
-            << "interested=          " << appState.getInterested() << "\n"
-            << "ignored=             " << appState.getIgnored() << "\n"
-            << "keywords=            " << appState.getKeywords() << "\n"
-            << "location=            " << appState.getLocation() << "\n"
-            << "limit=               " << appState.getLimit() << "\n"
-            << "filterMode=          " << appState.getFilterMode() << "\n"
-            << "filters=             " << appState.getFilters() << "\n"
-            << "sortMode=            " << appState.getSortMode() << "\n"
-            << "isUnreviewedVisible= " << appState.getIsUnreviewedVisible() << "\n"
-            << "isIgnoredVisible=    " << appState.getIsIgnoredVisible() << "\n"
-            << "isInterestedVisible= " << appState.getIsInterestedVisible();
+            << "interestedVacancies size: " << appState.interestedVacancies().size() << "\n"
+            << "ignoredVacancies size:    " << appState.ignoredVacancies().size() << "\n"
+            << "keywords:                 " << appState.keywords() << "\n"
+            << "location:                 " << appState.location() << "\n"
+            << "maxResults:               " << appState.maxResults() << "\n"
+            << "filterMode:               " << appState.filterMode() << "\n"
+            << "filters:                  " << appState.filters() << "\n"
+            << "sortMode:                 " << appState.sortMode() << "\n"
+            << "isUnreviewedVisible:      " << appState.isUnreviewedVisible() << "\n"
+            << "isIgnoredVisible:         " << appState.isIgnoredVisible() << "\n"
+            << "isInterestedVisible:      " << appState.isInterestedVisible();
 
         return debug;
 }
