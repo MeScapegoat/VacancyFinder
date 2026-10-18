@@ -30,6 +30,36 @@ QueryParametersPresenter::QueryParametersPresenter(QObject* parent) :
     connect(&view().resetButton, &QPushButton::released, this, &QueryParametersPresenter::resetRequested);
 }
 
+void QueryParametersPresenter::setKeywords(const QString& keywords)
+{
+    model().keywords = keywords;
+}
+
+QString QueryParametersPresenter::keywords() const
+{
+    return model().keywords();
+}
+
+void QueryParametersPresenter::setLocation(const QString& location)
+{
+    model().location = location;
+}
+
+QString QueryParametersPresenter::location() const
+{
+    return model().location();
+}
+
+void QueryParametersPresenter::setMaxResults(int maxResults)
+{
+    model().maxResults = maxResults;
+}
+
+int QueryParametersPresenter::maxResults() const
+{
+    return model().maxResults();
+}
+
 void QueryParametersPresenter::onMaxResultsChanged()
 {
     qCDebug(QPPLog) << __FUNCTION__;

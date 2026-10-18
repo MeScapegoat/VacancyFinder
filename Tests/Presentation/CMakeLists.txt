@@ -24,7 +24,8 @@ target_link_libraries(QueryParameters_test
 	PRIVATE
 		main_for_qt_tests
 		QueryParameters
-		test_helpers
+		QtTestPrinters
+		Qt::Test
 )
 
 set_target_properties(QueryParameters_test PROPERTIES FOLDER "Tests/Presentation")
@@ -42,6 +43,7 @@ target_link_libraries(VacancyBrowser_test
 	PRIVATE
 		main_for_qt_tests
 		VacancyBrowser
+		QtTestPrinters
 )
 
 set_target_properties(VacancyBrowser_test PROPERTIES FOLDER "Tests/Presentation")

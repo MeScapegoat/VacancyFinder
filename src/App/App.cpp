@@ -168,12 +168,12 @@ void App::loadInterested()
 
 void App::sendSearchRequest()
 {    
-    updateMaxVacancies(queryParametersPresenter.model().maxResults());
+    updateMaxVacancies(queryParametersPresenter.maxResults());
 
     controller.reset();
 
-    keywords = queryParametersPresenter.model().keywords();
-    location = queryParametersPresenter.model().location();
+    keywords = queryParametersPresenter.keywords();
+    location = queryParametersPresenter.location();
 
     qCInfo(AppLog) << "keywords:" << keywords << "location:" << location;
 
@@ -236,16 +236,16 @@ QString App::loadDescriptionFromFile(const QString& path)
     return ret;
 }
 
-void App::saveState() // TODO: refactor to not expose model
+void App::saveState()
 {
     state.setIgnored(vacancyBrowserPresenter.ignoredVacancies());
     state.setInterested(vacancyBrowserPresenter.interestedVacancies());
 
 
-    state.setKeywords(queryParametersPresenter.model().keywords());
-    state.setLocation(queryParametersPresenter.model().location());
+    state.setKeywords(queryParametersPresenter.keywords());
+    state.setLocation(queryParametersPresenter.location());
 
-    state.setLimit(queryParametersPresenter.model().maxResults());
+    state.setLimit(queryParametersPresenter.maxResults());
 
 
     state.setFilterMode(resultViewOptionsPresenter.filterMode());
@@ -261,7 +261,7 @@ void App::saveState() // TODO: refactor to not expose model
     state.saveState();
 }
 
-void App::loadState() // TODO: refactor to not expose model
+void App::loadState()
 {
     state.loadState();
 
@@ -269,10 +269,10 @@ void App::loadState() // TODO: refactor to not expose model
     vacancyBrowserPresenter.setInterestedVacancies(state.getInterested());
 
 
-    queryParametersPresenter.model().keywords = state.getKeywords();
-    queryParametersPresenter.model().location = state.getLocation();
+    queryParametersPresenter.setKeywords(state.getKeywords());
+    queryParametersPresenter.setLocation(state.getLocation());
 
-    queryParametersPresenter.model().maxResults = state.getLimit();
+    queryParametersPresenter.setMaxResults(state.getLimit());
 
 
     resultViewOptionsPresenter.setFilterMode(state.getFilterMode());

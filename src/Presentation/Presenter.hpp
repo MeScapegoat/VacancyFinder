@@ -37,7 +37,7 @@ public:
         return m_view;
     }
 
-public: // TODO: move to protected and rename to view and model
+protected:
     const View& view() const
     {
         return m_view;

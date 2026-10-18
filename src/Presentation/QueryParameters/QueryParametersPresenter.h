@@ -1,12 +1,12 @@
 #pragma once
 
-#include <Presenter.hpp>
+#include <QLoggingCategory>
+#include <QObject>
+#include <QString>
 
+#include <Presenter.hpp>
 #include "QueryParametersModel.h"
 #include "QueryParametersView.h"
-
-#include <QObject>
-#include <QLoggingCategory>
 
 
 Q_DECLARE_LOGGING_CATEGORY(QPPLog);
@@ -19,6 +19,15 @@ class QueryParametersPresenter : public Presenter<QueryParametersView, QueryPara
 public:
     QueryParametersPresenter(QObject* parent = nullptr);
     ~QueryParametersPresenter() = default;
+
+    void setKeywords(const QString& keywords);
+    QString keywords() const;
+
+    void setLocation(const QString& location);
+    QString location() const;
+
+    void setMaxResults(int maxResults);
+    int maxResults() const;
 
 signals:
     void searchRequested();
