@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QList>
+#include <QObject>
 
 #include <Vacancy.h>
 
@@ -16,10 +17,12 @@ enum class PageType
 };
 
 
-class AbstractParserStrategy
+class AbstractParserStrategy : public QObject
 {
 public:
-    AbstractParserStrategy() = default;
+    explicit AbstractParserStrategy(QObject* parent = nullptr) : 
+        QObject(parent)
+    {}
     virtual ~AbstractParserStrategy() = default;
 
 public:

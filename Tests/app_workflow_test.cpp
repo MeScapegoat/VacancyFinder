@@ -22,14 +22,14 @@ protected:
         strategy(*new LinkedInRequestStrategy(&networkManager)),
         requestManager(*new RequestManager(&strategy)),
         networkThread(*new QThread(this)),
-        parser(*new Parser),
-        parserThread(*new QThread(this)),
         parserStrategy(new LinkedInParserStrategy),
+        parser(*new Parser(parserStrategy)),
+        parserThread(*new QThread(this)),
         controllerSpy(&controller, &AppController::allActiveWorkFinished),
         parserBriefSpy(&parser, &Parser::briefParsed),
         parserDetailsSpy(&parser, &Parser::detailsParsed)
     {
-        parser.setStrategy(parserStrategy.get());
+        parserStrategy->setParent(&parser);
         strategy.setParent(&requestManager);
 
         networkThread.setObjectName("networkThread");
@@ -121,9 +121,9 @@ protected:
     RequestManager& requestManager;
     QThread& networkThread;
 
+    AbstractParserStrategy* parserStrategy;
     Parser& parser;
     QThread& parserThread;
-    std::unique_ptr<AbstractParserStrategy> parserStrategy;
 
     QSignalSpy controllerSpy;
     QSignalSpy parserBriefSpy;

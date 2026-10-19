@@ -63,6 +63,7 @@ private:
     RequestManager& requestManager;
     QThread& networkThread;
 
+    AbstractParserStrategy* parserStrategy;
     Parser& parser;
     QThread& parserThread;
 
@@ -74,6 +75,4 @@ private:
     unsigned maxVacancies;
 
     QTime searchStartTime;
-
-    std::unique_ptr<AbstractParserStrategy> parserStrategy;
 };

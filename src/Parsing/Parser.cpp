@@ -6,28 +6,33 @@
 Q_LOGGING_CATEGORY(ParserLog, "parsing.parser");
 
 
-Parser::Parser(QObject* parent) :
+Parser::Parser(const AbstractParserStrategy* const strategy, QObject* parent) :
     QObject(parent),
-    strategy(nullptr),
+    m_strategy(strategy),
     m_processedBriefs(),
     m_processedDetails(),
     m_isInterrupted(false)
 {
+    Q_ASSERT_X(strategy, __FUNCTION__, "Strategy is nullptr");
+    Q_ASSERT_X(strategy->thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as Parser");
 }
 
-void Parser::setStrategy(const AbstractParserStrategy* const newStrategy)
+void Parser::setStrategy(const AbstractParserStrategy* const strategy)
 {
-    Q_ASSERT(newStrategy);
+    Q_ASSERT_X(strategy, __FUNCTION__, "Strategy is nullptr");
+    Q_ASSERT_X(strategy->thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as Parser");
 
-    if (strategy == newStrategy)
+    if (m_strategy == strategy)
         return;
 
-    strategy = newStrategy;
+    qCInfo(ParserLog) << "New ParserStrategy:" << strategy;
+
+    m_strategy = strategy;
 }
 
-bool Parser::hasStrategy() const
+const AbstractParserStrategy* const Parser::strategy() const
 {
-    return strategy !=  nullptr;
+    return m_strategy;
 }
 
 void Parser::reset()
@@ -50,7 +55,7 @@ void Parser::processPage(const QString& html, const QUrl& url)
 
     qCInfo(ParserLog) << url;
 
-    const PageType pageType = strategy->classifyPage(html);
+    const PageType pageType = m_strategy->classifyPage(html);
     switch (pageType)
     {
         case PageType::Brief:
@@ -90,7 +95,7 @@ void Parser::processBriefs(const QString& html, const QUrl& url)
 
     m_processedBriefPages.insert(url);
 
-    QList<Vacancy> briefs = strategy->parseBriefs(html);
+    QList<Vacancy> briefs = m_strategy->parseBriefs(html);
     for (Vacancy& brief : briefs)
     {
         if (m_processedBriefs.contains(brief.link))
@@ -117,7 +122,7 @@ void Parser::processDetails(const QString& html, const QUrl& url)
 
     m_processedDetails.insert(url);
 
-    Vacancy details = strategy->parseDetails(html, url);
+    Vacancy details = m_strategy->parseDetails(html, url);
     details.id = m_processedDetails.size();
 
     emit detailsParsed(details);

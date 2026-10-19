@@ -23,6 +23,8 @@ class ParserTest : public ::testing::Test
 {
 protected:
     ParserTest() :
+        strategy(),
+        parser(&strategy),
         startedSpy(&parser, &Parser::pageParsingStarted),
         finishedSpy(&parser, &Parser::pageParsingFinished),
         requestDetailsSpy(&parser, &Parser::requestDetails),
@@ -33,8 +35,8 @@ protected:
     }
 
 protected:
-    Parser parser;
     StrictMock<MockParserStrategy> strategy;
+    Parser parser;
 
     QSignalSpy startedSpy;
     QSignalSpy finishedSpy;
@@ -45,30 +47,29 @@ protected:
     QSignalSpy detailsParsedSpy;
 };
 
-TEST_F(ParserTest, InitiallyHasNoStrategy)
+TEST_F(ParserTest, ConstructorSetsStrategy)
 {
-    EXPECT_FALSE(parser.hasStrategy());
+    EXPECT_EQ(parser.strategy(), &strategy);
 }
 
-TEST_F(ParserTest, SetStrategyMakesStrategyAvailable)
+TEST_F(ParserTest, SetStrategyReplacesCurrentStrategy)
 {
-    parser.setStrategy(&strategy);
+    StrictMock<MockParserStrategy> newStrategy;
 
-    EXPECT_TRUE(parser.hasStrategy());
+    parser.setStrategy(&newStrategy);
+
+    EXPECT_EQ(parser.strategy(), &newStrategy);
 }
 
 TEST_F(ParserTest, SettingSameStrategyAgainDoesNothing)
 {
     parser.setStrategy(&strategy);
-    parser.setStrategy(&strategy);
 
-    EXPECT_TRUE(parser.hasStrategy());
+    EXPECT_EQ(parser.strategy(), &strategy);
 }
 
 TEST_F(ParserTest, ProcessesBriefPage)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "brief html";
     const QUrl url("url");
     Vacancy vacancy;
@@ -95,8 +96,6 @@ TEST_F(ParserTest, ProcessesBriefPage)
 
 TEST_F(ParserTest, DoesNotParseSameBriefPageTwice)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "brief html";
     const QUrl url("url");
     Vacancy vacancy;
@@ -117,8 +116,6 @@ TEST_F(ParserTest, DoesNotParseSameBriefPageTwice)
 
 TEST_F(ParserTest, DoesNotParseDuplicateBriefs)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "brief html";
     const QUrl url1("url 1");
     const QUrl url2("url 2");
@@ -149,8 +146,6 @@ TEST_F(ParserTest, DoesNotParseDuplicateBriefs)
 
 TEST_F(ParserTest, AssignsIncrementingIdsToBriefs)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "brief html";
     const QUrl url("url");
 
@@ -179,8 +174,6 @@ TEST_F(ParserTest, AssignsIncrementingIdsToBriefs)
 
 TEST_F(ParserTest, ProcessesDetailsPage)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "details html";
     const QUrl url("Vacancy url");
 
@@ -205,8 +198,6 @@ TEST_F(ParserTest, ProcessesDetailsPage)
 
 TEST_F(ParserTest, DoesNotParseSameDetailsPageTwice)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "details html";
     const QUrl url("Vacancy url");
 
@@ -228,8 +219,6 @@ TEST_F(ParserTest, DoesNotParseSameDetailsPageTwice)
 
 TEST_F(ParserTest, UnknownPageTypeDoesNotParseAnything)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "unknown html";
     const QUrl url("url");
 
@@ -244,8 +233,6 @@ TEST_F(ParserTest, UnknownPageTypeDoesNotParseAnything)
 
 TEST_F(ParserTest, InterruptPreventsProcessing)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "brief html";
     const QUrl url("url");
 
@@ -262,8 +249,6 @@ TEST_F(ParserTest, InterruptPreventsProcessing)
 
 TEST_F(ParserTest, ResetAllowsPreviouslyProcessedPagesToBeProcessedAgain)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "brief html";
     const QUrl url("url");
 
@@ -295,8 +280,6 @@ TEST_F(ParserTest, ResetAllowsPreviouslyProcessedPagesToBeProcessedAgain)
 
 TEST_F(ParserTest, ResetClearsInterrupt)
 {
-    parser.setStrategy(&strategy);
-
     const QString html = "brief html";
     const QUrl url("url");
 

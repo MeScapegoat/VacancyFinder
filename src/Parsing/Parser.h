@@ -17,12 +17,12 @@ class Parser : public QObject
     Q_OBJECT
 
 public:
-    Parser(QObject* parent = nullptr);
+    Parser(const AbstractParserStrategy* const strategy, QObject* parent = nullptr);
     ~Parser() = default;
 
 public:
     void setStrategy(const AbstractParserStrategy* const strategy);
-    bool hasStrategy() const;
+    const AbstractParserStrategy* const strategy() const;
 
     void reset();
 
@@ -45,7 +45,7 @@ private:
     void processDetails(const QString& html, const QUrl& url);
 
 private:
-    const AbstractParserStrategy* strategy;
+    const AbstractParserStrategy* m_strategy;
 
     QSet<QUrl> m_processedBriefPages;
 

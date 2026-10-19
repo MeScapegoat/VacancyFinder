@@ -45,16 +45,16 @@ App::App(QObject* parent) :
     requestStrategy(new LinkedInRequestStrategy(new NetworkManager)),
     requestManager(*new RequestManager(requestStrategy)),
     networkThread(*new QThread(this)),
-    parser(*new Parser),
-    parserThread(*new QThread(this)),
 #ifdef NDEBUG
-    parserStrategy(new LinkedInParserStrategy)
+    parserStrategy(new LinkedInParserStrategy),
 #else
-    parserStrategy(new LinkedInPageCollector)
+    parserStrategy(new LinkedInPageCollector),
 #endif
+    parser(*new Parser(parserStrategy)),
+    parserThread(*new QThread(this))
 {
-    requestStrategy->setParent(&requestManager); // TODO: improve ownership
-    parser.setStrategy(parserStrategy.get());
+    requestStrategy->setParent(&requestManager);
+    parserStrategy->setParent(&parser);
 
     // Threads
     networkThread.setObjectName("networkThread");
