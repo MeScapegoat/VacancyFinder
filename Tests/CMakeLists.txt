@@ -66,7 +66,7 @@ add_executable(app_workflow_test
 target_link_libraries(app_workflow_test
 	PRIVATE
 		main_for_qt_tests
-		App # TODO: change to AppController
+		WorkCoordinator
 		NetworkManager
 		RequestManager
 		Parser

@@ -26,7 +26,7 @@ target_include_directories(RequestManagerBenchmark
 
 target_link_libraries(RequestManagerBenchmark
     PRIVATE
-        App #TODO: change to AppController
+        WorkCoordinator
         NetworkManager
         LinkedInRequestStrategy
         RequestManager

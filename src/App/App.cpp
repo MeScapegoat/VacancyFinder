@@ -8,7 +8,7 @@
 #include <QThread>
 #include <QUrlQuery>
 
-#include "AppController.h"
+#include <WorkCoordinator.h>
 #include <MainWindow.h>
 #include <NetworkManager.h>
 #include <Parser.h>
@@ -39,7 +39,7 @@ App::App(QObject* parent) :
     queryParametersPresenter(*new QueryParametersPresenter(this)),
     resultViewOptionsPresenter(*new ResultViewOptionsPresenter(this)),
     vacancyBrowserPresenter(*new VacancyBrowserPresenter(this)),
-    controller(*new AppController(this)),
+    workCoordinator(*new WorkCoordinator(this)),
     mainWindow(*new MainWindow(queryParametersPresenter.viewWidget(), resultViewOptionsPresenter.viewWidget(), vacancyBrowserPresenter.viewWidget())),
     progressDialog(*new ProgressDialog(&mainWindow)),
     requestStrategy(new LinkedInRequestStrategy(new NetworkManager)),
@@ -87,17 +87,17 @@ App::App(QObject* parent) :
 
 
     // RequestManager
-    QObject::connect(&requestManager, &RequestManager::requestsStarted, &controller, &AppController::workStarted);
-    QObject::connect(&requestManager, &RequestManager::requestsFinished, &controller, &AppController::workFinished);
+    QObject::connect(&requestManager, &RequestManager::requestsStarted, &workCoordinator, &WorkCoordinator::workStarted);
+    QObject::connect(&requestManager, &RequestManager::requestsFinished, &workCoordinator, &WorkCoordinator::workFinished);
 
     //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &App::onMeaningfulRepliesReceived); // -1 network work +1 parsing work, so the total work remains unchanged
-    QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &controller, &AppController::workFinished);
+    QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &workCoordinator, &WorkCoordinator::workFinished);
     
     QObject::connect(&requestManager, &RequestManager::receivedReply, &parser, &Parser::processPage);
     QObject::connect(&requestManager, &RequestManager::vacancyCountDetermined, &progressDialog, &ProgressDialog::updateVacancyCount);
 
-    QObject::connect(&requestManager, &RequestManager::urlsEnqueued, &controller, &AppController::workStarted);
-    QObject::connect(&requestManager, &RequestManager::urlsDequeued, &controller, &AppController::workFinished);
+    QObject::connect(&requestManager, &RequestManager::urlsEnqueued, &workCoordinator, &WorkCoordinator::workStarted);
+    QObject::connect(&requestManager, &RequestManager::urlsDequeued, &workCoordinator, &WorkCoordinator::workFinished);
 
 
     // Parser
@@ -111,17 +111,17 @@ App::App(QObject* parent) :
     QObject::connect(&parser, &Parser::detailsParsed, &vacancyBrowserPresenter, &VacancyBrowserPresenter::onDetailsReady);
     QObject::connect(&parser, &Parser::detailsParsed, &progressDialog, &ProgressDialog::updateDetails);
 
-    //QObject::connect(&parser, &Parser::pageParsingStarted,  &controller, &AppController::workStarted); // Work is actually added in App::onMeaningfulRepliesReceived
-    QObject::connect(&parser, &Parser::pageParsingFinished, &controller, &AppController::workFinished);
+    //QObject::connect(&parser, &Parser::pageParsingStarted,  &workCoordinator, &WorkCoordinator::workStarted); // Work is actually added in App::onMeaningfulRepliesReceived
+    QObject::connect(&parser, &Parser::pageParsingFinished, &workCoordinator, &WorkCoordinator::workFinished);
 
 
     // ProgressDialog
     QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::interrupt);
     QObject::connect(&progressDialog.stopButton, &QPushButton::released, &parser, &Parser::interrupt);
 
-    // AppController
-    QObject::connect(&controller, &AppController::allActiveWorkFinished, &vacancyBrowserPresenter, &VacancyBrowserPresenter::updateVisibleVacancies);
-    QObject::connect(&controller, &AppController::allActiveWorkFinished, &progressDialog, &ProgressDialog::accept);
+    // WorkCoordinator
+    QObject::connect(&workCoordinator, &WorkCoordinator::allActiveWorkFinished, &vacancyBrowserPresenter, &VacancyBrowserPresenter::updateVisibleVacancies);
+    QObject::connect(&workCoordinator, &WorkCoordinator::allActiveWorkFinished, &progressDialog, &ProgressDialog::accept);
 
     // This
     QObject::connect(this, &App::initSearch, &requestManager, &RequestManager::addUrls);    
@@ -149,7 +149,7 @@ void App::reset()
 {
     vacancyBrowserPresenter.reset();
 
-    controller.reset();
+    workCoordinator.reset();
     requestManager.reset();
     parser.reset();
 }
@@ -170,7 +170,7 @@ void App::sendSearchRequest()
 {    
     updateMaxVacancies(queryParametersPresenter.maxResults());
 
-    controller.reset();
+    workCoordinator.reset();
 
     keywords = queryParametersPresenter.keywords();
     location = queryParametersPresenter.location();
@@ -204,8 +204,8 @@ void App::updateMaxVacancies(const int maxVacancies_)
 
 void App::onMeaningfulRepliesReceived(int amount)
 {
-    controller.workStarted(amount);
-    controller.workFinished(amount);
+    workCoordinator.workStarted(amount);
+    workCoordinator.workFinished(amount);
 }
 
 void App::saveState()

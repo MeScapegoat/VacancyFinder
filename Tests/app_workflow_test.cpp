@@ -5,7 +5,7 @@
 #include <QTest>
 #include <QUrlQuery>
 
-#include <AppController.h>
+#include <WorkCoordinator.h>
 #include <LinkedInParserStrategy/LinkedInParserStrategy.h>
 #include <NetworkManager.h>
 #include <Parser.h>
@@ -25,7 +25,7 @@ protected:
         parserStrategy(new LinkedInParserStrategy),
         parser(*new Parser(parserStrategy)),
         parserThread(*new QThread(this)),
-        controllerSpy(&controller, &AppController::allActiveWorkFinished),
+        workCoordinatorSpy(&workCoordinator, &WorkCoordinator::allActiveWorkFinished),
         parserBriefSpy(&parser, &Parser::briefParsed),
         parserDetailsSpy(&parser, &Parser::detailsParsed)
     {
@@ -42,21 +42,21 @@ protected:
         QObject::connect(&parserThread, &QThread::finished, &parser, &Parser::deleteLater);
 
         // RequestManager
-        QObject::connect(&requestManager, &RequestManager::requestsStarted, &controller, &AppController::workStarted);
-        QObject::connect(&requestManager, &RequestManager::requestsFinished, &controller, &AppController::workFinished);
+        QObject::connect(&requestManager, &RequestManager::requestsStarted, &workCoordinator, &WorkCoordinator::workStarted);
+        QObject::connect(&requestManager, &RequestManager::requestsFinished, &workCoordinator, &WorkCoordinator::workFinished);
 
         //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &App::onMeaningfulRepliesReceived); // does +1 and then -1 active work, so actually does nothing, hence commented
-        QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &controller, &AppController::workFinished);
+        QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &workCoordinator, &WorkCoordinator::workFinished);
 
         QObject::connect(&requestManager, &RequestManager::receivedReply, &parser,     &Parser::processPage);
-        QObject::connect(&requestManager, &RequestManager::urlsEnqueued,  &controller, &AppController::workStarted);
-        QObject::connect(&requestManager, &RequestManager::urlsDequeued,  &controller, &AppController::workFinished);
+        QObject::connect(&requestManager, &RequestManager::urlsEnqueued,  &workCoordinator, &WorkCoordinator::workStarted);
+        QObject::connect(&requestManager, &RequestManager::urlsDequeued,  &workCoordinator, &WorkCoordinator::workFinished);
 
 
         // Parser
         QObject::connect(&parser, &Parser::requestDetails, &requestManager, &RequestManager::addUrl);
-        //QObject::connect(&parser, &HTMLparser::parsingStarted, &controller, &AppController::workStarted);
-        QObject::connect(&parser, &Parser::pageParsingFinished, &controller, &AppController::workFinished);
+        //QObject::connect(&parser, &HTMLparser::parsingStarted, &workCoordinator, &WorkCoordinator::workStarted);
+        QObject::connect(&parser, &Parser::pageParsingFinished, &workCoordinator, &WorkCoordinator::workFinished);
 
         networkThread.start();
         parserThread.start();
@@ -92,7 +92,7 @@ protected:
         static constexpr const char* keywords = "C++";
         static constexpr const char* location = "Belgrade";
 
-        controller.reset();
+        workCoordinator.reset();
 
         QVector<QUrl> urls;
 
@@ -114,7 +114,7 @@ protected:
         });
     }
 protected:
-    AppController controller;
+    WorkCoordinator workCoordinator;
 
     NetworkManager& networkManager;
     LinkedInRequestStrategy& strategy;
@@ -125,7 +125,7 @@ protected:
     Parser& parser;
     QThread& parserThread;
 
-    QSignalSpy controllerSpy;
+    QSignalSpy workCoordinatorSpy;
     QSignalSpy parserBriefSpy;
     QSignalSpy parserDetailsSpy;
 };
@@ -136,9 +136,9 @@ TEST_F(AppWorkFlowTest, SmallSearch)
 
     initSearch(maxVacancies);
 
-    ASSERT_TRUE(controllerSpy.wait(120'000)) << "Timed out waiting for all active work to finish";
+    ASSERT_TRUE(workCoordinatorSpy.wait(120'000)) << "Timed out waiting for all active work to finish";
 
-    EXPECT_EQ(controllerSpy.count(), 1);
+    EXPECT_EQ(workCoordinatorSpy.count(), 1);
     EXPECT_GE(parserBriefSpy.count(), maxVacancies);
     EXPECT_EQ(parserBriefSpy.count(), parserDetailsSpy.count());
 }
@@ -149,9 +149,9 @@ TEST_F(AppWorkFlowTest, MediumSearch)
 
     initSearch(maxVacancies);
 
-    ASSERT_TRUE(controllerSpy.wait(120'000)) << "Timed out waiting for all active work to finish";
+    ASSERT_TRUE(workCoordinatorSpy.wait(120'000)) << "Timed out waiting for all active work to finish";
 
-    EXPECT_EQ(controllerSpy.count(), 1);
+    EXPECT_EQ(workCoordinatorSpy.count(), 1);
     EXPECT_GE(parserBriefSpy.count(), maxVacancies);
     EXPECT_EQ(parserBriefSpy.count(), parserDetailsSpy.count());
 }
@@ -162,9 +162,9 @@ TEST_F(AppWorkFlowTest, BigSearch)
 
     initSearch(maxVacancies);
 
-    ASSERT_TRUE(controllerSpy.wait(240'000)) << "Timed out waiting for all active work to finish";
+    ASSERT_TRUE(workCoordinatorSpy.wait(240'000)) << "Timed out waiting for all active work to finish";
 
-    EXPECT_EQ(controllerSpy.count(), 1);
+    EXPECT_EQ(workCoordinatorSpy.count(), 1);
     EXPECT_GE(parserBriefSpy.count(), maxVacancies);
     EXPECT_EQ(parserBriefSpy.count(), parserDetailsSpy.count());
 }
@@ -181,14 +181,14 @@ TEST_F(AppWorkFlowTest, InterruptFinishesAllWorkExactlyOnce)
 
     interrupt();
 
-    if (controllerSpy.count() == 0)
-        ASSERT_TRUE(controllerSpy.wait(120'000)) << "Timed out waiting for all active work to finish after interrupt";
+    if (workCoordinatorSpy.count() == 0)
+        ASSERT_TRUE(workCoordinatorSpy.wait(120'000)) << "Timed out waiting for all active work to finish after interrupt";
 
-    EXPECT_EQ(controllerSpy.count(), 1);
+    EXPECT_EQ(workCoordinatorSpy.count(), 1);
 
     QTest::qWait(1000);
 
-    EXPECT_EQ(controllerSpy.count(), 1);
+    EXPECT_EQ(workCoordinatorSpy.count(), 1);
 }
 
 TEST_F(AppWorkFlowTest, InterruptStopsFurtherParsing)
@@ -203,15 +203,15 @@ TEST_F(AppWorkFlowTest, InterruptStopsFurtherParsing)
 
     interrupt();
 
-    if (controllerSpy.count() == 0)
-        ASSERT_TRUE(controllerSpy.wait(120'000)) << "Timed out waiting for all active work to finish after interrupt";
+    if (workCoordinatorSpy.count() == 0)
+        ASSERT_TRUE(workCoordinatorSpy.wait(120'000)) << "Timed out waiting for all active work to finish after interrupt";
 
     const int parsedBriefsAfterInterrupt = parserBriefSpy.count();
     const int parsedDetailsAfterInterrupt = parserDetailsSpy.count();
 
     QTest::qWait(1000);
 
-    EXPECT_EQ(controllerSpy.count(), 1);
+    EXPECT_EQ(workCoordinatorSpy.count(), 1);
     EXPECT_EQ(parserBriefSpy.count(), parsedBriefsAfterInterrupt);
     EXPECT_EQ(parserDetailsSpy.count(), parsedDetailsAfterInterrupt);
 }

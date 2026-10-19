@@ -1,14 +1,14 @@
-add_executable(AppController_test
-	AppController/AppController_test.cpp
+add_executable(WorkCoordinator_test
+	WorkCoordinator/WorkCoordinator_test.cpp
 )
 
-target_link_libraries(AppController_test
+target_link_libraries(WorkCoordinator_test
 	PRIVATE
-		App
+		WorkCoordinator
 		GTest::gtest_main
 		Qt6::Test
 )
 
-set_target_properties(AppController_test PROPERTIES FOLDER "Tests/App/AppController")
+set_target_properties(WorkCoordinator_test PROPERTIES FOLDER "Tests/App/WorkCoordinator")
 
-gtest_discover_tests(AppController_test)
+gtest_discover_tests(WorkCoordinator_test)

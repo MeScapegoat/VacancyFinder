@@ -4,14 +4,14 @@
 
 #include <QLoggingCategory>
 
-Q_DECLARE_LOGGING_CATEGORY(AppControllerLog);
+Q_DECLARE_LOGGING_CATEGORY(WorkCoordinatorLog);
 
-class AppController : public QObject
+class WorkCoordinator : public QObject
 {
     Q_OBJECT
 
 public:
-    AppController(QObject* parent = nullptr);
+    WorkCoordinator(QObject* parent = nullptr);
 
 public:
     void reset();

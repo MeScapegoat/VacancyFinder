@@ -12,7 +12,7 @@
 #include <QString>
 #include <QTimer>
 
-#include <AppController.h>
+#include <WorkCoordinator.h>
 #include <RequestManager.h>
 #include <NetworkManager.h>
 #include <RequestStrategy/LinkedInRequestStrategy.h>
@@ -111,18 +111,18 @@ private:
         networkManager = new NetworkManager(this);
         strategy = new LinkedInRequestStrategy(networkManager, config.requestsPerSecond, config.requestCooldownMs, config.maxConcurrent, this);
         requestManager = new RequestManager(strategy, this);
-        controller = new AppController(this);
+        workCoordinator = new WorkCoordinator(this);
 
-        QObject::connect(requestManager, &RequestManager::urlsEnqueued, controller, &AppController::workStarted);
-        QObject::connect(requestManager, &RequestManager::urlsDequeued, controller, &AppController::workFinished);
+        QObject::connect(requestManager, &RequestManager::urlsEnqueued, workCoordinator, &WorkCoordinator::workStarted);
+        QObject::connect(requestManager, &RequestManager::urlsDequeued, workCoordinator, &WorkCoordinator::workFinished);
 
-        QObject::connect(requestManager, &RequestManager::requestsStarted, controller, &AppController::workStarted);
-        QObject::connect(requestManager, &RequestManager::requestsFinished, controller, &AppController::workFinished);
+        QObject::connect(requestManager, &RequestManager::requestsStarted, workCoordinator, &WorkCoordinator::workStarted);
+        QObject::connect(requestManager, &RequestManager::requestsFinished, workCoordinator, &WorkCoordinator::workFinished);
 
-        QObject::connect(requestManager, &RequestManager::meaningfulRepliesReceived, controller, &AppController::workFinished);
-        QObject::connect(requestManager, &RequestManager::meaninglessRepliesReceived, controller, &AppController::workFinished);
+        QObject::connect(requestManager, &RequestManager::meaningfulRepliesReceived, workCoordinator, &WorkCoordinator::workFinished);
+        QObject::connect(requestManager, &RequestManager::meaninglessRepliesReceived, workCoordinator, &WorkCoordinator::workFinished);
 
-        connect(controller, &AppController::allActiveWorkFinished, this, [this]()
+        connect(workCoordinator, &WorkCoordinator::allActiveWorkFinished, this, [this]()
         {
             finishCurrentBenchmark();
         });
@@ -164,8 +164,8 @@ private:
         requestManager->deleteLater();
         requestManager = nullptr;
         
-        controller->deleteLater();
-        controller = nullptr;
+        workCoordinator->deleteLater();
+        workCoordinator = nullptr;
 
         if (runIndex < totalRuns)
         {
@@ -194,7 +194,7 @@ private:
     }
 
 private:
-    AppController* controller = nullptr;
+    WorkCoordinator* workCoordinator = nullptr;
 
 
     NetworkManager* networkManager = nullptr;

@@ -7,7 +7,7 @@
 #include "AppState.h"
 #include <Vacancy.h>
 
-class AppController;
+class WorkCoordinator;
 class RequestManager;
 class Parser;
 class QueryParametersPresenter;
@@ -54,7 +54,7 @@ private:
     VacancyBrowserPresenter& vacancyBrowserPresenter;
 
 private:
-    AppController& controller;
+    WorkCoordinator& workCoordinator;
 
     MainWindow& mainWindow;
     ProgressDialog& progressDialog;

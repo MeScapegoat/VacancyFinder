@@ -1,13 +1,25 @@
+add_library(WorkCoordinator
+    WorkCoordinator.h
+    WorkCoordinator.cpp
+)
+
+target_include_directories(WorkCoordinator PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(WorkCoordinator
+    PUBLIC
+        Qt6::Core
+)
+
+
+
 add_library(App
     App.h
     App.cpp
 
     AppState.h
     AppState.cpp
-
-    # TODO: make separate class
-    AppController.h
-    AppController.cpp
 )
 
 target_include_directories(App PUBLIC
@@ -31,5 +43,6 @@ target_link_libraries(App
         ResultViewOptions
         VacancyBrowser
     PRIVATE
+        WorkCoordinator
         Utils
 )
