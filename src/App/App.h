@@ -29,11 +29,6 @@ public:
     App(QObject* parent = nullptr);
     ~App();
 
-public:
-    // TODO: bad class for this
-    QString loadTitleFromFile(const QString& path);
-    QString loadDescriptionFromFile(const QString& path);
-
 public slots:
     void reset();
     void loadInterested();

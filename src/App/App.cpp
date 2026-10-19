@@ -208,34 +208,6 @@ void App::onMeaningfulRepliesReceived(int amount)
     controller.workFinished(amount);
 }
 
-QString App::loadTitleFromFile(const QString& path)
-{
-    QFile file(path);
-    QString ret;
-    if (file.open(QIODeviceBase::ReadOnly))
-    {
-        ret = file.readAll();
-        file.close();
-    }
-    else
-        qCWarning(AppLog) << "couldn't open " << path;
-    return ret;
-}
-
-QString App::loadDescriptionFromFile(const QString& path)
-{
-    QFile file(path);
-    QString ret;
-    if (file.open(QIODeviceBase::ReadOnly))
-    {
-        ret = file.readAll();
-        file.close();
-    }
-    else
-        qCWarning(AppLog) << "couldn't open " << path;
-    return ret;
-}
-
 void App::saveState()
 {
     state.setIgnoredVacancies(vacancyBrowserPresenter.ignoredVacancies());
