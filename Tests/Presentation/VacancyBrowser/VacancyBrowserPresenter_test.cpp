@@ -61,18 +61,6 @@ TEST_F(VacancyBrowserPresenterTest, InterestedVacanciesGetterAndSetter)
     EXPECT_TRUE(interestedVacancies().isEmpty());
 }
 
-TEST_F(VacancyBrowserPresenterTest, BriefAndDetailsReadyAddVacancies)
-{
-    const QUrl briefUrl("brief");
-    const QUrl detailsUrl("details");
-
-    onBriefReady(makeVacancy("Brief", briefUrl));
-    onDetailsReady(makeVacancy("Details", detailsUrl));
-
-    EXPECT_TRUE(model().vacancyByUrl().contains(briefUrl));
-    EXPECT_TRUE(model().vacancyByUrl().contains(detailsUrl));
-}
-
 TEST_F(VacancyBrowserPresenterTest, UpdateVisibleVacanciesUpdatesListModel)
 {
     const Vacancy vacancy = makeVacancy("Developer", QUrl("url"));

@@ -5,32 +5,15 @@
 #include <QListView>
 #include <QStackedLayout>
 #include <QTextBrowser>
-#include <QThread>
-#include <QUrlQuery>
 
-#include <WorkCoordinator.h>
+#include <LinkedInVacancySearchWorkflow.h>
 #include <MainWindow.h>
-#include <NetworkManager.h>
-#include <Parser.h>
 #include <ProgressDialog.h>
 #include <QueryParametersPresenter.h>
-#include <RequestManager.h>
-#include <RequestStrategy/LinkedInRequestStrategy.h>
 #include <ResultViewOptionsPresenter.h>
 #include <VacancyBrowserPresenter.h>
-#include <Vacancy.h>
+#include <VacancySearchWorkflow.h>
 
-#ifdef NDEBUG
-#include <LinkedInParserStrategy/LinkedInParserStrategy.h>
-#else
-#include <LinkedInParserStrategy/LinkedInPageCollector.h>
-#endif
-
-
-namespace
-{
-    inline constexpr const char* BaseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
-}
 
 Q_LOGGING_CATEGORY(AppLog, "app");
 
@@ -39,34 +22,10 @@ App::App(QObject* parent) :
     queryParametersPresenter(*new QueryParametersPresenter(this)),
     resultViewOptionsPresenter(*new ResultViewOptionsPresenter(this)),
     vacancyBrowserPresenter(*new VacancyBrowserPresenter(this)),
-    workCoordinator(*new WorkCoordinator(this)),
+    vacancySearchWorkflow(*new LinkedInVacancySearchWorkflow(this)),
     mainWindow(*new MainWindow(queryParametersPresenter.viewWidget(), resultViewOptionsPresenter.viewWidget(), vacancyBrowserPresenter.viewWidget())),
-    progressDialog(*new ProgressDialog(&mainWindow)),
-    requestStrategy(new LinkedInRequestStrategy(new NetworkManager)),
-    requestManager(*new RequestManager(requestStrategy)),
-    networkThread(*new QThread(this)),
-#ifdef NDEBUG
-    parserStrategy(new LinkedInParserStrategy),
-#else
-    parserStrategy(new LinkedInPageCollector),
-#endif
-    parser(*new Parser(parserStrategy)),
-    parserThread(*new QThread(this))
+    progressDialog(*new ProgressDialog(&mainWindow))
 {
-    requestStrategy->setParent(&requestManager);
-    parserStrategy->setParent(&parser);
-
-    // Threads
-    networkThread.setObjectName("networkThread");
-    requestManager.moveToThread(&networkThread);
-
-    parserThread.setObjectName("parserThread");
-    parser.moveToThread(&parserThread);
-
-    QObject::connect(&networkThread, &QThread::finished, &requestManager, &RequestManager::deleteLater);
-    QObject::connect(&parserThread, &QThread::finished, &parser, &Parser::deleteLater);
-
-
     // QueryParameters
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::loadInterestedRequested, this, &App::loadInterested);
@@ -86,72 +45,29 @@ App::App(QObject* parent) :
     vacancyBrowserPresenter.setVacancySortComparator(resultViewOptionsPresenter.vacancySortComparator());
 
 
-    // RequestManager
-    QObject::connect(&requestManager, &RequestManager::requestsStarted, &workCoordinator, &WorkCoordinator::workStarted);
-    QObject::connect(&requestManager, &RequestManager::requestsFinished, &workCoordinator, &WorkCoordinator::workFinished);
-
-    //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &App::onMeaningfulRepliesReceived); // -1 network work +1 parsing work, so the total work remains unchanged
-    QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &workCoordinator, &WorkCoordinator::workFinished);
-    
-    QObject::connect(&requestManager, &RequestManager::receivedReply, &parser, &Parser::processPage);
-    QObject::connect(&requestManager, &RequestManager::vacancyCountDetermined, &progressDialog, &ProgressDialog::updateVacancyCount);
-
-    QObject::connect(&requestManager, &RequestManager::urlsEnqueued, &workCoordinator, &WorkCoordinator::workStarted);
-    QObject::connect(&requestManager, &RequestManager::urlsDequeued, &workCoordinator, &WorkCoordinator::workFinished);
-
-
-    // Parser
-    QObject::connect(&parser, &Parser::requestDetails, &requestManager, &RequestManager::addUrl);
-
-    //QObject::connect(&parser, &Parser::briefParsed, this, &App::onBriefReady);
-    QObject::connect(&parser, &Parser::briefParsed, &vacancyBrowserPresenter, &VacancyBrowserPresenter::onBriefReady);
-    QObject::connect(&parser, &Parser::briefParsed, &progressDialog, &ProgressDialog::updateBrief);
-
-    //QObject::connect(&parser, &Parser::detailsParsed, this, &App::onDetailsReady);
-    QObject::connect(&parser, &Parser::detailsParsed, &vacancyBrowserPresenter, &VacancyBrowserPresenter::onDetailsReady);
-    QObject::connect(&parser, &Parser::detailsParsed, &progressDialog, &ProgressDialog::updateDetails);
-
-    //QObject::connect(&parser, &Parser::pageParsingStarted,  &workCoordinator, &WorkCoordinator::workStarted); // Work is actually added in App::onMeaningfulRepliesReceived
-    QObject::connect(&parser, &Parser::pageParsingFinished, &workCoordinator, &WorkCoordinator::workFinished);
-
-
     // ProgressDialog
-    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &requestManager, &RequestManager::interrupt);
-    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &parser, &Parser::interrupt);
+    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &vacancySearchWorkflow, &VacancySearchWorkflow::interrupt);
 
-    // WorkCoordinator
-    QObject::connect(&workCoordinator, &WorkCoordinator::allActiveWorkFinished, &vacancyBrowserPresenter, &VacancyBrowserPresenter::updateVisibleVacancies);
-    QObject::connect(&workCoordinator, &WorkCoordinator::allActiveWorkFinished, &progressDialog, &ProgressDialog::accept);
+    // VacancySearchWorkflow
+    QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::vacancyCountDetermined, &progressDialog, &ProgressDialog::updateVacancyCount);
+    QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::briefReady, &progressDialog, &ProgressDialog::updateBrief);
+    QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
+    QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::vacanciesReady, &vacancyBrowserPresenter, &VacancyBrowserPresenter::onVacanciesReady);
+    QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::allActiveWorkFinished, &progressDialog, &ProgressDialog::accept);
 
-    // This
-    QObject::connect(this, &App::initSearch, &requestManager, &RequestManager::addUrls);    
+
     QObject::connect(this, &App::openProgressDialog, &progressDialog, &ProgressDialog::start);
+
+    QObject::connect(this, &App::reset, &vacancyBrowserPresenter, &VacancyBrowserPresenter::reset);
+    QObject::connect(this, &App::reset, &vacancySearchWorkflow, &VacancySearchWorkflow::reset);
 
     
     loadState();
-
-    networkThread.start();
-    parserThread.start();
 }
 
 App::~App()
 {
     saveState();
-
-    networkThread.quit();
-    networkThread.wait();
-
-    parserThread.quit();
-    parserThread.wait();
-}
-
-void App::reset()
-{
-    vacancyBrowserPresenter.reset();
-
-    workCoordinator.reset();
-    requestManager.reset();
-    parser.reset();
 }
 
 void App::loadInterested()
@@ -160,9 +76,8 @@ void App::loadInterested()
 
     updateMaxVacancies(interestedVacancies.size());
 
-    searchStartTime = QTime::currentTime();
 
-    emit initSearch(interestedVacancies.values().toVector());
+    vacancySearchWorkflow.startSearch(interestedVacancies.values());
     emit openProgressDialog(maxVacancies);
 }
 
@@ -170,42 +85,19 @@ void App::sendSearchRequest()
 {    
     updateMaxVacancies(queryParametersPresenter.maxResults());
 
-    workCoordinator.reset();
-
     keywords = queryParametersPresenter.keywords();
     location = queryParametersPresenter.location();
 
     qCInfo(AppLog) << "keywords:" << keywords << "location:" << location;
 
-    QVector<QUrl> urls;
 
-    for (auto n = 0; n < maxVacancies; n += 10)
-    {
-        QUrl url(BaseUrl);
-        QUrlQuery query;
-        query.addQueryItem("keywords", QUrl::toPercentEncoding(keywords));
-        query.addQueryItem("location", QUrl::toPercentEncoding(location));
-        query.addQueryItem("start", QString::number(n));
-        url.setQuery(query);
-
-        urls.append(url);
-    }
-
-    searchStartTime = QTime::currentTime();
-
-    emit initSearch(urls);
+    vacancySearchWorkflow.startSearch(keywords, location, maxVacancies);
     emit openProgressDialog(maxVacancies);
 }
 
 void App::updateMaxVacancies(const int maxVacancies_)
 {
     maxVacancies = maxVacancies_;
-}
-
-void App::onMeaningfulRepliesReceived(int amount)
-{
-    workCoordinator.workStarted(amount);
-    workCoordinator.workFinished(amount);
 }
 
 void App::saveState()

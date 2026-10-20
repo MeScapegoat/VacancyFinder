@@ -1,13 +1,14 @@
 #pragma once
 
-#include <Presenter.hpp>
-
+#include <QList>
 #include <QLoggingCategory>
+#include <QUrl>
 
+#include <FunctionTypes.h>
+#include <Presenter.hpp>
+#include <Vacancy.h>
 #include "VacancyBrowserModel.h"
 #include "VacancyBrowserView.h"
-#include <FunctionTypes.h>
-#include <Vacancy.h>
 
 
 Q_DECLARE_LOGGING_CATEGORY(VBPLog);
@@ -34,8 +35,7 @@ public:
     void reset();
 
 public slots:
-    void onBriefReady(const Vacancy& brief);
-    void onDetailsReady(const Vacancy& details);
+    void onVacanciesReady(const QList<Vacancy>& vacancies);
 
     void updateVisibleVacancies();
 

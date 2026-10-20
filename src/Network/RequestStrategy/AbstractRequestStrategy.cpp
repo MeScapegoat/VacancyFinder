@@ -16,3 +16,8 @@ void AbstractRequestStrategy::reset()
 {
     m_isInterrupted = false;
 }
+
+void AbstractRequestStrategy::interrupt()
+{
+    m_isInterrupted = true;
+}

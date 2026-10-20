@@ -5,8 +5,6 @@
 #include <QLoggingCategory>
 #include <QUrl>
 
-#include <ConnectionGroup.h>
-
 
 Q_DECLARE_LOGGING_CATEGORY(RequestManagerLog);
 
@@ -22,19 +20,16 @@ public:
     ~RequestManager() = default;
 
 public:
-    void setStrategy(AbstractRequestStrategy* const strategy);
     const AbstractRequestStrategy* const strategy() const;
-
-public:
-    void reset();
 
 public slots:
     void addUrls(const QList<QUrl>& urls);
     void addUrl(const QUrl& url);
 
+signals:
+    void reset();
     void interrupt();
 
-signals:
     void urlsEnqueued(int amount = 1);
     void urlsDequeued(int amount = 1);
 
@@ -48,11 +43,6 @@ signals:
 
     void receivedReply(const QString& html, const QUrl& url);
 
-protected:
-    void connectStrategy();
-    void disconnectStrategy();
-
 private:
     AbstractRequestStrategy* m_strategy;
-    ConnectionGroup connections;
 };

@@ -132,7 +132,7 @@ void LinkedInRequestStrategy::addUrl(const QUrl& url)
 
 void LinkedInRequestStrategy::interrupt()
 {
-    m_isInterrupted = true;
+    AbstractRequestStrategy::interrupt();
 
     cancelAll();
 }

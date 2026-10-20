@@ -23,7 +23,7 @@ class ParserTest : public ::testing::Test
 {
 protected:
     ParserTest() :
-        strategy(),
+        strategy(*new StrictMock<MockParserStrategy>),
         parser(&strategy),
         startedSpy(&parser, &Parser::pageParsingStarted),
         finishedSpy(&parser, &Parser::pageParsingFinished),
@@ -35,7 +35,7 @@ protected:
     }
 
 protected:
-    StrictMock<MockParserStrategy> strategy;
+    StrictMock<MockParserStrategy>& strategy;
     Parser parser;
 
     QSignalSpy startedSpy;
@@ -49,22 +49,6 @@ protected:
 
 TEST_F(ParserTest, ConstructorSetsStrategy)
 {
-    EXPECT_EQ(parser.strategy(), &strategy);
-}
-
-TEST_F(ParserTest, SetStrategyReplacesCurrentStrategy)
-{
-    StrictMock<MockParserStrategy> newStrategy;
-
-    parser.setStrategy(&newStrategy);
-
-    EXPECT_EQ(parser.strategy(), &newStrategy);
-}
-
-TEST_F(ParserTest, SettingSameStrategyAgainDoesNothing)
-{
-    parser.setStrategy(&strategy);
-
     EXPECT_EQ(parser.strategy(), &strategy);
 }
 

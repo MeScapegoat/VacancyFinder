@@ -13,7 +13,9 @@ Q_DECLARE_LOGGING_CATEGORY(LinkedInParserStrategyLog);
 class LinkedInParserStrategy : public AbstractParserStrategy
 {
 public:
-    LinkedInParserStrategy() = default;
+    explicit LinkedInParserStrategy(QObject* parent = nullptr) :
+        AbstractParserStrategy(parent)
+    {}
     virtual ~LinkedInParserStrategy() = default;
 
 public: // AbstractParserStrategy

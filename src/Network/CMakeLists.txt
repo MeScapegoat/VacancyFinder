@@ -1,5 +1,6 @@
 add_subdirectory(NetworkManager)
 add_subdirectory(RequestStrategy)
+add_subdirectory(SearchUrlProvider)
 
 
 
@@ -15,7 +16,6 @@ target_include_directories(RequestManager PUBLIC
 target_link_libraries(RequestManager 
     PUBLIC 
         Qt6::Core
-        ConnectionGroup
     PRIVATE
         AbstractRequestStrategy
 )

@@ -59,7 +59,7 @@ class RequestManagerTest : public testing::Test
 {
 protected:
     RequestManagerTest() :
-        m_strategy(),
+        m_strategy(*new MockRequestStrategy),
         m_manager(&m_strategy),
         urlsEnqueuedSpy(&m_manager, &RequestManager::urlsEnqueued),
         urlsDequeuedSpy(&m_manager, &RequestManager::urlsDequeued),
@@ -126,7 +126,7 @@ protected:
     }
 
 protected:
-    MockRequestStrategy m_strategy;
+    MockRequestStrategy& m_strategy;
     RequestManager m_manager;
 
     QSignalSpy urlsEnqueuedSpy;
@@ -180,33 +180,6 @@ TEST_F(RequestManagerTest, ConstructorSetsStrategyAndConnectsSignals)
     ASSERT_EQ(m_manager.strategy(), &m_strategy);
 
     emitAllStrategySignals(m_strategy);
-    verifyAllReceivedManagerSignals();
-}
-
-TEST_F(RequestManagerTest, SetSameStrategy)
-{
-    m_manager.setStrategy(&m_strategy);
-
-    ASSERT_EQ(m_manager.strategy(), &m_strategy);
-
-    emitAllStrategySignals(m_strategy);
-    verifyAllReceivedManagerSignals();
-}
-
-TEST_F(RequestManagerTest, ReplaceStrategy)
-{
-    MockRequestStrategy newStrategy;
-
-    m_manager.setStrategy(&newStrategy);
-
-    ASSERT_EQ(m_manager.strategy(), &newStrategy);
-
-
-    emitAllStrategySignals(m_strategy);
-    verifyNothingReceived();
-
-
-    emitAllStrategySignals(newStrategy);
     verifyAllReceivedManagerSignals();
 }
 

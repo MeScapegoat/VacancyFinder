@@ -6,7 +6,9 @@
 class LinkedInPageCollector : public LinkedInParserStrategy
 {
 public:
-    LinkedInPageCollector() = default;
+    explicit LinkedInPageCollector(QObject* parent = nullptr) :
+        LinkedInParserStrategy(parent)
+    {}
     virtual ~LinkedInPageCollector() = default;
 
 public: // LinkedInParserStrategy

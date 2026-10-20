@@ -6,7 +6,7 @@
 Q_LOGGING_CATEGORY(ParserLog, "parsing.parser");
 
 
-Parser::Parser(const AbstractParserStrategy* const strategy, QObject* parent) :
+Parser::Parser(AbstractParserStrategy* const strategy, QObject* parent) :
     QObject(parent),
     m_strategy(strategy),
     m_processedBriefs(),
@@ -15,19 +15,8 @@ Parser::Parser(const AbstractParserStrategy* const strategy, QObject* parent) :
 {
     Q_ASSERT_X(strategy, __FUNCTION__, "Strategy is nullptr");
     Q_ASSERT_X(strategy->thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as Parser");
-}
 
-void Parser::setStrategy(const AbstractParserStrategy* const strategy)
-{
-    Q_ASSERT_X(strategy, __FUNCTION__, "Strategy is nullptr");
-    Q_ASSERT_X(strategy->thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as Parser");
-
-    if (m_strategy == strategy)
-        return;
-
-    qCInfo(ParserLog) << "New ParserStrategy:" << strategy;
-
-    m_strategy = strategy;
+    m_strategy->setParent(this);
 }
 
 const AbstractParserStrategy* const Parser::strategy() const

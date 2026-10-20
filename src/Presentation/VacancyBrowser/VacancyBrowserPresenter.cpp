@@ -52,18 +52,14 @@ void VacancyBrowserPresenter::reset()
     model().visibleVacancies().clear();
 }
 
-void VacancyBrowserPresenter::onBriefReady(const Vacancy& brief)
+void VacancyBrowserPresenter::onVacanciesReady(const QList<Vacancy>& vacancies)
 {
-    qCDebug(VBPLog) << "received brief of" << brief.title;
+    for (const Vacancy& vacancy : vacancies)
+    {
+        model().addVacancy(vacancy);
+    }
 
-    model().addVacancy(brief);
-}
-
-void VacancyBrowserPresenter::onDetailsReady(const Vacancy& details)
-{
-    qCDebug(VBPLog) << "received details of" << details.title;
-
-    model().addVacancy(details);
+    updateVisibleVacancies();
 }
 
 void VacancyBrowserPresenter::updateVisibleVacancies()

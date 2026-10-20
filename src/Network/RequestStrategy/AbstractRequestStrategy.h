@@ -20,15 +20,15 @@ public:
     virtual ~AbstractRequestStrategy() = default;
 
 public:
-    virtual void reset();
-
     virtual void startNext() = 0;
 
 public slots:
+    virtual void reset();
+
     virtual void addUrls(const QList<QUrl>& urls) = 0;
     virtual void addUrl(const QUrl& url) = 0;
 
-    virtual void interrupt() = 0;
+    virtual void interrupt();
 
     virtual void handleReceivedReply(QNetworkReply* reply) = 0;
 
