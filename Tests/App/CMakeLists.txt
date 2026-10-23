@@ -11,4 +11,4 @@ target_link_libraries(WorkCoordinator_test
 
 set_target_properties(WorkCoordinator_test PROPERTIES FOLDER "Tests/App/WorkCoordinator")
 
-gtest_discover_tests(WorkCoordinator_test)
+gtest_discover_tests(WorkCoordinator_test PROPERTIES LABELS "unit;App")

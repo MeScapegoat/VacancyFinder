@@ -79,7 +79,7 @@ target_link_libraries(app_workflow_test
 
 set_target_properties(app_workflow_test PROPERTIES FOLDER "Tests/General")
 
-gtest_discover_tests(app_workflow_test)
+gtest_discover_tests(app_workflow_test PROPERTIES LABELS integration)
 
 
 

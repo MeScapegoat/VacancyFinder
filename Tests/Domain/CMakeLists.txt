@@ -12,4 +12,4 @@ target_link_libraries(VacancyOperations_test
 
 set_target_properties(VacancyOperations_test PROPERTIES FOLDER "Tests/Domain")
 
-gtest_discover_tests(VacancyOperations_test)
+gtest_discover_tests(VacancyOperations_test PROPERTIES LABELS "unit;Domain")

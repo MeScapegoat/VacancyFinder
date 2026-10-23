@@ -12,7 +12,7 @@ target_link_libraries(Parser_test
 
 set_target_properties(Parser_test PROPERTIES FOLDER "Tests/Parsing")
 
-gtest_discover_tests(Parser_test)
+gtest_discover_tests(Parser_test PROPERTIES LABELS "unit;Parsing")
 
 
 
@@ -62,7 +62,7 @@ target_link_libraries(LinkedInBriefVacancyExtractor_test
 
 set_target_properties(LinkedInBriefVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy")
 
-gtest_discover_tests(LinkedInBriefVacancyExtractor_test)
+gtest_discover_tests(LinkedInBriefVacancyExtractor_test PROPERTIES LABELS "unit;Parsing")
 
 
 
@@ -79,7 +79,7 @@ target_link_libraries(LinkedInDetailsHtmlVacancyExtractor_test
 
 set_target_properties(LinkedInDetailsHtmlVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy")
 
-gtest_discover_tests(LinkedInDetailsHtmlVacancyExtractor_test)
+gtest_discover_tests(LinkedInDetailsHtmlVacancyExtractor_test PROPERTIES LABELS "unit;Parsing")
 
 
 
@@ -96,7 +96,7 @@ target_link_libraries(LinkedInDetailsJsonVacancyExtractor_test
 
 set_target_properties(LinkedInDetailsJsonVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy")
 
-gtest_discover_tests(LinkedInDetailsJsonVacancyExtractor_test)
+gtest_discover_tests(LinkedInDetailsJsonVacancyExtractor_test PROPERTIES LABELS "unit;Parsing")
 
 
 
@@ -113,4 +113,4 @@ target_link_libraries(LinkedInParserStrategy_test
 
 set_target_properties(LinkedInParserStrategy_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy")
 
-gtest_discover_tests(LinkedInParserStrategy_test)
+gtest_discover_tests(LinkedInParserStrategy_test PROPERTIES LABELS "unit;Parsing")

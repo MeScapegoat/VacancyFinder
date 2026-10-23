@@ -6,3 +6,8 @@ out
 CMakeUserPresets.json
 
 Documentation
+
+
+/compare_coverage.cmake
+/test_coverage.cmd
+/LastCoverageResults.log

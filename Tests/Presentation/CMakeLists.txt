@@ -12,7 +12,7 @@ target_link_libraries(ResultViewOptions_test
 
 set_target_properties(ResultViewOptions_test PROPERTIES FOLDER "Tests/Presentation")
 
-gtest_discover_tests(ResultViewOptions_test)
+gtest_discover_tests(ResultViewOptions_test PROPERTIES LABELS "unit;Presentation")
 
 
 
@@ -30,7 +30,7 @@ target_link_libraries(QueryParameters_test
 
 set_target_properties(QueryParameters_test PROPERTIES FOLDER "Tests/Presentation")
 
-gtest_discover_tests(QueryParameters_test)
+gtest_discover_tests(QueryParameters_test PROPERTIES LABELS "unit;Presentation")
 
 
 
@@ -48,4 +48,4 @@ target_link_libraries(VacancyBrowser_test
 
 set_target_properties(VacancyBrowser_test PROPERTIES FOLDER "Tests/Presentation")
 
-gtest_discover_tests(VacancyBrowser_test)
+gtest_discover_tests(VacancyBrowser_test PROPERTIES LABELS "unit;Presentation")

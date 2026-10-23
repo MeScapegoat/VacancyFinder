@@ -11,4 +11,4 @@ target_link_libraries(ConnectionGroup_test
 
 set_target_properties(ConnectionGroup_test PROPERTIES FOLDER "Tests/Utils")
 
-gtest_discover_tests(ConnectionGroup_test)
+gtest_discover_tests(ConnectionGroup_test PROPERTIES LABELS "unit;Utils")

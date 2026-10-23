@@ -15,7 +15,7 @@ target_link_libraries(RequestManager_test
 
 set_target_properties(RequestManager_test PROPERTIES FOLDER "Tests/Network")
 
-gtest_discover_tests(RequestManager_test)
+gtest_discover_tests(RequestManager_test PROPERTIES LABELS "unit;Network")
 
 
 
@@ -32,7 +32,7 @@ target_link_libraries(FakeNetworkReply_test
 
 set_target_properties(FakeNetworkReply_test PROPERTIES FOLDER "Tests/Network")
 
-gtest_discover_tests(FakeNetworkReply_test)
+gtest_discover_tests(FakeNetworkReply_test PROPERTIES LABELS "unit;Network")
 
 
 
@@ -50,7 +50,7 @@ target_link_libraries(FakeNetworkManager_test
 
 set_target_properties(FakeNetworkManager_test PROPERTIES FOLDER "Tests/Network")
 
-gtest_discover_tests(FakeNetworkManager_test)
+gtest_discover_tests(FakeNetworkManager_test PROPERTIES LABELS "unit;Network")
 
 
 
@@ -69,4 +69,4 @@ target_link_libraries(LinkedInRequestStrategy_test
 
 set_target_properties(LinkedInRequestStrategy_test PROPERTIES FOLDER "Tests/Network")
 
-gtest_discover_tests(LinkedInRequestStrategy_test)
+gtest_discover_tests(LinkedInRequestStrategy_test PROPERTIES LABELS "unit;Network")
