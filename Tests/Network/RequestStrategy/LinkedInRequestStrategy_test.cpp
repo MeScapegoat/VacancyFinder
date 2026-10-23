@@ -1,16 +1,70 @@
 #include <gtest/gtest.h>
 
-#include <QMetaObject>
+#include <QByteArray>
+#include <QList>
 #include <QNetworkCookie>
+#include <QNetworkCookieJar>
 #include <QNetworkReply>
+#include <QNetworkRequest>
 #include <QSignalSpy>
 #include <QUrl>
 
-#include <LinkedInRequestStrategy.h>
+#include <AbstractNetworkManager.h>
 #include <FakeNetworkManager.h>
+#include <FakeNetworkReply.h>
+#include <LinkedInRequestStrategy.h>
 
 namespace
 {
+    class RecordingNetworkManager final : public AbstractNetworkManager
+    {
+    public:
+        explicit RecordingNetworkManager(QObject* parent = nullptr) :
+            AbstractNetworkManager(parent),
+            m_cookieJar(new QNetworkCookieJar(this))
+        {}
+
+        QNetworkCookieJar* cookieJar() const override
+        {
+            return m_cookieJar;
+        }
+
+        void setCookieJar(QNetworkCookieJar* cookieJar) override
+        {
+            if (cookieJar == m_cookieJar)
+                return;
+
+            m_cookieJar->deleteLater();
+            cookieJar->setParent(this);
+            m_cookieJar = cookieJar;
+        }
+
+        QNetworkReply* get(const QNetworkRequest& request) override
+        {
+            QNetworkReply* reply = new FakeNetworkReply(
+                request,
+                200,
+                QByteArrayLiteral("<li>Job</li>"),
+                QNetworkReply::NoError,
+                this);
+            m_pendingReplies.append(reply);
+
+            return reply;
+        }
+
+        void finishNextReply()
+        {
+            if (m_pendingReplies.isEmpty())
+                return;
+
+            emit finished(m_pendingReplies.takeFirst());
+        }
+
+    private:
+        QNetworkCookieJar* m_cookieJar;
+        QList<QNetworkReply*> m_pendingReplies;
+    };
+
     QUrl briefUrl(int start = 0)
     {
         static const QString url("https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=C%2B%2B&location=Belgrade&start=%1");
@@ -30,53 +84,53 @@ namespace
 
         return urls.at(id);
     }
+
+    class LinkedInRequestStrategyTest : public ::testing::Test
+    {
+    protected:
+        LinkedInRequestStrategyTest() :
+            manager(new FakeNetworkManager),
+            strategy(new LinkedInRequestStrategy(manager)),
+            urlsEnqueuedSpy(strategy, &AbstractRequestStrategy::urlsEnqueued),
+            urlsDequeuedSpy(strategy, &AbstractRequestStrategy::urlsDequeued),
+
+            startedSpy(strategy, &AbstractRequestStrategy::requestsStarted),
+            finishedSpy(strategy, &AbstractRequestStrategy::requestsFinished),
+
+            meaningfulSpy(strategy, &AbstractRequestStrategy::meaningfulRepliesReceived),
+            meaninglessSpy(strategy, &AbstractRequestStrategy::meaninglessRepliesReceived),
+
+            vacancyCountSpy(strategy, &AbstractRequestStrategy::vacancyCountDetermined),
+            receivedReplySpy(strategy, &AbstractRequestStrategy::receivedReply)
+        {
+            qRegisterMetaType<QNetworkReply*>();
+        }
+
+        ~LinkedInRequestStrategyTest()
+        {
+            manager->deleteLater();
+
+            strategy = nullptr;
+            manager = nullptr;
+        }
+
+    protected:
+        FakeNetworkManager* manager;
+        LinkedInRequestStrategy* strategy;
+
+        QSignalSpy urlsEnqueuedSpy;
+        QSignalSpy urlsDequeuedSpy;
+
+        QSignalSpy startedSpy;
+        QSignalSpy finishedSpy;
+
+        QSignalSpy meaningfulSpy;
+        QSignalSpy meaninglessSpy;
+
+        QSignalSpy vacancyCountSpy;
+        QSignalSpy receivedReplySpy;
+    };
 }
-
-class LinkedInRequestStrategyTest : public ::testing::Test
-{
-protected:
-    LinkedInRequestStrategyTest() :
-        manager(new FakeNetworkManager),
-        strategy(new LinkedInRequestStrategy(manager)),
-        urlsEnqueuedSpy(strategy, &AbstractRequestStrategy::urlsEnqueued),
-        urlsDequeuedSpy(strategy, &AbstractRequestStrategy::urlsDequeued),
-
-        startedSpy(strategy, &AbstractRequestStrategy::requestsStarted),
-        finishedSpy(strategy, &AbstractRequestStrategy::requestsFinished),
-
-        meaningfulSpy(strategy, &AbstractRequestStrategy::meaningfulRepliesReceived),
-        meaninglessSpy(strategy, &AbstractRequestStrategy::meaninglessRepliesReceived),
-
-        vacancyCountSpy(strategy, &AbstractRequestStrategy::vacancyCountDetermined),
-        receivedReplySpy(strategy, &AbstractRequestStrategy::receivedReply)
-    {
-        qRegisterMetaType<QNetworkReply*>();
-    }
-
-    ~LinkedInRequestStrategyTest()
-    {
-        manager->deleteLater();
-
-        strategy = nullptr;
-        manager = nullptr;
-    }
-
-protected:
-    FakeNetworkManager* manager;
-    LinkedInRequestStrategy* strategy;
-
-    QSignalSpy urlsEnqueuedSpy;
-    QSignalSpy urlsDequeuedSpy;
-
-    QSignalSpy startedSpy;
-    QSignalSpy finishedSpy;
-
-    QSignalSpy meaningfulSpy;
-    QSignalSpy meaninglessSpy;
-
-    QSignalSpy vacancyCountSpy;
-    QSignalSpy receivedReplySpy;
-};
 
 TEST_F(LinkedInRequestStrategyTest, AddUrlEmitsUrlsEnqueued)
 {
@@ -159,6 +213,75 @@ TEST_F(LinkedInRequestStrategyTest, SuccessfulDetailsReplyEmitsReceivedReply)
     EXPECT_EQ(receivedReplySpy.at(0).at(0).toString(), QString::fromUtf8(html));
 
     EXPECT_EQ(receivedReplySpy.at(0).at(1).toUrl(), detailsUrl());
+}
+
+TEST_F(LinkedInRequestStrategyTest, BriefUrlsAreProcessedBeforeDetailsUrls)
+{
+    const QList<QUrl> urls
+    {
+        detailsUrl(),
+        briefUrl()
+    };
+
+    manager->respondWith(200, "<html><body><li>Job 1</li></body></html>");
+    strategy->addUrls(urls);
+
+    strategy->startNext();
+    manager->finish();
+
+    ASSERT_EQ(receivedReplySpy.count(), 1);
+    EXPECT_EQ(receivedReplySpy.at(0).at(1).toUrl(), briefUrl());
+
+    strategy->startNext();
+    manager->finish();
+
+    ASSERT_EQ(receivedReplySpy.count(), 2);
+    EXPECT_EQ(receivedReplySpy.at(1).at(1).toUrl(), detailsUrl());
+}
+
+TEST(LinkedInRequestStrategyConcurrencyTest, AllowsConcurrentRequestsAfterCookiesAreInitialized)
+{
+    RecordingNetworkManager* manager = new RecordingNetworkManager;
+    LinkedInRequestStrategy strategy(manager, 8, 5000, 3);
+    QSignalSpy startedSpy(&strategy, &AbstractRequestStrategy::requestsStarted);
+
+    QNetworkCookie cookie("li_at", "token");
+    cookie.setDomain("www.linkedin.com");
+    cookie.setPath("/");
+    ASSERT_TRUE(manager->cookieJar()->insertCookie(cookie));
+
+    strategy.addUrl(briefUrl(0));
+    strategy.startNext();
+    ASSERT_EQ(startedSpy.count(), 1);
+    manager->finishNextReply();
+
+    strategy.addUrls({briefUrl(10), briefUrl(20)});
+    strategy.startNext();
+    strategy.startNext();
+
+    EXPECT_EQ(startedSpy.count(), 3);
+
+    manager->finishNextReply();
+    manager->finishNextReply();
+}
+
+TEST(LinkedInRequestStrategyConcurrencyTest, KeepsRequestsSerializedWithoutCookies)
+{
+    RecordingNetworkManager* manager = new RecordingNetworkManager;
+    LinkedInRequestStrategy strategy(manager, 8, 5000, 3);
+    QSignalSpy startedSpy(&strategy, &AbstractRequestStrategy::requestsStarted);
+
+    strategy.addUrls({briefUrl(0), briefUrl(10)});
+    strategy.startNext();
+    ASSERT_EQ(startedSpy.count(), 1);
+
+    strategy.startNext();
+    EXPECT_EQ(startedSpy.count(), 1);
+
+    manager->finishNextReply();
+    strategy.startNext();
+
+    EXPECT_EQ(startedSpy.count(), 2);
 }
 
 TEST_F(LinkedInRequestStrategyTest, NetworkErrorEmitsMeaninglessReply)
@@ -291,6 +414,7 @@ TEST_F(LinkedInRequestStrategyTest, EmptyBriefReplyRemovesLaterUrlsFromQueue)
         briefUrl(0),
         briefUrl(10),
         briefUrl(20),
+        detailsUrl(),
     };
 
     strategy->addUrls(urls);
@@ -302,6 +426,34 @@ TEST_F(LinkedInRequestStrategyTest, EmptyBriefReplyRemovesLaterUrlsFromQueue)
 
     ASSERT_EQ(urlsDequeuedSpy.count(), 2);
     EXPECT_EQ(urlsDequeuedSpy.at(1).at(0).toInt(), 2);
+    EXPECT_EQ(meaninglessSpy.count(), 1);
+    EXPECT_EQ(receivedReplySpy.count(), 0);
+
+    manager->respondWith(200, "<html><body>Job details</body></html>");
+    strategy->startNext();
+    manager->finish();
+
+    ASSERT_EQ(receivedReplySpy.count(), 1);
+    EXPECT_EQ(receivedReplySpy.at(0).at(1).toUrl(), detailsUrl());
+}
+
+TEST_F(LinkedInRequestStrategyTest, ResetClearsTheBriefUrlCutoff)
+{
+    manager->respondWith(200, "<html>No jobs</html>");
+    strategy->addUrl(briefUrl(0));
+    strategy->startNext();
+    manager->finish();
+
+    ASSERT_EQ(meaninglessSpy.count(), 1);
+
+    strategy->reset();
+    strategy->addUrls({briefUrl(10), briefUrl(20)});
+    strategy->startNext();
+    manager->finish();
+
+    EXPECT_EQ(meaninglessSpy.count(), 2);
+    ASSERT_EQ(urlsDequeuedSpy.count(), 4);
+    EXPECT_EQ(urlsDequeuedSpy.at(3).at(0).toInt(), 1);
 }
 
 TEST_F(LinkedInRequestStrategyTest, InterruptCancelsActiveReplies)
@@ -320,11 +472,12 @@ TEST_F(LinkedInRequestStrategyTest, InterruptCancelsActiveReplies)
 
 TEST_F(LinkedInRequestStrategyTest, InterruptedReplyIsIgnored)
 {
-    strategy->interrupt();
-
+    manager->respondWith(200, "<html><body><li>Job</li></body></html>");
     strategy->addUrl(briefUrl());
-
     strategy->startNext();
+    ASSERT_EQ(startedSpy.count(), 1);
+
+    strategy->interrupt();
 
     manager->finish();
 
@@ -387,6 +540,11 @@ TEST_F(LinkedInRequestStrategyTest, ClassifyUrlWithoutQueryAsDetails)
 TEST_F(LinkedInRequestStrategyTest, GetStartExtractsStartParameter)
 {
     EXPECT_EQ(getStart(briefUrl(20)), 20);
+}
+
+TEST_F(LinkedInRequestStrategyTest, GetStartReturnsZeroWhenParameterIsMissing)
+{
+    EXPECT_EQ(getStart(QUrl("https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=C%2B%2B")), 0);
 }
 
 TEST_F(LinkedInRequestStrategyTest, IsAfterStartReturnsTrueForGreaterStart)

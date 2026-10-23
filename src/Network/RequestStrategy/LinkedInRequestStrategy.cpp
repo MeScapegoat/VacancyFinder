@@ -76,7 +76,7 @@ void LinkedInRequestStrategy::startNext()
         emit vacancyCountDetermined(m_detailsUrlsQueue.size());
     }
 
-    const unsigned _maxConcurrent = m_cookiesInitialized ? m_maxConcurrent : 1; // m_networkManager->hasCookies()
+    const unsigned _maxConcurrent = m_cookiesInitialized ? m_maxConcurrent : 1;
 
     if (hasPendingRequests() && m_activeReplies.size() < _maxConcurrent)
     {
@@ -179,7 +179,7 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
     }
 
 
-    initCookies(url); // m_networkManager->initCookies(url);
+    initCookies(url);
 
     if (updateBriefUrlCutoff(html, url))
     {
