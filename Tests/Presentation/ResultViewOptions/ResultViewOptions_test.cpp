@@ -4,12 +4,17 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QList>
 #include <QSignalSpy>
+#include <QString>
+#include <QStringList>
 
-#include "ResultViewOptionsPresenter.h"
 #include <CallableComboBox.hpp>
 #include <QtTestPrinters.h>
 #include <ResultViewOptionsEnums.h>
+#include "ResultViewOptionsPresenter.h"
+#include <Vacancy.h>
+#include <VacancyStatus.h>
 
 class ResultViewOptionsPresenterTest : public testing::Test, public ResultViewOptionsPresenter
 {
@@ -184,6 +189,40 @@ TEST_F(ResultViewOptionsPresenterTest, ChangingFilterModeUpdatesVacancyFilter)
     EXPECT_EQ(vacancyFilterChangedSpy.count(), static_cast<int>(FilterMode::COUNT));
 }
 
+TEST_F(ResultViewOptionsPresenterTest, FilterModeCallbacksApplySelectedRules)
+{
+    Vacancy matchesOneWord{};
+    matchesOneWord.title = "C++ Developer";
+
+    Vacancy matchesAllWords{};
+    matchesAllWords.title = "C++ Qt Developer";
+
+    Vacancy matchesNoWords{};
+    matchesNoWords.title = "Java Developer";
+
+    setFilterWords("C++, Qt");
+
+    setFilterMode(static_cast<int>(FilterMode::ContainsAny));
+    EXPECT_TRUE(vacancyFilter()(&matchesOneWord));
+    EXPECT_FALSE(vacancyFilter()(&matchesNoWords));
+
+    setFilterMode(static_cast<int>(FilterMode::ContainsAll));
+    EXPECT_TRUE(vacancyFilter()(&matchesAllWords));
+    EXPECT_FALSE(vacancyFilter()(&matchesOneWord));
+
+    setFilterMode(static_cast<int>(FilterMode::ExcludesAny));
+    EXPECT_TRUE(vacancyFilter()(&matchesNoWords));
+    EXPECT_FALSE(vacancyFilter()(&matchesOneWord));
+
+    setFilterMode(static_cast<int>(FilterMode::ExcludesAll));
+    EXPECT_TRUE(vacancyFilter()(&matchesOneWord));
+    EXPECT_FALSE(vacancyFilter()(&matchesAllWords));
+
+    setFilterWords("Java");
+    EXPECT_FALSE(vacancyFilter()(&matchesNoWords));
+    EXPECT_TRUE(vacancyFilter()(&matchesOneWord));
+}
+
 TEST_F(ResultViewOptionsPresenterTest, ChangingSortModeUpdatesVacancySortComparator)
 {
     setSortMode(static_cast<int>(SortMode::COUNT) - 1);
@@ -202,6 +241,23 @@ TEST_F(ResultViewOptionsPresenterTest, ChangingSortModeUpdatesVacancySortCompara
     }
 
     EXPECT_EQ(vacancySortComparatorChangedSpy.count(), static_cast<int>(SortMode::COUNT));
+}
+
+TEST_F(ResultViewOptionsPresenterTest, RelevanceSortUsesCurrentKeywords)
+{
+    Vacancy cppVacancy{};
+    cppVacancy.title = "C++ C++ Developer";
+
+    Vacancy qtVacancy{};
+    qtVacancy.title = "Qt Developer";
+
+    setSortMode(static_cast<int>(SortMode::Relevance));
+    setKeywords("C++");
+    EXPECT_TRUE(vacancySortComparator()(&cppVacancy, &qtVacancy));
+
+    setKeywords("Qt");
+    EXPECT_FALSE(vacancySortComparator()(&cppVacancy, &qtVacancy));
+    EXPECT_TRUE(vacancySortComparator()(&qtVacancy, &cppVacancy));
 }
 
 TEST_F(ResultViewOptionsPresenterTest, VisibleStatusesMatchVisibilitySettings)

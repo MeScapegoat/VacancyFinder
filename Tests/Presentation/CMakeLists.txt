@@ -48,4 +48,4 @@ target_link_libraries(VacancyBrowser_test
 
 set_target_properties(VacancyBrowser_test PROPERTIES FOLDER "Tests/Presentation")
 
-gtest_discover_tests(VacancyBrowser_test PROPERTIES LABELS "unit;Presentation")
+gtest_discover_tests(VacancyBrowser_test PROPERTIES LABELS "unit;Presentation" ENVIRONMENT "QT_QPA_PLATFORM=offscreen")

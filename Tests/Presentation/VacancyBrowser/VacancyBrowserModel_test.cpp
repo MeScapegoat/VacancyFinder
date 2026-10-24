@@ -1,6 +1,10 @@
-#include <gtest/gtest.h>
 #include "VacancyBrowserModel.h"
+
+#include <gtest/gtest.h>
+
 #include <QStringListModel>
+
+#include <QtTestPrinters.h>
 
 
 Vacancy makeVacancy(QString url = "url",
@@ -59,6 +63,30 @@ TEST_F(VacancyBrowserModelTest, AddingSameUrlDoesNotCreateDuplicate)
     model.addVacancy(second);
     ASSERT_EQ(model.vacancyByUrl().size(), 1);
     EXPECT_EQ(model.vacancyByUrl().value(first.link).title, first.title);
+}
+
+TEST_F(VacancyBrowserModelTest, AddingSameUrlFillsMissingVacancyDetails)
+{
+    const Vacancy brief = makeVacancy("url", "Developer", "First Company", QString());
+
+    Vacancy details{};
+    details.link = brief.link;
+    details.title = "Updated title";
+    details.companyName = "Updated company";
+    details.location = "Budapest";
+    details.description = "Full description";
+    details.level = "Senior";
+
+    model.addVacancy(brief);
+    model.addVacancy(details);
+
+    const Vacancy& merged = model.vacancyByUrl().constFind(brief.link).value();
+    EXPECT_EQ(merged.title, brief.title);
+    EXPECT_EQ(merged.companyName, brief.companyName);
+    EXPECT_EQ(merged.location, details.location);
+    EXPECT_EQ(merged.description, details.description);
+    ASSERT_TRUE(merged.level.has_value());
+    EXPECT_EQ(*merged.level, *details.level);
 }
 
 TEST_F(VacancyBrowserModelTest, NewVacancyIsUnreviewed)
