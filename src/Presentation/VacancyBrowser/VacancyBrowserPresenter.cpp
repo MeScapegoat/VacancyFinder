@@ -50,6 +50,9 @@ void VacancyBrowserPresenter::reset()
 {
     model().vacancyByUrl().clear();
     model().visibleVacancies().clear();
+
+    updateVisibleVacancies();
+    view().vacancyDetails().close();
 }
 
 void VacancyBrowserPresenter::onVacanciesReady(const QList<Vacancy>& vacancies)
