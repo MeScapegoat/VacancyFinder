@@ -24,7 +24,12 @@ namespace
             m_cookieJar(new QNetworkCookieJar(this))
         {}
 
-        QNetworkCookieJar* cookieJar() const override
+        QNetworkCookieJar* cookieJar() override
+        {
+            return m_cookieJar;
+        }
+
+        const QNetworkCookieJar* cookieJar() const override
         {
             return m_cookieJar;
         }

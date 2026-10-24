@@ -32,7 +32,7 @@ protected:
 TEST_F(QueryParametersPresenterTest, MaxResultsSync)
 {
     Observable<int>& maxResults = model().maxResults;
-    QSpinBox& maxResultsInput = view().maxResultsInput;
+    QSpinBox& maxResultsInput = view().maxResultsInput();
     const int assignedMaxResults = 42;
     const int enteredMaxResults = 123;
 
@@ -49,22 +49,22 @@ TEST_F(QueryParametersPresenterTest, MaxResultsSync)
 
 TEST_F(QueryParametersPresenterTest, MaxResultsInputClampsValuesToSupportedRange)
 {
-    EXPECT_EQ(view().maxResultsInput.minimum(), 1);
-    EXPECT_EQ(view().maxResultsInput.maximum(), 999);
+    EXPECT_EQ(view().maxResultsInput().minimum(), 1);
+    EXPECT_EQ(view().maxResultsInput().maximum(), 999);
 
-    view().maxResultsInput.setValue(0);
-    EXPECT_EQ(view().maxResultsInput.value(), 1);
+    view().maxResultsInput().setValue(0);
+    EXPECT_EQ(view().maxResultsInput().value(), 1);
     EXPECT_EQ(maxResults(), 1);
 
-    view().maxResultsInput.setValue(1000);
-    EXPECT_EQ(view().maxResultsInput.value(), 999);
+    view().maxResultsInput().setValue(1000);
+    EXPECT_EQ(view().maxResultsInput().value(), 999);
     EXPECT_EQ(maxResults(), 999);
 }
 
 TEST_F(QueryParametersPresenterTest, KeywordsSync)
 {
     Observable<QString>& keywords = model().keywords;
-    QLineEdit& keywordsInput = view().keywordsInput;
+    QLineEdit& keywordsInput = view().keywordsInput();
     const QString assignedKeywords = QStringLiteral("C++");
     const QString typedKeywordSuffix = QStringLiteral(" Qt");
     const QString expectedKeywords = assignedKeywords + typedKeywordSuffix;
@@ -87,7 +87,7 @@ TEST_F(QueryParametersPresenterTest, KeywordsSync)
 TEST_F(QueryParametersPresenterTest, LocationSync)
 {
     Observable<QString>& location = model().location;
-    QLineEdit& locationInput = view().locationInput;
+    QLineEdit& locationInput = view().locationInput();
     const QString assignedLocation = QStringLiteral("Budapest");
     const QString typedLocation = QStringLiteral("Remote");
 
@@ -117,25 +117,25 @@ TEST_F(QueryParametersPresenterTest, PublicAccessorsSync)
     EXPECT_EQ(location(), expectedLocation);
     EXPECT_EQ(maxResults(), expectedMaxResults);
 
-    EXPECT_EQ(view().keywordsInput.text(), expectedKeywords);
-    EXPECT_EQ(view().locationInput.text(), expectedLocation);
-    EXPECT_EQ(view().maxResultsInput.value(), expectedMaxResults);
+    EXPECT_EQ(view().keywordsInput().text(), expectedKeywords);
+    EXPECT_EQ(view().locationInput().text(), expectedLocation);
+    EXPECT_EQ(view().maxResultsInput().value(), expectedMaxResults);
 }
 
 TEST_F(QueryParametersPresenterTest, SearchRequest)
 {
-    QTest::mouseClick(&view().searchButton, Qt::LeftButton);
+    QTest::mouseClick(&view().searchButton(), Qt::LeftButton);
     EXPECT_EQ(searchRequestedSpy.count(), 1);
 }
 
 TEST_F(QueryParametersPresenterTest, LoadInterestedRequested)
 {
-    QTest::mouseClick(&view().searchInterestedButton, Qt::LeftButton);
+    QTest::mouseClick(&view().searchInterestedButton(), Qt::LeftButton);
     EXPECT_EQ(loadInterestedRequestedSpy.count(), 1);
 }
 
 TEST_F(QueryParametersPresenterTest, ResetRequest)
 {
-    QTest::mouseClick(&view().resetButton, Qt::LeftButton);
+    QTest::mouseClick(&view().resetButton(), Qt::LeftButton);
     EXPECT_EQ(resetRequestedSpy.count(), 1);
 }

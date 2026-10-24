@@ -20,33 +20,33 @@ ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) :
     insertSorts();
 
 
-    connect(&view().filterMode, &QComboBox::currentIndexChanged, &model().currentFilterMode, &Observable<int>::setValue);
+    connect(&view().filterMode(), &QComboBox::currentIndexChanged, &model().currentFilterMode, &Observable<int>::setValue);
     connect(&model().currentFilterMode, &Observable<int>::valueChanged, this, &ResultViewOptionsPresenter::onCurrentFilterIndexChanged);
     onCurrentFilterIndexChanged();
 
 
-    connect(&view().sortMode, &QComboBox::currentIndexChanged, &model().currentSortMode, &Observable<int>::setValue);
+    connect(&view().sortMode(), &QComboBox::currentIndexChanged, &model().currentSortMode, &Observable<int>::setValue);
     connect(&model().currentSortMode, &Observable<int>::valueChanged, this, &ResultViewOptionsPresenter::onCurrentSortIndexChanged);
     onCurrentSortIndexChanged();
 
 
-    connect(&view().filterLineEdit, &QLineEdit::textChanged, this, &ResultViewOptionsPresenter::onFilterWordsWidgetChanged);
+    connect(&view().filterLineEdit(), &QLineEdit::textChanged, this, &ResultViewOptionsPresenter::onFilterWordsWidgetChanged);
     connect(&model().filterWordList, &Observable<QStringList>::valueChanged, this, &ResultViewOptionsPresenter::onFilterWordsChanged);
     onFilterWordsWidgetChanged();
     onFilterWordsChanged();
 
 
-    connect(&view().unreviewedCheckBox, &QCheckBox::checkStateChanged, &model().isUnreviewedVisible, &Observable<bool>::setValue);
+    connect(&view().unreviewedCheckBox(), &QCheckBox::checkStateChanged, &model().isUnreviewedVisible, &Observable<bool>::setValue);
     connect(&model().isUnreviewedVisible, &Observable<bool>::valueChanged, this, &ResultViewOptionsPresenter::onUnreviewedVisibleChanged);
     onUnreviewedVisibleChanged();
 
 
-    connect(&view().ignoredCheckBox, &QCheckBox::checkStateChanged, &model().isIgnoredVisible, &Observable<bool>::setValue);
+    connect(&view().ignoredCheckBox(), &QCheckBox::checkStateChanged, &model().isIgnoredVisible, &Observable<bool>::setValue);
     connect(&model().isIgnoredVisible, &Observable<bool>::valueChanged, this, &ResultViewOptionsPresenter::onIgnoredVisibleChanged);
     onIgnoredVisibleChanged();
 
 
-    connect(&view().interestedCheckBox, &QCheckBox::checkStateChanged, &model().isInterestedVisible, &Observable<bool>::setValue);
+    connect(&view().interestedCheckBox(), &QCheckBox::checkStateChanged, &model().isInterestedVisible, &Observable<bool>::setValue);
     connect(&model().isInterestedVisible, &Observable<bool>::valueChanged, this, &ResultViewOptionsPresenter::onInterestedVisibleChanged);
     onInterestedVisibleChanged();
 
@@ -71,7 +71,7 @@ int ResultViewOptionsPresenter::filterMode() const
 
 const VacancyFilter& ResultViewOptionsPresenter::vacancyFilter() const
 {
-    return view().filterMode.currentFunction();
+    return view().filterMode().currentFunction();
 }
 
 void ResultViewOptionsPresenter::setFilterWords(const QString& filterWords)
@@ -96,7 +96,7 @@ int ResultViewOptionsPresenter::sortMode() const
 
 const VacancySortComparator& ResultViewOptionsPresenter::vacancySortComparator() const
 {
-    return view().sortMode.currentFunction();
+    return view().sortMode().currentFunction();
 }
 
 void ResultViewOptionsPresenter::setIsUnreviewedVisible(bool isVisible)
@@ -148,54 +148,54 @@ void ResultViewOptionsPresenter::setKeywords(const QString& keywords)
 
 void ResultViewOptionsPresenter::onCurrentSortIndexChanged()
 {
-    view().sortMode.setCurrentIndex(model().currentSortMode());
+    view().setSortMode(model().currentSortMode());
 
     emit vacancySortComparatorChanged(vacancySortComparator());
 }
 
 void ResultViewOptionsPresenter::onCurrentFilterIndexChanged()
 {
-    view().filterMode.setCurrentIndex(model().currentFilterMode());
+    view().setFilterMode(model().currentFilterMode());
 
     emit vacancyFilterChanged(vacancyFilter());
 }
 
 void ResultViewOptionsPresenter::onFilterWordsChanged()
 {
-    view().filterLineEdit.setText(filterWords());
+    view().setFilterLineEdit(filterWords());
 }
 
 void ResultViewOptionsPresenter::onFilterWordsWidgetChanged()
 {
-    const QString& filterWordsString = view().filterLineEdit.text();
+    const QString& filterWordsString = view().filterLineEdit().text();
 
     model().filterWordList = filterWordsToList(filterWordsString);
 }
 
 void ResultViewOptionsPresenter::onUnreviewedVisibleChanged()
 {
-    view().unreviewedCheckBox.setChecked(model().isUnreviewedVisible());
+    view().setUnreviewedCheckBox(model().isUnreviewedVisible());
 
     updateVisibleStatuses();
 }
 
 void ResultViewOptionsPresenter::onIgnoredVisibleChanged()
 {
-    view().ignoredCheckBox.setChecked(model().isIgnoredVisible());
+    view().setIgnoredCheckBox(model().isIgnoredVisible());
 
     updateVisibleStatuses();
 }
 
 void ResultViewOptionsPresenter::onInterestedVisibleChanged()
 {
-    view().interestedCheckBox.setChecked(model().isInterestedVisible());
+    view().setInterestedCheckBox(model().isInterestedVisible());
 
     updateVisibleStatuses();
 }
 
 void ResultViewOptionsPresenter::insertFilters()
 {
-    auto& filterMode = view().filterMode;
+    auto& filterMode = view().filterMode();
 
     VacancyFilter offFilterCallback = [](const Vacancy* vacancy) -> bool
     {
@@ -234,7 +234,7 @@ void ResultViewOptionsPresenter::insertFilters()
 
 void ResultViewOptionsPresenter::insertSorts()
 {
-    auto& sortMode = view().sortMode;
+    auto& sortMode = view().sortMode();
 
     VacancySortComparator offSortCallback;
     sortMode.insertItem(static_cast<qsizetype>(SortMode::Off), tr("Off"), std::move(offSortCallback));

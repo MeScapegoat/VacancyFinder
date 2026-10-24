@@ -46,7 +46,7 @@ VacancyFinder::VacancyFinder(QObject* parent) :
 
 
     // ProgressDialog
-    QObject::connect(&progressDialog.stopButton, &QPushButton::released, &vacancySearchWorkflow, &VacancySearchWorkflow::interrupt);
+    QObject::connect(&progressDialog.stopButton(), &QPushButton::released, &vacancySearchWorkflow, &VacancySearchWorkflow::interrupt);
 
     // VacancySearchWorkflow
     QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::vacancyCountDetermined, &progressDialog, &ProgressDialog::updateVacancyCount);

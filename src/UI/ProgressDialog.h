@@ -23,9 +23,11 @@ public slots:
     void start(qsizetype maxVacancies);
 
 public:
-    QPushButton& stopButton;
+    const QPushButton& stopButton() const;
+    QPushButton& stopButton();
 
 private:
+    QPushButton& m_stopButton;
     QLabel& briefLabel;
     QProgressBar& briefsProgressBar;
 

@@ -14,7 +14,8 @@ public:
     ~FakeNetworkManager() = default;
 
 public:
-    QNetworkCookieJar* cookieJar() const override;
+    QNetworkCookieJar* cookieJar() override;
+    const QNetworkCookieJar* cookieJar() const override;
     void setCookieJar(QNetworkCookieJar* cookieJar) override;
     QNetworkReply* get(const QNetworkRequest& request) override;
 

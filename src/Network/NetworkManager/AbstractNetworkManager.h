@@ -18,7 +18,8 @@ public:
     virtual ~AbstractNetworkManager() = default;
 
 public:
-    virtual QNetworkCookieJar* cookieJar() const = 0;
+    virtual QNetworkCookieJar* cookieJar() = 0;
+    virtual const QNetworkCookieJar* cookieJar() const = 0;
     virtual void setCookieJar(QNetworkCookieJar* cookieJar) = 0;
     virtual QNetworkReply* get(const QNetworkRequest& request) = 0;
 

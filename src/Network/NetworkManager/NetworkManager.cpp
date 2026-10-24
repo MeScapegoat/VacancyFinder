@@ -9,7 +9,12 @@ NetworkManager::NetworkManager(QObject* parent) :
     QObject::connect(&m_networkManager, &QNetworkAccessManager::finished, this, &NetworkManager::finished);
 }
 
-QNetworkCookieJar* NetworkManager::cookieJar() const
+QNetworkCookieJar* NetworkManager::cookieJar()
+{
+    return m_networkManager.cookieJar();
+}
+
+const QNetworkCookieJar* NetworkManager::cookieJar() const
 {
     return m_networkManager.cookieJar();
 }

@@ -14,13 +14,13 @@ ProgressDialog::ProgressDialog(QWidget* parent) :
     detailsLabel(*new QLabel),
     allDetailsProgressBar(*new QProgressBar),
     errorLabel(*new QLabel),
-    stopButton(*new QPushButton)
+    m_stopButton(*new QPushButton)
 {
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowTitleHint);
 
     QVBoxLayout& layout = *new QVBoxLayout();
 
-    stopButton.setText("Stop Search");
+    m_stopButton.setText("Stop Search");
 
     layout.addWidget(&briefLabel);
     layout.addWidget(&briefsProgressBar);
@@ -30,13 +30,23 @@ ProgressDialog::ProgressDialog(QWidget* parent) :
 
     layout.addWidget(&errorLabel);
 
-    layout.addWidget(&stopButton);
+    layout.addWidget(&m_stopButton);
 
     setMinimumSize(500, 200);
 
     setLayout(&layout);
 
-    QObject::connect(&stopButton, &QPushButton::released, this, &ProgressDialog::accept);
+    QObject::connect(&m_stopButton, &QPushButton::released, this, &ProgressDialog::accept);
+}
+
+const QPushButton& ProgressDialog::stopButton() const
+{
+    return m_stopButton;
+}
+
+QPushButton& ProgressDialog::stopButton()
+{
+    return m_stopButton;
 }
 
 void ProgressDialog::updateVacancyCount(int count)

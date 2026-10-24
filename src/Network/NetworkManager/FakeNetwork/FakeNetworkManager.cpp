@@ -11,7 +11,12 @@ FakeNetworkManager::FakeNetworkManager(QObject* parent) :
     m_lastReply(nullptr)
 {}
 
-QNetworkCookieJar* FakeNetworkManager::cookieJar() const
+QNetworkCookieJar* FakeNetworkManager::cookieJar()
+{
+    return m_cookieJar;
+}
+
+const QNetworkCookieJar* FakeNetworkManager::cookieJar() const
 {
     return m_cookieJar;
 }

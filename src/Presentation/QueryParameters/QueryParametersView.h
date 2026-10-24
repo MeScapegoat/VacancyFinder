@@ -8,6 +8,7 @@
 class QLineEdit;
 class QSpinBox;
 class QPushButton;
+class QString;
 
 class QueryParametersView : public View
 {
@@ -16,11 +17,35 @@ public:
     ~QueryParametersView() = default;
 
 public:
-    QLineEdit& keywordsInput;
-    QLineEdit& locationInput;
-    QSpinBox& maxResultsInput;
+    const QLineEdit& keywordsInput() const;
+    QLineEdit& keywordsInput();
 
-    QPushButton& searchButton;
-    QPushButton& searchInterestedButton;
-    QPushButton& resetButton;
+    const QLineEdit& locationInput() const;
+    QLineEdit& locationInput();
+
+    const QSpinBox& maxResultsInput() const;
+    QSpinBox& maxResultsInput();
+
+
+    const QPushButton& searchButton() const;
+    QPushButton& searchButton();
+
+    const QPushButton& searchInterestedButton() const;
+    QPushButton& searchInterestedButton();
+
+    const QPushButton& resetButton() const;
+    QPushButton& resetButton();
+
+    void setKeywordsInput(const QString& keywords);
+    void setLocationInput(const QString& location);
+    void setMaxResultsInput(int maxResults);
+
+private:
+    QLineEdit& m_keywordsInput;
+    QLineEdit& m_locationInput;
+    QSpinBox& m_maxResultsInput;
+
+    QPushButton& m_searchButton;
+    QPushButton& m_searchInterestedButton;
+    QPushButton& m_resetButton;
 };
