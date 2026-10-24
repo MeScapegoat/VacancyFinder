@@ -16,9 +16,9 @@ TEST(LinkedInDetailsHtmlVacancyExtractor, Html1)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, "Senior C++ Software Engineer (Gameplay)");
-    EXPECT_EQ(vacancy.link, url);
+    EXPECT_EQ(vacancy.url, url);
     EXPECT_EQ(vacancy.companyName, "Playrix");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://ie.linkedin.com/company/playrix-entertainment"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://ie.linkedin.com/company/playrix-entertainment"));
     EXPECT_EQ(vacancy.location, "Serbia");
     EXPECT_EQ(vacancy.employmentType, "Full-time");
 
@@ -48,9 +48,9 @@ TEST(LinkedInDetailsHtmlVacancyExtractor, Html2)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, "Senior Open Source Engineer");
-    EXPECT_EQ(vacancy.link, url);
+    EXPECT_EQ(vacancy.url, url);
     EXPECT_EQ(vacancy.companyName, "Sysdig");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://www.linkedin.com/company/sysdig"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://www.linkedin.com/company/sysdig"));
     EXPECT_EQ(vacancy.location, "Serbia");
     EXPECT_EQ(vacancy.employmentType, "Full-time");
 
@@ -80,9 +80,9 @@ TEST(LinkedInDetailsHtmlVacancyExtractor, Json1)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, "Senior Software Engineer (C++) for JVM runtime");
-    EXPECT_EQ(vacancy.link, url);
+    EXPECT_EQ(vacancy.url, url);
     EXPECT_EQ(vacancy.companyName, "Azul");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://www.linkedin.com/company/azul-systems"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://www.linkedin.com/company/azul-systems"));
     EXPECT_EQ(vacancy.location, "Belgrade, Serbia");
     EXPECT_EQ(vacancy.employmentType, "Full-time");
 
@@ -112,9 +112,9 @@ TEST(LinkedInDetailsHtmlVacancyExtractor, Json2)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, "C++ Software Engineer – SDK System & Performance");
-    EXPECT_EQ(vacancy.link, url);
+    EXPECT_EQ(vacancy.url, url);
     EXPECT_EQ(vacancy.companyName, "Cisco");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://www.linkedin.com/company/cisco"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://www.linkedin.com/company/cisco"));
     EXPECT_EQ(vacancy.location, "Belgrade, Serbia");
     EXPECT_EQ(vacancy.employmentType, "Full-time");
 

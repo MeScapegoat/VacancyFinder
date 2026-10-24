@@ -73,10 +73,10 @@ const VacancyBrowserModel::VacancyListModel& VacancyBrowserModel::vacancyListMod
 
 void VacancyBrowserModel::addVacancy(const Vacancy& vacancy)
 {
-    const auto it = m_vacancyByUrl.find(vacancy.link);
+    const auto it = m_vacancyByUrl.find(vacancy.url);
     if (it == m_vacancyByUrl.end())
     {
-        m_vacancyByUrl.emplace(vacancy.link, vacancy);
+        m_vacancyByUrl.emplace(vacancy.url, vacancy);
     }
     else
     {
@@ -112,7 +112,7 @@ std::optional<constVacancyRef> VacancyBrowserModel::getVisibleVacancy(size_t id)
 
 VacancyStatus VacancyBrowserModel::getVacancyStatus(const Vacancy& vacancy) const
 {
-    const QUrl& url = vacancy.link;
+    const QUrl& url = vacancy.url;
 
     if (m_interestedVacancies.contains(url))
         return VacancyStatus::Interested;

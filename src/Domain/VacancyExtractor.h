@@ -13,9 +13,9 @@ public:
 
 protected:
     virtual QString title() const;
-    virtual QUrl link() const;
+    virtual QUrl url() const;
     virtual QString companyName() const;
-    virtual QUrl companyLink() const;
+    virtual QUrl companyUrl() const;
     virtual QString location() const;
     virtual QString employmentType() const;
     virtual QString skills() const;

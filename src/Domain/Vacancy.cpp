@@ -27,9 +27,9 @@ void Vacancy::fillEmptyFrom(Vacancy other) noexcept
     // cringe alarm
 
     if (title.isEmpty())             title = std::move(other.title);
-    if (link.isEmpty())              link = std::move(other.link);
+    if (url.isEmpty())               url = std::move(other.url);
     if (companyName.isEmpty())       companyName = std::move(other.companyName);
-    if (companyLink.isEmpty())       companyLink = std::move(other.companyLink);
+    if (companyUrl.isEmpty())        companyUrl = std::move(other.companyUrl);
     if (location.isEmpty())          location = std::move(other.location);
     if (employmentType.isEmpty())    employmentType = std::move(other.employmentType);
     if (skills.isEmpty())            skills = std::move(other.skills);
@@ -51,9 +51,9 @@ QDebug operator<<(QDebug debug, const Vacancy& vacancy) noexcept
     debug.nospace() << "Vacancy:\n";
     print(debug, "id", vacancy.id);
     print(debug, "title", vacancy.title);
-    print(debug, "link", vacancy.link);
+    print(debug, "url", vacancy.url);
     print(debug, "companyName", vacancy.companyName);
-    print(debug, "companyLink", vacancy.companyLink);
+    print(debug, "companyUrl", vacancy.companyUrl);
     print(debug, "location", vacancy.location);
     print(debug, "employmentType", vacancy.employmentType);
     print(debug, "skills", vacancy.skills);

@@ -5,9 +5,9 @@ Vacancy VacancyExtractor::vacancy() const
     Vacancy result;
 
     result.title = title();
-    result.link = link();
+    result.url = url();
     result.companyName = companyName();
-    result.companyLink = companyLink();
+    result.companyUrl = companyUrl();
     result.location = location();
     result.employmentType = employmentType();
     result.skills = skills();
@@ -27,7 +27,7 @@ QString VacancyExtractor::title() const
     return QString();
 };
 
-QUrl VacancyExtractor::link() const
+QUrl VacancyExtractor::url() const
 {
     return QUrl();
 };
@@ -37,7 +37,7 @@ QString VacancyExtractor::companyName() const
     return QString();
 };
 
-QUrl VacancyExtractor::companyLink() const
+QUrl VacancyExtractor::companyUrl() const
 {
     return QUrl();
 };

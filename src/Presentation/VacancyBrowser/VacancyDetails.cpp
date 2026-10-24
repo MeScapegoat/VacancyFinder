@@ -103,12 +103,12 @@ void VacancyDetails::open(const Vacancy& vacancy, VacancyStatus status)
     const QString& skills = vacancy.skills;
     const QString& employmentType = vacancy.employmentType;
     const QString& companyName = vacancy.companyName;
-    const QString& companyLink = vacancy.companyLink.toString();
+    const QString& companyUrl = vacancy.companyUrl.toString();
 
     const QString linkPattern = "<a href='%1'>%2</a>";
 
-    titleLabel.setText(linkPattern.arg(vacancy.link.toString()).arg(title));
-    companyNameLabel.setText(linkPattern.arg(companyLink).arg(companyName));
+    titleLabel.setText(linkPattern.arg(vacancy.url.toString()).arg(title));
+    companyNameLabel.setText(linkPattern.arg(companyUrl).arg(companyName));
 
     employmentTypeLabel.setText("Employment type: " + employmentType);
 

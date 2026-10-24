@@ -87,16 +87,16 @@ void Parser::processBriefs(const QString& html, const QUrl& url)
     QList<Vacancy> briefs = m_strategy->parseBriefs(html);
     for (Vacancy& brief : briefs)
     {
-        if (m_processedBriefs.contains(brief.link))
+        if (m_processedBriefs.contains(brief.url))
         {
-            qCDebug(ParserLog) << "Already processed brief:" << brief.link;
+            qCDebug(ParserLog) << "Already processed brief:" << brief.url;
             continue;
         }
-        m_processedBriefs.insert(brief.link);
+        m_processedBriefs.insert(brief.url);
 
         brief.id = m_processedBriefs.size();
 
-        emit requestDetails(brief.link);
+        emit requestDetails(brief.url);
         emit briefParsed(brief);
     }
 }

@@ -16,9 +16,9 @@ public:
 
 protected:
     virtual QString title() const override;
-    virtual QUrl link() const override;
+    virtual QUrl url() const override;
     virtual QString companyName() const override;
-    virtual QUrl companyLink() const override;
+    virtual QUrl companyUrl() const override;
     virtual QString location() const override;
     virtual QDate date() const override;
 

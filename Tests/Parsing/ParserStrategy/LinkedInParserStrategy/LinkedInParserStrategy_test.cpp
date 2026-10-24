@@ -93,9 +93,9 @@ TEST(LinkedInParserStrategy, ParseHtmlDetails)
     const Vacancy vacancy = strategy.parseDetails(file.readAll(), url);
 
     EXPECT_EQ(vacancy.title, "Senior C++ Software Engineer (Gameplay)");
-    EXPECT_EQ(vacancy.link, url);
+    EXPECT_EQ(vacancy.url, url);
     EXPECT_EQ(vacancy.companyName, "Playrix");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://ie.linkedin.com/company/playrix-entertainment"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://ie.linkedin.com/company/playrix-entertainment"));
     EXPECT_EQ(vacancy.location, "Serbia");
     EXPECT_EQ(vacancy.employmentType, "Full-time");
 
@@ -124,9 +124,9 @@ TEST(LinkedInParserStrategy, ParseJsonDetails)
     const Vacancy vacancy = strategy.parseDetails(file.readAll(), url);
 
     EXPECT_EQ(vacancy.title, "Senior Software Engineer (C++) for JVM runtime");
-    EXPECT_EQ(vacancy.link, url);
+    EXPECT_EQ(vacancy.url, url);
     EXPECT_EQ(vacancy.companyName, "Azul");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://www.linkedin.com/company/azul-systems"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://www.linkedin.com/company/azul-systems"));
     EXPECT_EQ(vacancy.location, "Belgrade");
     EXPECT_EQ(vacancy.employmentType, "FULL_TIME");
 
@@ -157,7 +157,7 @@ TEST(LinkedInParserStrategy, ParseDetailsFallsBackToHtmlWhenJsonIsInvalid)
     const Vacancy vacancy = strategy.parseDetails(html, url);
 
     EXPECT_EQ(vacancy.title, "Software Engineer");
-    EXPECT_EQ(vacancy.link, url);
+    EXPECT_EQ(vacancy.url, url);
     EXPECT_EQ(vacancy.companyName, "Acme");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://example.com/company/acme"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://example.com/company/acme"));
 }

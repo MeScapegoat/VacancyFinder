@@ -50,9 +50,9 @@ TEST(LinkedInBriefVacancyExtractor, NormalUrl1)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, "Service Delivery Manager / MSP Administrator");
-    EXPECT_EQ(vacancy.link, QUrl("https://rs.linkedin.com/jobs/view/service-delivery-manager-msp-administrator-at-joyful-craftsmen-4464274493"));
+    EXPECT_EQ(vacancy.url, QUrl("https://rs.linkedin.com/jobs/view/service-delivery-manager-msp-administrator-at-joyful-craftsmen-4464274493"));
     EXPECT_EQ(vacancy.companyName, "Joyful Craftsmen");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://cz.linkedin.com/company/joyful-craftsmen"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://cz.linkedin.com/company/joyful-craftsmen"));
     EXPECT_EQ(vacancy.location, "Serbia");
 
     EXPECT_TRUE(vacancy.employmentType.isEmpty());
@@ -79,9 +79,9 @@ TEST(LinkedInBriefVacancyExtractor, NormalUrl2)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, "Art Manager/Lead Art Owner (World of Tanks, PC)");
-    EXPECT_EQ(vacancy.link, QUrl("https://rs.linkedin.com/jobs/view/art-manager-lead-art-owner-world-of-tanks-pc-at-wargaming-4458880974"));
+    EXPECT_EQ(vacancy.url, QUrl("https://rs.linkedin.com/jobs/view/art-manager-lead-art-owner-world-of-tanks-pc-at-wargaming-4458880974"));
     EXPECT_EQ(vacancy.companyName, "Wargaming");
-    EXPECT_EQ(vacancy.companyLink, QUrl("https://cy.linkedin.com/company/wargaming-net"));
+    EXPECT_EQ(vacancy.companyUrl, QUrl("https://cy.linkedin.com/company/wargaming-net"));
     EXPECT_EQ(vacancy.location, "Belgrade, Serbia");
 
     EXPECT_TRUE(vacancy.employmentType.isEmpty());
@@ -108,10 +108,10 @@ TEST(LinkedInBriefVacancyExtractor, AlternateUrl1)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, "Performance Marketing Associate");
-    EXPECT_EQ(vacancy.link, QUrl("https://rs.linkedin.com/jobs/view/performance-marketing-associate-4446672722"));
+    EXPECT_EQ(vacancy.url, QUrl("https://rs.linkedin.com/jobs/view/performance-marketing-associate-4446672722"));
 
     EXPECT_TRUE(vacancy.companyName.isEmpty());
-    EXPECT_TRUE(vacancy.companyLink.isEmpty());
+    EXPECT_TRUE(vacancy.companyUrl.isEmpty());
 
     EXPECT_EQ(vacancy.location, "Belgrade, Serbia");
 
@@ -139,10 +139,10 @@ TEST(LinkedInBriefVacancyExtractor, AlternateUrl2)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, "Performance Creative Strategist — Meta Ads");
-    EXPECT_EQ(vacancy.link, QUrl("https://rs.linkedin.com/jobs/view/performance-creative-strategist-—-meta-ads-4472525421"));
+    EXPECT_EQ(vacancy.url, QUrl("https://rs.linkedin.com/jobs/view/performance-creative-strategist-—-meta-ads-4472525421"));
 
     EXPECT_TRUE(vacancy.companyName.isEmpty());
-    EXPECT_TRUE(vacancy.companyLink.isEmpty());
+    EXPECT_TRUE(vacancy.companyUrl.isEmpty());
 
     EXPECT_EQ(vacancy.location, "Serbia");
 

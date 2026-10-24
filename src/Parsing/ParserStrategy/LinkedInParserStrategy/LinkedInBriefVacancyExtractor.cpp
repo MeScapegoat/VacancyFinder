@@ -15,22 +15,22 @@ QString LinkedInBriefVacancyExtractor::title() const
     return extract(html, titlePattern);
 };
 
-QUrl LinkedInBriefVacancyExtractor::link() const
+QUrl LinkedInBriefVacancyExtractor::url() const
 {
-    static constexpr auto linkPattern = R"REGEX(<a\b[^>]*class="base-card__full-link[^"]*"[^>]*href="([^"]+)")REGEX";
-    static constexpr auto alternateLinkPattern = R"REGEX(<a\s+href="(https://rs\.linkedin\.com/jobs/view/[^"]+)")REGEX";
+    static constexpr auto urlPattern = R"REGEX(<a\b[^>]*class="base-card__full-link[^"]*"[^>]*href="([^"]+)")REGEX";
+    static constexpr auto alternateUrlPattern = R"REGEX(<a\s+href="(https://rs\.linkedin\.com/jobs/view/[^"]+)")REGEX";
 
-    QUrl link;
+    QUrl url;
 
-    link = extract(html, linkPattern);
+    url = extract(html, urlPattern);
 
-    if (!link.isValid())
+    if (!url.isValid())
     {
-        link = extract(html, alternateLinkPattern);
+        url = extract(html, alternateUrlPattern);
     }
-    link.setQuery(QString());
+    url.setQuery(QString());
 
-    return link;
+    return url;
 };
 
 QString LinkedInBriefVacancyExtractor::companyName() const
@@ -40,14 +40,14 @@ QString LinkedInBriefVacancyExtractor::companyName() const
     return extract(html, companyNamePattern);
 };
 
-QUrl LinkedInBriefVacancyExtractor::companyLink() const
+QUrl LinkedInBriefVacancyExtractor::companyUrl() const
 {
-    static constexpr auto companyLinkPattern = R"REGEX(<h4\b[^>]*class="base-search-card__subtitle"[^>]*>.*?<a\b[^>]*href="([^"]+)")REGEX";
+    static constexpr auto companyUrlPattern = R"REGEX(<h4\b[^>]*class="base-search-card__subtitle"[^>]*>.*?<a\b[^>]*href="([^"]+)")REGEX";
 
-    QUrl companyLink = extract(html, companyLinkPattern);
-    companyLink.setQuery(QString());
+    QUrl companyUrl = extract(html, companyUrlPattern);
+    companyUrl.setQuery(QString());
 
-    return companyLink;
+    return companyUrl;
 };
 
 QString LinkedInBriefVacancyExtractor::location() const

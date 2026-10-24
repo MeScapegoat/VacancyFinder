@@ -14,7 +14,7 @@ Vacancy makeVacancy(QString url = "url",
                     QDate date = QDate::currentDate())
 {
     Vacancy vacancy;
-    vacancy.link = QUrl(url);
+    vacancy.url = QUrl(url);
     vacancy.title = std::move(title);
     vacancy.companyName = std::move(company);
     vacancy.location = std::move(location);
@@ -51,8 +51,8 @@ TEST_F(VacancyBrowserModelTest, AddVacancyStoresItByUrl)
     const Vacancy vacancy = makeVacancy();
     model.addVacancy(vacancy);
     ASSERT_EQ(model.vacancyByUrl().size(), 1);
-    EXPECT_TRUE(model.vacancyByUrl().contains(vacancy.link));
-    EXPECT_EQ(model.vacancyByUrl().value(vacancy.link).title, vacancy.title);
+    EXPECT_TRUE(model.vacancyByUrl().contains(vacancy.url));
+    EXPECT_EQ(model.vacancyByUrl().value(vacancy.url).title, vacancy.title);
 }
 
 TEST_F(VacancyBrowserModelTest, AddingSameUrlDoesNotCreateDuplicate)
@@ -62,7 +62,7 @@ TEST_F(VacancyBrowserModelTest, AddingSameUrlDoesNotCreateDuplicate)
     model.addVacancy(first);
     model.addVacancy(second);
     ASSERT_EQ(model.vacancyByUrl().size(), 1);
-    EXPECT_EQ(model.vacancyByUrl().value(first.link).title, first.title);
+    EXPECT_EQ(model.vacancyByUrl().value(first.url).title, first.title);
 }
 
 TEST_F(VacancyBrowserModelTest, AddingSameUrlFillsMissingVacancyDetails)
@@ -70,7 +70,7 @@ TEST_F(VacancyBrowserModelTest, AddingSameUrlFillsMissingVacancyDetails)
     const Vacancy brief = makeVacancy("url", "Developer", "First Company", QString());
 
     Vacancy details{};
-    details.link = brief.link;
+    details.url = brief.url;
     details.title = "Updated title";
     details.companyName = "Updated company";
     details.location = "Budapest";
@@ -80,7 +80,7 @@ TEST_F(VacancyBrowserModelTest, AddingSameUrlFillsMissingVacancyDetails)
     model.addVacancy(brief);
     model.addVacancy(details);
 
-    const Vacancy& merged = model.vacancyByUrl().constFind(brief.link).value();
+    const Vacancy& merged = model.vacancyByUrl().constFind(brief.url).value();
     EXPECT_EQ(merged.title, brief.title);
     EXPECT_EQ(merged.companyName, brief.companyName);
     EXPECT_EQ(merged.location, details.location);
@@ -98,14 +98,14 @@ TEST_F(VacancyBrowserModelTest, NewVacancyIsUnreviewed)
 TEST_F(VacancyBrowserModelTest, IgnoredVacancyHasIgnoredStatus)
 {
     const Vacancy vacancy = makeVacancy();
-    model.ignoredVacancies().insert(vacancy.link);
+    model.ignoredVacancies().insert(vacancy.url);
     EXPECT_EQ(model.getVacancyStatus(vacancy), VacancyStatus::Ignored);
 }
 
 TEST_F(VacancyBrowserModelTest, InterestedVacancyHasInterestedStatus)
 {
     const Vacancy vacancy = makeVacancy();
-    model.interestedVacancies().insert(vacancy.link);
+    model.interestedVacancies().insert(vacancy.url);
     EXPECT_EQ(model.getVacancyStatus(vacancy), VacancyStatus::Interested);
 }
 
@@ -148,13 +148,13 @@ TEST_F(VacancyBrowserModelTest, StatusFilterRemovesIgnoredVacancies)
     model.addVacancy(ignored);
     model.addVacancy(unreviewed);
 
-    model.ignoredVacancies().insert(ignored.link);
+    model.ignoredVacancies().insert(ignored.url);
     model.setVisibleStatuses({VacancyStatus::Unreviewed});
 
     model.updateVisibleVacancies();
 
     ASSERT_EQ(model.visibleVacancies().size(), 1);
-    EXPECT_EQ(model.visibleVacancies().first()->link, unreviewed.link);
+    EXPECT_EQ(model.visibleVacancies().first()->url, unreviewed.url);
 }
 
 TEST_F(VacancyBrowserModelTest, EmptyVisibleStatusesHideAllVacancies)

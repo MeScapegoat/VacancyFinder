@@ -57,7 +57,7 @@ TEST_F(ParserTest, ProcessesBriefPage)
     const QString html = "brief html";
     const QUrl url("url");
     Vacancy vacancy;
-    vacancy.link = QUrl("Vacancy url");
+    vacancy.url = QUrl("Vacancy url");
 
     EXPECT_CALL(strategy, classifyPage(html))
         .WillOnce(Return(PageType::Brief));
@@ -74,7 +74,7 @@ TEST_F(ParserTest, ProcessesBriefPage)
 
     const Vacancy parsedVacancy = qvariant_cast<Vacancy>(briefParsedSpy.at(0).at(0));
 
-    EXPECT_EQ(parsedVacancy.link, vacancy.link);
+    EXPECT_EQ(parsedVacancy.url, vacancy.url);
     EXPECT_EQ(parsedVacancy.id, 1);
 }
 
@@ -83,7 +83,7 @@ TEST_F(ParserTest, DoesNotParseSameBriefPageTwice)
     const QString html = "brief html";
     const QUrl url("url");
     Vacancy vacancy;
-    vacancy.link = QUrl("Vacancy url");
+    vacancy.url = QUrl("Vacancy url");
 
     EXPECT_CALL(strategy, classifyPage(html))
         .Times(2)
@@ -105,10 +105,10 @@ TEST_F(ParserTest, DoesNotParseDuplicateBriefs)
     const QUrl url2("url 2");
 
     Vacancy first;
-    first.link = QUrl("Vacancy url");
+    first.url = QUrl("Vacancy url");
 
     Vacancy duplicate;
-    duplicate.link = first.link;
+    duplicate.url = first.url;
 
     EXPECT_CALL(strategy, classifyPage(html))
         .Times(2)
@@ -134,10 +134,10 @@ TEST_F(ParserTest, AssignsIncrementingIdsToBriefs)
     const QUrl url("url");
 
     Vacancy first;
-    first.link = QUrl("Vacancy url 1");
+    first.url = QUrl("Vacancy url 1");
 
     Vacancy second;
-    second.link = QUrl("Vacancy url 2");
+    second.url = QUrl("Vacancy url 2");
 
     EXPECT_CALL(strategy, classifyPage(html))
         .WillOnce(Return(PageType::Brief));
@@ -162,7 +162,7 @@ TEST_F(ParserTest, ProcessesDetailsPage)
     const QUrl url("Vacancy url");
 
     Vacancy details;
-    details.link = url;
+    details.url = url;
 
     EXPECT_CALL(strategy, classifyPage(html))
         .WillOnce(Return(PageType::Details));
@@ -176,7 +176,7 @@ TEST_F(ParserTest, ProcessesDetailsPage)
 
     const Vacancy parsedDetails = qvariant_cast<Vacancy>(detailsParsedSpy.at(0).at(0));
 
-    EXPECT_EQ(parsedDetails.link, url);
+    EXPECT_EQ(parsedDetails.url, url);
     EXPECT_EQ(parsedDetails.id, 1);
 }
 
@@ -186,7 +186,7 @@ TEST_F(ParserTest, DoesNotParseSameDetailsPageTwice)
     const QUrl url("Vacancy url");
 
     Vacancy details;
-    details.link = url;
+    details.url = url;
 
     EXPECT_CALL(strategy, classifyPage(html))
         .Times(2)
@@ -237,7 +237,7 @@ TEST_F(ParserTest, ResetAllowsPreviouslyProcessedPagesToBeProcessedAgain)
     const QUrl url("url");
 
     Vacancy vacancy;
-    vacancy.link = QUrl("Vacancy url");
+    vacancy.url = QUrl("Vacancy url");
 
     EXPECT_CALL(strategy, classifyPage(html))
         .Times(2)
@@ -268,7 +268,7 @@ TEST_F(ParserTest, ResetClearsInterrupt)
     const QUrl url("url");
 
     Vacancy vacancy;
-    vacancy.link = QUrl("Vacancy url");
+    vacancy.url = QUrl("Vacancy url");
 
     parser.interrupt();
     parser.reset();

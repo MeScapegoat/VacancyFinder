@@ -148,7 +148,7 @@ bool VacancyBrowserPresenter::addCurrentVacancyToStatusList(QSet<QUrl>& statusVa
 
     const qsizetype oldSize = statusVacancyList.size();
 
-    statusVacancyList.insert(vacancy->get().link);
+    statusVacancyList.insert(vacancy->get().url);
 
     return oldSize != statusVacancyList.size();
 }
@@ -159,7 +159,7 @@ bool VacancyBrowserPresenter::removeCurrentVacancyFromStatusList(QSet<QUrl>& sta
     if (!vacancy)
         return false;
 
-    return statusVacancyList.remove(vacancy->get().link);
+    return statusVacancyList.remove(vacancy->get().url);
 }
 
 void VacancyBrowserPresenter::updateStatusButtons(VacancyStatus status)

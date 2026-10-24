@@ -16,9 +16,9 @@ namespace
     {
     protected:
         QString title() const override { return QStringLiteral("Software Engineer"); }
-        QUrl link() const override { return QUrl(QStringLiteral("https://example.com/jobs/1")); }
+        QUrl url() const override { return QUrl(QStringLiteral("https://example.com/jobs/1")); }
         QString companyName() const override { return QStringLiteral("Acme"); }
-        QUrl companyLink() const override { return QUrl(QStringLiteral("https://example.com/company/acme")); }
+        QUrl companyUrl() const override { return QUrl(QStringLiteral("https://example.com/company/acme")); }
         QString location() const override { return QStringLiteral("Budapest"); }
         QString employmentType() const override { return QStringLiteral("Full-time"); }
         QString skills() const override { return QStringLiteral("C++; Qt"); }
@@ -39,9 +39,9 @@ TEST(VacancyExtractorTest, CollectsSubclassValuesIntoVacancy)
     const Vacancy vacancy = extractor.vacancy();
 
     EXPECT_EQ(vacancy.title, QStringLiteral("Software Engineer"));
-    EXPECT_EQ(vacancy.link, QUrl(QStringLiteral("https://example.com/jobs/1")));
+    EXPECT_EQ(vacancy.url, QUrl(QStringLiteral("https://example.com/jobs/1")));
     EXPECT_EQ(vacancy.companyName, QStringLiteral("Acme"));
-    EXPECT_EQ(vacancy.companyLink, QUrl(QStringLiteral("https://example.com/company/acme")));
+    EXPECT_EQ(vacancy.companyUrl, QUrl(QStringLiteral("https://example.com/company/acme")));
     EXPECT_EQ(vacancy.location, QStringLiteral("Budapest"));
     EXPECT_EQ(vacancy.employmentType, QStringLiteral("Full-time"));
     EXPECT_EQ(vacancy.skills, QStringLiteral("C++; Qt"));

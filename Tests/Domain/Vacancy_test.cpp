@@ -45,9 +45,9 @@ TEST(VacancyTest, FillEmptyFieldsFromFallbackWithoutOverwritingExistingValues)
     Vacancy fallback;
     fallback.id = 200;
     fallback.title = QStringLiteral("Fallback title");
-    fallback.link = QUrl(QStringLiteral("https://example.com/jobs/1"));
+    fallback.url = QUrl(QStringLiteral("https://example.com/jobs/1"));
     fallback.companyName = QStringLiteral("Fallback company");
-    fallback.companyLink = QUrl(QStringLiteral("https://example.com/company"));
+    fallback.companyUrl = QUrl(QStringLiteral("https://example.com/company"));
     fallback.location = QStringLiteral("Budapest");
     fallback.employmentType = QStringLiteral("Full-time");
     fallback.skills = QStringLiteral("C++; Qt");
@@ -63,9 +63,9 @@ TEST(VacancyTest, FillEmptyFieldsFromFallbackWithoutOverwritingExistingValues)
 
     EXPECT_EQ(vacancy.id, 100);
     EXPECT_EQ(vacancy.title, QStringLiteral("Original title"));
-    EXPECT_EQ(vacancy.link, fallback.link);
+    EXPECT_EQ(vacancy.url, fallback.url);
     EXPECT_EQ(vacancy.companyName, QStringLiteral("Original company"));
-    EXPECT_EQ(vacancy.companyLink, fallback.companyLink);
+    EXPECT_EQ(vacancy.companyUrl, fallback.companyUrl);
     EXPECT_EQ(vacancy.location, QStringLiteral("Budapest"));
     EXPECT_EQ(vacancy.employmentType, QStringLiteral("Full-time"));
     EXPECT_EQ(vacancy.skills, QStringLiteral("C++; Qt"));

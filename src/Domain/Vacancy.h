@@ -29,10 +29,10 @@ public:
     size_t id = 0;
 
     QString title;
-    QUrl link; // TODO: rename to url
+    QUrl url;
 
     QString companyName;
-    QUrl companyLink;
+    QUrl companyUrl;
 
     QString location;
 

@@ -97,10 +97,10 @@ void VacancySearchWorkflow::startSearch(const QString& keywords, const QString& 
 
 void VacancySearchWorkflow::storeVacancy(const Vacancy& vacancy)
 {
-    const auto it = m_vacancyByUrl.find(vacancy.link);
+    const auto it = m_vacancyByUrl.find(vacancy.url);
     if (it == m_vacancyByUrl.end())
     {
-        m_vacancyByUrl.emplace(vacancy.link, vacancy);
+        m_vacancyByUrl.emplace(vacancy.url, vacancy);
     }
     else
     {

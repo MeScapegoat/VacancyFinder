@@ -28,11 +28,11 @@ protected:
             return true;
         });
     }
-    static Vacancy makeVacancy(const QString& title, const QUrl& link)
+    static Vacancy makeVacancy(const QString& title, const QUrl& url)
     {
         Vacancy vacancy{};
         vacancy.title = title;
-        vacancy.link = link;
+        vacancy.url = url;
         return vacancy;
     }
 
@@ -136,28 +136,28 @@ TEST_F(VacancyBrowserPresenterTest, StatusActionsUpdateVacancyMetadata)
     QPushButton* ignoreButton = buttonWithText("Not interested");
     ASSERT_NE(ignoreButton, nullptr);
     ignoreButton->click();
-    EXPECT_TRUE(ignoredVacancies().contains(vacancy.link));
+    EXPECT_TRUE(ignoredVacancies().contains(vacancy.url));
     EXPECT_EQ(model().getVacancyStatus(vacancy), VacancyStatus::Ignored);
 
     openFirstVacancy();
     QPushButton* removeIgnoreButton = buttonWithText("Remove from not interested list");
     ASSERT_NE(removeIgnoreButton, nullptr);
     removeIgnoreButton->click();
-    EXPECT_FALSE(ignoredVacancies().contains(vacancy.link));
+    EXPECT_FALSE(ignoredVacancies().contains(vacancy.url));
     EXPECT_EQ(model().getVacancyStatus(vacancy), VacancyStatus::Unreviewed);
 
     openFirstVacancy();
     QPushButton* interestedButton = buttonWithText("Interested");
     ASSERT_NE(interestedButton, nullptr);
     interestedButton->click();
-    EXPECT_TRUE(interestedVacancies().contains(vacancy.link));
+    EXPECT_TRUE(interestedVacancies().contains(vacancy.url));
     EXPECT_EQ(model().getVacancyStatus(vacancy), VacancyStatus::Interested);
 
     openFirstVacancy();
     QPushButton* removeInterestedButton = buttonWithText("Remove from interested list");
     ASSERT_NE(removeInterestedButton, nullptr);
     removeInterestedButton->click();
-    EXPECT_FALSE(interestedVacancies().contains(vacancy.link));
+    EXPECT_FALSE(interestedVacancies().contains(vacancy.url));
     EXPECT_EQ(model().getVacancyStatus(vacancy), VacancyStatus::Unreviewed);
 }
 

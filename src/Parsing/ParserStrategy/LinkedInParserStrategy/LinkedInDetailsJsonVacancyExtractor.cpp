@@ -5,7 +5,7 @@
 
 LinkedInDetailsJsonVacancyExtractor::LinkedInDetailsJsonVacancyExtractor(const QJsonObject& json_, const QUrl& url_) :
     json(json_),
-    url(url_)
+    vacancyUrl(url_)
 {
     static constexpr auto organizationKey = "hiringOrganization";
     const QJsonValue organizationValue = json.value(organizationKey);
@@ -28,9 +28,9 @@ QString LinkedInDetailsJsonVacancyExtractor::title() const
     return VacancyExtractor::title();
 };
 
-QUrl LinkedInDetailsJsonVacancyExtractor::link() const
+QUrl LinkedInDetailsJsonVacancyExtractor::url() const
 {
-    return url;
+    return vacancyUrl;
 };
 
 QString LinkedInDetailsJsonVacancyExtractor::companyName() const
@@ -49,7 +49,7 @@ QString LinkedInDetailsJsonVacancyExtractor::companyName() const
     return VacancyExtractor::companyName();
 };
 
-QUrl LinkedInDetailsJsonVacancyExtractor::companyLink() const
+QUrl LinkedInDetailsJsonVacancyExtractor::companyUrl() const
 {
     static constexpr auto organizationUrlKey = "sameAs";
 
@@ -62,7 +62,7 @@ QUrl LinkedInDetailsJsonVacancyExtractor::companyLink() const
         }
     }
 
-    return VacancyExtractor::companyLink();
+    return VacancyExtractor::companyUrl();
 };
 
 QString LinkedInDetailsJsonVacancyExtractor::location() const
