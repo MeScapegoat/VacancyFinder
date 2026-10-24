@@ -142,3 +142,22 @@ TEST(LinkedInParserStrategy, ParseJsonDetails)
     EXPECT_EQ(vacancy.education.value(), "bachelor degree");
     EXPECT_EQ(vacancy.expirationDate.value(), QDate::fromString("2026-12-08", Qt::ISODate));
 }
+
+TEST(LinkedInParserStrategy, ParseDetailsFallsBackToHtmlWhenJsonIsInvalid)
+{
+    const QString html = R"HTML(
+        <h1 class="top-card-layout__title">Software Engineer</h1>
+        <a class="topcard__org-name-link" href="https://example.com/company/acme?trk=job">Acme</a>
+        <script type="application/ld+json">{ invalid json }</script>
+    )HTML";
+
+    const QUrl url("https://example.com/jobs/1");
+    const LinkedInParserStrategy strategy;
+
+    const Vacancy vacancy = strategy.parseDetails(html, url);
+
+    EXPECT_EQ(vacancy.title, "Software Engineer");
+    EXPECT_EQ(vacancy.link, url);
+    EXPECT_EQ(vacancy.companyName, "Acme");
+    EXPECT_EQ(vacancy.companyLink, QUrl("https://example.com/company/acme"));
+}
