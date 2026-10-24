@@ -65,19 +65,19 @@ target_link_libraries(LinkedInVacancySearchWorkflow
 
 
 
-add_library(App
-    App.h
-    App.cpp
+add_library(VacancyFinder
+    VacancyFinder.h
+    VacancyFinder.cpp
 
     AppState.h
     AppState.cpp
 )
 
-target_include_directories(App PUBLIC
+target_include_directories(VacancyFinder PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(App
+target_link_libraries(VacancyFinder
     PUBLIC 
         Qt6::Core
         Domain

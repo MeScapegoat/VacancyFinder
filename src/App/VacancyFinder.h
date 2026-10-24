@@ -13,15 +13,15 @@ class VacancyBrowserPresenter;
 class ProgressDialog;
 class MainWindow;
 
-Q_DECLARE_LOGGING_CATEGORY(AppLog);
+Q_DECLARE_LOGGING_CATEGORY(VacancyFinderLog);
 
-class App : public QObject
+class VacancyFinder : public QObject
 {
     Q_OBJECT
 
 public:
-    App(QObject* parent = nullptr);
-    ~App();
+    VacancyFinder(QObject* parent = nullptr);
+    ~VacancyFinder();
 
 public slots:
     void loadInterested();

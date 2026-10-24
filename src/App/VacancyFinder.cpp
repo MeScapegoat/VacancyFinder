@@ -1,4 +1,4 @@
-#include "App.h"
+#include "VacancyFinder.h"
 
 #include <QDir>
 #include <QFile>
@@ -15,9 +15,9 @@
 #include <VacancySearchWorkflow.h>
 
 
-Q_LOGGING_CATEGORY(AppLog, "app");
+Q_LOGGING_CATEGORY(VacancyFinderLog, "vacancyFinder");
 
-App::App(QObject* parent) :
+VacancyFinder::VacancyFinder(QObject* parent) :
     QObject(parent),
     queryParametersPresenter(*new QueryParametersPresenter(this)),
     resultViewOptionsPresenter(*new ResultViewOptionsPresenter(this)),
@@ -27,9 +27,9 @@ App::App(QObject* parent) :
     progressDialog(*new ProgressDialog(&mainWindow))
 {
     // QueryParameters
-    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &App::sendSearchRequest);
-    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::loadInterestedRequested, this, &App::loadInterested);
-    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::resetRequested, this, &App::reset);
+    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &VacancyFinder::sendSearchRequest);
+    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::loadInterestedRequested, this, &VacancyFinder::loadInterested);
+    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::resetRequested, this, &VacancyFinder::reset);
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::keywordsChanged, &resultViewOptionsPresenter, &ResultViewOptionsPresenter::setKeywords);
 
 
@@ -56,21 +56,21 @@ App::App(QObject* parent) :
     QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::allActiveWorkFinished, &progressDialog, &ProgressDialog::accept);
 
 
-    QObject::connect(this, &App::openProgressDialog, &progressDialog, &ProgressDialog::start);
+    QObject::connect(this, &VacancyFinder::openProgressDialog, &progressDialog, &ProgressDialog::start);
 
-    QObject::connect(this, &App::reset, &vacancyBrowserPresenter, &VacancyBrowserPresenter::reset);
-    QObject::connect(this, &App::reset, &vacancySearchWorkflow, &VacancySearchWorkflow::reset);
+    QObject::connect(this, &VacancyFinder::reset, &vacancyBrowserPresenter, &VacancyBrowserPresenter::reset);
+    QObject::connect(this, &VacancyFinder::reset, &vacancySearchWorkflow, &VacancySearchWorkflow::reset);
 
     
     loadState();
 }
 
-App::~App()
+VacancyFinder::~VacancyFinder()
 {
     saveState();
 }
 
-void App::loadInterested()
+void VacancyFinder::loadInterested()
 {
     const auto& interestedVacancies = vacancyBrowserPresenter.interestedVacancies();
     const int maxVacancies = interestedVacancies.size();
@@ -80,21 +80,21 @@ void App::loadInterested()
     emit openProgressDialog(maxVacancies);
 }
 
-void App::sendSearchRequest()
+void VacancyFinder::sendSearchRequest()
 {
     const qsizetype maxVacancies = queryParametersPresenter.maxResults();
 
     const QString keywords = queryParametersPresenter.keywords();
     const QString location = queryParametersPresenter.location();
 
-    qCInfo(AppLog) << "keywords:" << keywords << "location:" << location;
+    qCInfo(VacancyFinderLog) << "keywords:" << keywords << "location:" << location;
 
 
     vacancySearchWorkflow.startSearch(keywords, location, maxVacancies);
     emit openProgressDialog(maxVacancies);
 }
 
-void App::saveState()
+void VacancyFinder::saveState()
 {
     state.setIgnoredVacancies(vacancyBrowserPresenter.ignoredVacancies());
     state.setInterestedVacancies(vacancyBrowserPresenter.interestedVacancies());
@@ -119,7 +119,7 @@ void App::saveState()
     state.saveState();
 }
 
-void App::loadState()
+void VacancyFinder::loadState()
 {
     state.loadState();
 

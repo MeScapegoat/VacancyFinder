@@ -45,7 +45,7 @@ protected:
         QObject::connect(&requestManager, &RequestManager::requestsStarted, &workCoordinator, &WorkCoordinator::workStarted);
         QObject::connect(&requestManager, &RequestManager::requestsFinished, &workCoordinator, &WorkCoordinator::workFinished);
 
-        //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &App::onMeaningfulRepliesReceived); // does +1 and then -1 active work, so actually does nothing, hence commented
+        //QObject::connect(&requestManager, &RequestManager::meaningfulRepliesReceived, this, &VacancyFinder::onMeaningfulRepliesReceived); // does +1 and then -1 active work, so actually does nothing, hence commented
         QObject::connect(&requestManager, &RequestManager::meaninglessRepliesReceived, &workCoordinator, &WorkCoordinator::workFinished);
 
         QObject::connect(&requestManager, &RequestManager::receivedReply, &parser,     &Parser::processPage);

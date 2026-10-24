@@ -1,10 +1,8 @@
 
 #include <windows.h>
 
-// std
 #include <iostream>
 
-// Qt
 #include <QApplication>
 #include <QDir>
 #include <QUrl>
@@ -12,8 +10,7 @@
 #include <QFile>
 #include <QThread>
 
-// custom
-#include <App.h>
+#include <VacancyFinder.h>
 #include <Logger.h>
 
 int main(int argc, char *argv[])
@@ -28,7 +25,7 @@ int main(int argc, char *argv[])
     Logger logger;
     logger.setLogRulesPath(logRulesPath);
 
-    App app;
+    VacancyFinder app;
 
     return application.exec();
 }

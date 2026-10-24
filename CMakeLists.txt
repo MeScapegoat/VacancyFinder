@@ -41,7 +41,7 @@ add_subdirectory(${SOURCE_FOLDER_NAME}/App)
 
 target_link_libraries(VacancyFinderApp
     PRIVATE
-        App
+        VacancyFinder
         Core
         Qt6::Widgets
 )
