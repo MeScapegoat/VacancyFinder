@@ -21,7 +21,7 @@ target_include_directories(test_helpers INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set_target_properties(test_helpers PROPERTIES FOLDER "Tests")
+set_target_properties(test_helpers PROPERTIES FOLDER "Tests/Support")
 
 
 
@@ -37,7 +37,7 @@ target_include_directories(QtTestPrinters INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-set_target_properties(QtTestPrinters PROPERTIES FOLDER "Tests")
+set_target_properties(QtTestPrinters PROPERTIES FOLDER "Tests/Support")
 
 
 
@@ -52,7 +52,7 @@ target_link_libraries(main_for_qt_tests
 		Qt6::Widgets
 )
 
-set_target_properties(main_for_qt_tests PROPERTIES FOLDER "Tests")
+set_target_properties(main_for_qt_tests PROPERTIES FOLDER "Tests/Support")
 
 
 
@@ -77,7 +77,7 @@ target_link_libraries(app_workflow_test
 		Qt6::Test
 )
 
-set_target_properties(app_workflow_test PROPERTIES FOLDER "Tests/General")
+set_target_properties(app_workflow_test PROPERTIES FOLDER "Tests/App/Integration")
 
 gtest_discover_tests(app_workflow_test PROPERTIES LABELS integration)
 

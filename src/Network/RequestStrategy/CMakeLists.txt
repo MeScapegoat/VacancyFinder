@@ -13,7 +13,7 @@ target_link_libraries(AbstractRequestStrategy
         AbstractNetworkManager
 )
 
-set_target_properties(AbstractRequestStrategy PROPERTIES FOLDER "Network/RequestStrategy")
+set_target_properties(AbstractRequestStrategy PROPERTIES FOLDER "src/Network/RequestStrategy")
 
 
 
@@ -32,4 +32,4 @@ target_link_libraries(LinkedInRequestStrategy
         Qt6::Network
 )
 
-set_target_properties(LinkedInRequestStrategy PROPERTIES FOLDER "Network/RequestStrategy")
+set_target_properties(LinkedInRequestStrategy PROPERTIES FOLDER "src/Network/RequestStrategy")

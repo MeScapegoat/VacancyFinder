@@ -10,7 +10,7 @@ target_link_libraries(AbstractSearchUrlProvider
         Qt6::Core
 )
 
-set_target_properties(AbstractSearchUrlProvider PROPERTIES FOLDER "Network/SearchUrlProvider")
+set_target_properties(AbstractSearchUrlProvider PROPERTIES FOLDER "src/Network/SearchUrlProvider")
 
 
 
@@ -28,4 +28,4 @@ target_link_libraries(LinkedInSearchUrlProvider
         AbstractSearchUrlProvider
 )
 
-set_target_properties(LinkedInSearchUrlProvider PROPERTIES FOLDER "Network/SearchUrlProvider")
+set_target_properties(LinkedInSearchUrlProvider PROPERTIES FOLDER "src/Network/SearchUrlProvider")

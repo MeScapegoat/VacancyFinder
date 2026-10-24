@@ -12,6 +12,8 @@ target_link_libraries(Core
         Qt6::Core
 )
 
+set_target_properties(Core PROPERTIES FOLDER "src/Core")
+
 
 
 add_library(FunctionTypes
@@ -21,3 +23,5 @@ add_library(FunctionTypes
 target_include_directories(FunctionTypes INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+set_target_properties(FunctionTypes PROPERTIES FOLDER "src/Core")

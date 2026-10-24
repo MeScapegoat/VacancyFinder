@@ -11,7 +11,7 @@ target_link_libraries(BenchmarkCommonData
         Qt6::Core
 )
 
-set_target_properties(BenchmarkCommonData PROPERTIES FOLDER "RequestManagerBenchmark")
+set_target_properties(BenchmarkCommonData PROPERTIES FOLDER "Benchmarks/RequestManagerBenchmark")
 
 
 
@@ -34,7 +34,7 @@ target_link_libraries(RequestManagerBenchmark
         Qt6::Network
 )
 
-set_target_properties(RequestManagerBenchmark PROPERTIES FOLDER "RequestManagerBenchmark")
+set_target_properties(RequestManagerBenchmark PROPERTIES FOLDER "Benchmarks/RequestManagerBenchmark")
 
 
 
@@ -47,4 +47,4 @@ target_link_libraries(BenchmarkAnalyzer
         BenchmarkCommonData
 )
 
-set_target_properties(BenchmarkAnalyzer PROPERTIES FOLDER "RequestManagerBenchmark")
+set_target_properties(BenchmarkAnalyzer PROPERTIES FOLDER "Benchmarks/RequestManagerBenchmark")

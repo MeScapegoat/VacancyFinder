@@ -11,7 +11,7 @@ target_link_libraries(AbstractNetworkManager
         Qt6::Core        
 )
 
-set_target_properties(AbstractNetworkManager PROPERTIES FOLDER "Network/NetworkManager")
+set_target_properties(AbstractNetworkManager PROPERTIES FOLDER "src/Network/NetworkManager")
 
 
 
@@ -31,7 +31,7 @@ target_link_libraries(NetworkManager
         AbstractNetworkManager
 )
 
-set_target_properties(NetworkManager PROPERTIES FOLDER "Network/NetworkManager")
+set_target_properties(NetworkManager PROPERTIES FOLDER "src/Network/NetworkManager")
 
 
 

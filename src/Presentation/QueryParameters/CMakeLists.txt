@@ -18,3 +18,5 @@ target_link_libraries(QueryParameters
         Presentation
         Utils
 )
+
+set_target_properties(QueryParameters PROPERTIES FOLDER "src/Presentation")

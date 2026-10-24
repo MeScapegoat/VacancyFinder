@@ -12,6 +12,8 @@ target_link_libraries(WorkCoordinator
         Qt6::Core
 )
 
+set_target_properties(WorkCoordinator PROPERTIES FOLDER "src/App")
+
 
 
 add_library(VacancySearchWorkflow
@@ -36,7 +38,8 @@ target_link_libraries(VacancySearchWorkflow
         WorkCoordinator
 )
 
-#set_target_properties(VacancySearchWorkflow PROPERTIES FOLDER "App")
+set_target_properties(VacancySearchWorkflow PROPERTIES FOLDER "src/App")
+
 
 
 
@@ -61,7 +64,8 @@ target_link_libraries(LinkedInVacancySearchWorkflow
         $<$<CONFIG:Debug>:LinkedInPageCollector>
 )
 
-#set_target_properties(LinkedInVacancySearchWorkflow PROPERTIES FOLDER "App")
+set_target_properties(LinkedInVacancySearchWorkflow PROPERTIES FOLDER "src/App")
+
 
 
 
@@ -91,3 +95,5 @@ target_link_libraries(VacancyFinder
         LinkedInVacancySearchWorkflow
         Utils
 )
+
+set_target_properties(VacancyFinder PROPERTIES FOLDER "src/App")

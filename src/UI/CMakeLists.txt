@@ -20,3 +20,5 @@ target_link_libraries(UI
         ResultViewOptions
             
 )
+
+set_target_properties(UI PROPERTIES FOLDER "src/UI")

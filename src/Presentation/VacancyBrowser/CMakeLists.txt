@@ -23,3 +23,5 @@ target_link_libraries(VacancyBrowser
         FunctionTypes
         VacancyStatus
 )
+
+set_target_properties(VacancyBrowser PROPERTIES FOLDER "src/Presentation")

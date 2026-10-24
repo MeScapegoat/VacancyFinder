@@ -20,4 +20,4 @@ target_link_libraries(RequestManager
         AbstractRequestStrategy
 )
 
-set_target_properties(RequestManager PROPERTIES FOLDER "Network")
+set_target_properties(RequestManager PROPERTIES FOLDER "src/Network")

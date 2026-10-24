@@ -18,3 +18,5 @@ target_link_libraries(Presentation
 add_subdirectory(QueryParameters)
 add_subdirectory(ResultViewOptions)
 add_subdirectory(VacancyBrowser)
+
+set_target_properties(Presentation PROPERTIES FOLDER "src/Presentation")

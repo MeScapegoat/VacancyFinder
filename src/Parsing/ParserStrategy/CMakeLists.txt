@@ -12,7 +12,7 @@ target_link_libraries(AbstractParserStrategy
         Qt6::Core
 )
 
-set_target_properties(AbstractParserStrategy PROPERTIES FOLDER "Parsing")
+set_target_properties(AbstractParserStrategy PROPERTIES FOLDER "src/Parsing/ParserStrategy")
 
 
 
@@ -41,7 +41,7 @@ target_link_libraries(LinkedInParserStrategy
         Utils
 )
 
-set_target_properties(LinkedInParserStrategy PROPERTIES FOLDER "Parsing")
+set_target_properties(LinkedInParserStrategy PROPERTIES FOLDER "src/Parsing/ParserStrategy")
 
 
 
@@ -61,4 +61,4 @@ target_link_libraries(LinkedInPageCollector
         Utils
 )
 
-set_target_properties(LinkedInPageCollector PROPERTIES FOLDER "Parsing")
+set_target_properties(LinkedInPageCollector PROPERTIES FOLDER "src/Parsing/ParserStrategy")

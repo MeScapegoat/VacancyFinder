@@ -12,7 +12,7 @@ target_link_libraries(FakeNetworkReply
         Qt6::Network
 )
 
-set_target_properties(FakeNetworkReply PROPERTIES FOLDER "Network/NetworkManager/FakeNetwork")
+set_target_properties(FakeNetworkReply PROPERTIES FOLDER "src/Network/NetworkManager/FakeNetwork")
 
 
 
@@ -33,4 +33,4 @@ target_link_libraries(FakeNetworkManager
         FakeNetworkReply
 )
 
-set_target_properties(FakeNetworkManager PROPERTIES FOLDER "Network/NetworkManager/FakeNetwork")
+set_target_properties(FakeNetworkManager PROPERTIES FOLDER "src/Network/NetworkManager/FakeNetwork")

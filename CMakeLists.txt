@@ -57,6 +57,22 @@ FetchContent_Declare(googletest
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+if(TARGET gtest)
+    set_target_properties(gtest PROPERTIES FOLDER "Tests/GoogleTest")
+endif()
+
+if(TARGET gtest_main)
+    set_target_properties(gtest_main PROPERTIES FOLDER "Tests/GoogleTest")
+endif()
+
+if(TARGET gmock)
+    set_target_properties(gmock PROPERTIES FOLDER "Tests/GoogleTest")
+endif()
+
+if(TARGET gmock_main)
+    set_target_properties(gmock_main PROPERTIES FOLDER "Tests/GoogleTest")
+endif()
+
 
 add_subdirectory(Benchmarks)
 add_subdirectory(Tests)

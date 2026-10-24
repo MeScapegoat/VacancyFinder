@@ -17,6 +17,8 @@ target_link_libraries(Domain
         Utils
 )
 
+set_target_properties(Domain PROPERTIES FOLDER "src/Domain")
+
 
 
 add_library(VacancyOperations
@@ -33,6 +35,8 @@ target_link_libraries(VacancyOperations
         Domain
 )
 
+set_target_properties(VacancyOperations PROPERTIES FOLDER "src/Domain")
+
 
 
 add_library(VacancyStatus
@@ -42,3 +46,5 @@ add_library(VacancyStatus
 target_include_directories(VacancyStatus INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+set_target_properties(VacancyStatus PROPERTIES FOLDER "src/Domain")

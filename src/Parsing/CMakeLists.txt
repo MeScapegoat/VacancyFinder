@@ -18,4 +18,4 @@ target_link_libraries(Parser
         Utils
 )
 
-set_target_properties(Parser PROPERTIES FOLDER "Parsing")
+set_target_properties(Parser PROPERTIES FOLDER "src/Parsing")

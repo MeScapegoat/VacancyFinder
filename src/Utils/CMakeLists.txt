@@ -11,6 +11,8 @@ target_include_directories(Utils PUBLIC
 
 target_link_libraries(Utils PUBLIC Qt6::Core)
 
+set_target_properties(Utils PROPERTIES FOLDER "src/Utils")
+
 
 
 
@@ -25,6 +27,8 @@ target_include_directories(ConnectionGroup PUBLIC
 
 target_link_libraries(ConnectionGroup PUBLIC Qt6::Core)
 
+set_target_properties(ConnectionGroup PROPERTIES FOLDER "src/Utils")
+
 
 
 add_library(CallableComboBox
@@ -36,3 +40,5 @@ target_include_directories(CallableComboBox PUBLIC
 )
 
 target_link_libraries(CallableComboBox PUBLIC Qt6::Core)
+
+set_target_properties(CallableComboBox PROPERTIES FOLDER "src/Utils")

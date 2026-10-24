@@ -42,10 +42,10 @@ qt_add_resources(html_resources
 )
 
 foreach(target IN LISTS html_resources_output_targets)
-	set_target_properties(${target}				 PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/html_resources")
+	set_target_properties(${target}				 PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy/html_resources")
 endforeach()
-set_target_properties(html_resources_other_files PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/html_resources") # Target created by qt_add_resources, cringe alarm TODO (?)
-set_target_properties(html_resources			 PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/html_resources")
+set_target_properties(html_resources_other_files PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy/html_resources") # Target created by qt_add_resources, cringe alarm TODO (?)
+set_target_properties(html_resources			 PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy/html_resources")
 
 
 
@@ -60,7 +60,7 @@ target_link_libraries(LinkedInBriefVacancyExtractor_test
 		GTest::gtest_main
 )
 
-set_target_properties(LinkedInBriefVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy")
+set_target_properties(LinkedInBriefVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy")
 
 gtest_discover_tests(LinkedInBriefVacancyExtractor_test PROPERTIES LABELS "unit;Parsing")
 
@@ -77,7 +77,7 @@ target_link_libraries(LinkedInDetailsHtmlVacancyExtractor_test
 		GTest::gtest_main
 )
 
-set_target_properties(LinkedInDetailsHtmlVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy")
+set_target_properties(LinkedInDetailsHtmlVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy")
 
 gtest_discover_tests(LinkedInDetailsHtmlVacancyExtractor_test PROPERTIES LABELS "unit;Parsing")
 
@@ -94,7 +94,7 @@ target_link_libraries(LinkedInDetailsJsonVacancyExtractor_test
 		GTest::gtest_main
 )
 
-set_target_properties(LinkedInDetailsJsonVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy")
+set_target_properties(LinkedInDetailsJsonVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy")
 
 gtest_discover_tests(LinkedInDetailsJsonVacancyExtractor_test PROPERTIES LABELS "unit;Parsing")
 
@@ -111,6 +111,6 @@ target_link_libraries(LinkedInParserStrategy_test
 		GTest::gtest_main
 )
 
-set_target_properties(LinkedInParserStrategy_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy")
+set_target_properties(LinkedInParserStrategy_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy")
 
 gtest_discover_tests(LinkedInParserStrategy_test PROPERTIES LABELS "unit;Parsing")

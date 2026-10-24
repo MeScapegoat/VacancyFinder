@@ -26,3 +26,5 @@ target_link_libraries(ResultViewOptions
         VacancyOperations
         Domain
 )
+
+set_target_properties(ResultViewOptions PROPERTIES FOLDER "src/Presentation")
