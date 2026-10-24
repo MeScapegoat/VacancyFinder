@@ -1,16 +1,10 @@
 #pragma once
 
-// std
-
-// Qt
 #include <QDialog>
 #include <QLabel>
 #include <QPushButton>
 #include <QProgressBar>
 #include <QNetworkReply>
-
-// custom
-//#include "../model/Vacancy.h"
 
 class Vacancy;
 
@@ -26,7 +20,7 @@ public slots:
     void updateBrief(const Vacancy& vacancy);
     void updateDetails(const Vacancy& vacancy);
     void updateError(QNetworkReply::NetworkError);
-    void start(const unsigned& maxVacancies);
+    void start(qsizetype maxVacancies);
 
 public:
     QPushButton& stopButton;

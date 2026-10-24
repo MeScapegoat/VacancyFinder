@@ -73,8 +73,7 @@ App::~App()
 void App::loadInterested()
 {
     const auto& interestedVacancies = vacancyBrowserPresenter.interestedVacancies();
-
-    updateMaxVacancies(interestedVacancies.size());
+    const int maxVacancies = interestedVacancies.size();
 
 
     vacancySearchWorkflow.startSearch(interestedVacancies.values());
@@ -82,22 +81,17 @@ void App::loadInterested()
 }
 
 void App::sendSearchRequest()
-{    
-    updateMaxVacancies(queryParametersPresenter.maxResults());
+{
+    const qsizetype maxVacancies = queryParametersPresenter.maxResults();
 
-    keywords = queryParametersPresenter.keywords();
-    location = queryParametersPresenter.location();
+    const QString keywords = queryParametersPresenter.keywords();
+    const QString location = queryParametersPresenter.location();
 
     qCInfo(AppLog) << "keywords:" << keywords << "location:" << location;
 
 
     vacancySearchWorkflow.startSearch(keywords, location, maxVacancies);
     emit openProgressDialog(maxVacancies);
-}
-
-void App::updateMaxVacancies(const int maxVacancies_)
-{
-    maxVacancies = maxVacancies_;
 }
 
 void App::saveState()

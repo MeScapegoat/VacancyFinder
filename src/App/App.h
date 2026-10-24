@@ -28,12 +28,10 @@ public slots:
 
     void sendSearchRequest();
 
-    void updateMaxVacancies(const int maxVacancies);
-
 signals:
     void reset();
 
-    void openProgressDialog(const unsigned& maxVacancies);
+    void openProgressDialog(qsizetype maxVacancies);
 
 protected:
     void saveState();
@@ -51,9 +49,4 @@ private:
     ProgressDialog& progressDialog;
 
     AppState state;
-
-    QString keywords;
-    QString location;
-
-    qsizetype maxVacancies;
 };

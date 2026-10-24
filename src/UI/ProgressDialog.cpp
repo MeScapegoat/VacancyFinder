@@ -89,7 +89,7 @@ void ProgressDialog::updateError(QNetworkReply::NetworkError err)
     errorLabel.setText(errorText);
 }
 
-void ProgressDialog::start(const unsigned& maxVacancies)
+void ProgressDialog::start(qsizetype maxVacancies)
 {
     briefsProgressBar.setRange(0, maxVacancies);
     briefsProgressBar.setValue(0);
