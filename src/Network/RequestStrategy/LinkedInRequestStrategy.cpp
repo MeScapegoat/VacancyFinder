@@ -9,11 +9,25 @@
 
 #include <algorithm>
 
+namespace
+{
+    constexpr qsizetype RequestsPerSecond = 8;
+    constexpr qsizetype RequestCooldownMs = 5000;
+    constexpr qsizetype MaxConcurrentRequests = 8;
+    constexpr qsizetype MillisecondsPerSecond = 1000;
+    constexpr qsizetype InitialConcurrencyLimit = 1;
+    constexpr qsizetype TooManyRequestsStatusCode = 429;
+}
+
 Q_LOGGING_CATEGORY(LinkedInRequestStrategyLog, "network.linkedInRequestStrategy");
 
 
 LinkedInRequestStrategy::LinkedInRequestStrategy(AbstractNetworkManager* const networkManager, QObject* parent) : 
-    LinkedInRequestStrategy(networkManager, 8, 5000, 8, parent)
+    LinkedInRequestStrategy(networkManager,
+                            RequestsPerSecond,
+                            RequestCooldownMs,
+                            MaxConcurrentRequests,
+                            parent)
 {
 }
 
@@ -29,7 +43,7 @@ LinkedInRequestStrategy::LinkedInRequestStrategy(AbstractNetworkManager* const n
     m_requestTimer(this),
     m_requestCooldownTimer(this),
     m_requestsPerSecond(requestPerSecond),
-    m_requestIntervalMs(1000 / m_requestsPerSecond),
+    m_requestIntervalMs(MillisecondsPerSecond / m_requestsPerSecond),
     m_requestCooldown(requestCooldown),
     m_maxConcurrent(maxConcurrent),
     m_cookiesInitialized(false),
@@ -76,7 +90,7 @@ void LinkedInRequestStrategy::startNext()
         emit vacancyCountDetermined(m_detailsUrlsQueue.size());
     }
 
-    const unsigned _maxConcurrent = m_cookiesInitialized ? m_maxConcurrent : 1;
+    const unsigned _maxConcurrent = m_cookiesInitialized ? m_maxConcurrent : InitialConcurrencyLimit;
 
     if (hasPendingRequests() && m_activeReplies.size() < _maxConcurrent)
     {
@@ -161,7 +175,7 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
 
         switch (statusCode)
         {
-            case 429:
+            case TooManyRequestsStatusCode:
             {
                 m_requestCooldownTimer.start(m_requestCooldown);
                 addUrl(url);
