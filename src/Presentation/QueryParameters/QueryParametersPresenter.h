@@ -1,16 +1,11 @@
 #pragma once
 
-#include <QLoggingCategory>
 #include <QObject>
 #include <QString>
 
 #include <Presenter.hpp>
 #include "QueryParametersModel.h"
 #include "QueryParametersView.h"
-
-
-Q_DECLARE_LOGGING_CATEGORY(QPPLog);
-
 
 class QueryParametersPresenter : public Presenter<QueryParametersView, QueryParametersModel>
 {

@@ -1,5 +1,8 @@
 #include "Parser.h"
 
+#include <QLoggingCategory>
+#include <QUrl>
+
 #include <AbstractParserStrategy.h>
 
 
@@ -42,7 +45,7 @@ void Parser::processPage(const QString& html, const QUrl& url)
 
     emit pageParsingStarted();
 
-    qCInfo(ParserLog) << url;
+    qCDebug(ParserLog) << "Parsing page:" << url;
 
     const PageType pageType = m_strategy->classifyPage(html);
     switch (pageType)
@@ -59,7 +62,7 @@ void Parser::processPage(const QString& html, const QUrl& url)
         }
         default:
         {
-            qCDebug(ParserLog) << "unknown PageType" << url;
+            qCWarning(ParserLog) << "Could not classify page:" << url;
             break;
         }
     }
@@ -70,15 +73,12 @@ void Parser::processPage(const QString& html, const QUrl& url)
 void Parser::interrupt()
 {
     m_isInterrupted = true;
-
-    qCDebug(ParserLog) << "Interrupted";
 }
 
 void Parser::processBriefs(const QString& html, const QUrl& url)
 {
     if (m_processedBriefPages.contains(url))
     {
-        qCDebug(ParserLog) << "Already processed page:" << url;
         return;
     }
 
@@ -89,7 +89,6 @@ void Parser::processBriefs(const QString& html, const QUrl& url)
     {
         if (m_processedBriefs.contains(brief.url))
         {
-            qCDebug(ParserLog) << "Already processed brief:" << brief.url;
             continue;
         }
         m_processedBriefs.insert(brief.url);
@@ -105,7 +104,6 @@ void Parser::processDetails(const QString& html, const QUrl& url)
 {
     if (m_processedDetails.contains(url))
     {
-        qCDebug(ParserLog) << "Already processed details:" << url;
         return;
     }
 

@@ -1,11 +1,14 @@
-// std
-
-// Qt
-#include <QFile>
-#include <QDir>
-
-// Custom
 #include "Logger.h"
+
+#include <QByteArray>
+#include <QFile>
+#include <QFileInfo>
+#include <QLoggingCategory>
+#include <QString>
+#include <QTextStream>
+#include <QThread>
+
+#include <cstdio>
 
 Q_LOGGING_CATEGORY(LoggerLog, "logger");
 
@@ -34,11 +37,12 @@ void Logger::setLogRulesPath(const QString& path)
 
     if (!QFile(path).exists())
     {
-        qCCritical(LoggerLog) << QFileInfo(path).absoluteFilePath() << "doesnt exists";
+        qCCritical(LoggerLog) << "Logging rules file does not exist:" << QFileInfo(path).absoluteFilePath();
         return;
     }
     logRulesPath = path;
-    logRulesWatcher.addPath(logRulesPath);
+    if (!logRulesWatcher.addPath(logRulesPath))
+        qCWarning(LoggerLog) << "Could not watch logging rules file:" << QFileInfo(logRulesPath).absoluteFilePath();
 
     emit applyLogRules(logRulesPath);
 }
@@ -48,22 +52,29 @@ void Logger::applyLogRules(const QString& path)
     QFile logRules(path);
     if (!logRules.open(QIODeviceBase::ReadOnly))
     {
-        qCWarning(LoggerLog) << "couldn't open" << logRules.fileName();
+        qCWarning(LoggerLog) << "Could not open logging rules file:" << logRules.fileName() << logRules.errorString();
         return;
     }
     QString rules = QString::fromUtf8(logRules.readAll());
     QLoggingCategory::setFilterRules(rules);
     logRules.close();
 
-    qCInfo(LoggerLog) << "Log rules updated!";
+    qCInfo(LoggerLog) << "Applied logging rules from" << QFileInfo(path).absoluteFilePath();
 }
 
 void myMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
+    QString logMessage = qFormatLogMessage(type, context, msg);
+    QThread* currentThread = QThread::currentThread();
+    logMessage.replace("%ThreadName", currentThread->objectName());
+
 #ifdef NDEBUG
     QFile logFile("app.log");
     if (!logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
     {
+        const QByteArray error = logFile.errorString().toLocal8Bit();
+        const QByteArray formattedMessage = logMessage.toLocal8Bit();
+        std::fprintf(stderr, "Could not open app.log for logging: %s\n%s\n", error.constData(), formattedMessage.constData());
         return;
     }
 
@@ -72,9 +83,5 @@ void myMessageHandler(QtMsgType type, const QMessageLogContext& context, const Q
     QTextStream out(stdout);
 #endif
 
-    auto log_msg = qFormatLogMessage(type, context, msg);
-    auto currentThread = QThread::currentThread();
-    log_msg.replace("%ThreadName", currentThread->objectName());
-
-    out << log_msg << Qt::endl;
+    out << logMessage << Qt::endl;
 }

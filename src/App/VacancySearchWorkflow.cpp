@@ -1,11 +1,16 @@
 #include "VacancySearchWorkflow.h"
 
+#include <QLoggingCategory>
+
 #include <AbstractParserStrategy.h>
 #include <AbstractRequestStrategy.h>
 #include <AbstractSearchUrlProvider.h>
 #include <Parser.h>
 #include <RequestManager.h>
 #include <WorkCoordinator.h>
+
+
+Q_LOGGING_CATEGORY(VacancySearchWorkflowLog, "app.vacancySearchWorkflow");
 
 
 VacancySearchWorkflow::VacancySearchWorkflow(AbstractSearchUrlProvider* searchUrlProvider,
@@ -125,6 +130,7 @@ void VacancySearchWorkflow::onDetailsParsed(const Vacancy& vacancy)
 
 void VacancySearchWorkflow::onWorkFinished()
 {
+    qCInfo(VacancySearchWorkflowLog) << "Search completed; vacancies collected:" << m_vacancyByUrl.size();
     emit vacanciesReady(std::move(m_vacancyByUrl.values()));
     emit allActiveWorkFinished();
 }

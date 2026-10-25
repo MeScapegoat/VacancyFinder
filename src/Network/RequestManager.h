@@ -2,12 +2,7 @@
 
 #include <QObject>
 
-#include <QLoggingCategory>
 #include <QUrl>
-
-
-Q_DECLARE_LOGGING_CATEGORY(RequestManagerLog);
-
 
 class AbstractRequestStrategy;
 

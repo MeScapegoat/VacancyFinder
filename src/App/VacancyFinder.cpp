@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFile>
 #include <QListView>
+#include <QLoggingCategory>
 #include <QStackedLayout>
 #include <QTextBrowser>
 
@@ -87,7 +88,7 @@ void VacancyFinder::sendSearchRequest()
     const QString keywords = queryParametersPresenter.keywords();
     const QString location = queryParametersPresenter.location();
 
-    qCInfo(VacancyFinderLog) << "keywords:" << keywords << "location:" << location;
+    qCInfo(VacancyFinderLog) << "Starting vacancy search; maximum results:" << maxVacancies;
 
 
     vacancySearchWorkflow.startSearch(keywords, location, maxVacancies);

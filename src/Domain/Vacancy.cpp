@@ -2,10 +2,6 @@
 
 #include <Utils.hpp>
 
-
-Q_LOGGING_CATEGORY(VacancyLog, "vacancy");
-
-
 qsizetype Vacancy::count(const QString& str, Qt::CaseSensitivity cs) const noexcept
 {
     qsizetype counted = 0;

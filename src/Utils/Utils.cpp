@@ -1,7 +1,12 @@
 #include "Utils.hpp"
 
+#include <QByteArray>
 #include <QDir>
 #include <QFile>
+#include <QLoggingCategory>
+
+
+Q_LOGGING_CATEGORY(UtilsLog, "utils");
 
 QString removeSpaces(QString str)
 {
@@ -89,12 +94,15 @@ void saveToFile(const QString& str, const QString& fileName, const QString& fold
 
     file.setFileName(dir.absolutePath() + "/" + folderName + "/" + fileName);
 
-    if (file.open(QFile::WriteOnly))
-        file.write(str.toUtf8());
-    else
+    if (!file.open(QFile::WriteOnly))
     {
-        qInfo() << "couldnt open file!" << file.fileName();
+        qCWarning(UtilsLog) << "Could not open output file:" << file.fileName() << file.errorString();
+        return;
     }
+
+    const QByteArray data = str.toUtf8();
+    if (file.write(data) != data.size())
+        qCWarning(UtilsLog) << "Could not write output file:" << file.fileName() << file.errorString();
 
     file.close();
 }

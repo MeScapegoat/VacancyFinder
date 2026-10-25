@@ -1,16 +1,11 @@
 #pragma once
 
-#include <Model.h>
-
 #include <QUrl>
-#include <QLoggingCategory>
 
 #include <FunctionTypes.h>
-#include <VacancyStatus.h>
+#include <Model.h>
 #include <Vacancy.h>
-
-
-Q_DECLARE_LOGGING_CATEGORY(VBMlog);
+#include <VacancyStatus.h>
 
 
 using constVacancyRef = std::reference_wrapper<const Vacancy>;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QList>
-#include <QLoggingCategory>
 #include <QUrl>
 
 #include <FunctionTypes.h>
@@ -9,9 +8,6 @@
 #include <Vacancy.h>
 #include "VacancyBrowserModel.h"
 #include "VacancyBrowserView.h"
-
-
-Q_DECLARE_LOGGING_CATEGORY(VBPLog);
 
 
 class QModelIndex;

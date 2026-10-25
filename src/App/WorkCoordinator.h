@@ -2,10 +2,6 @@
 
 #include <QObject>
 
-#include <QLoggingCategory>
-
-Q_DECLARE_LOGGING_CATEGORY(WorkCoordinatorLog);
-
 class WorkCoordinator : public QObject
 {
     Q_OBJECT

@@ -2,18 +2,12 @@
 
 #include <QVBoxLayout>
 
-
-Q_LOGGING_CATEGORY(MainWindowLog, "gui.main_window");
-
-
 MainWindow::MainWindow(QWidget& queryParametersWidget,
                        QWidget& resultViewOptionsWidget,
                        QWidget& vacancyBrowserWidget,
                        QWidget* parent) :
     QMainWindow(parent)
 {
-    qCDebug(MainWindowLog) << __FUNCTION__;
-
     const QSize maxSize(1920, 1080);
 
     setMinimumSize(maxSize * 0.75);

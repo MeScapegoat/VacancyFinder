@@ -1,16 +1,12 @@
 #include "LinkedInParserStrategy.h"
 
-#include <QRegularExpression>
 #include <QJsonDocument>
-#include <QDebug>
+#include <QRegularExpression>
 
-#include <Utils.hpp>
 #include "LinkedInBriefVacancyExtractor.h"
 #include "LinkedInDetailsHtmlVacancyExtractor.h"
 #include "LinkedInDetailsJsonVacancyExtractor.h"
-
-
-Q_LOGGING_CATEGORY(LinkedInParserStrategyLog, "parsing.linkedInParserStrategy");
+#include <Utils.hpp>
 
 
 PageType LinkedInParserStrategy::classifyPage(const QString& html) const

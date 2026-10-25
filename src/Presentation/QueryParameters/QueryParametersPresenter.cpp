@@ -1,19 +1,12 @@
 #include "QueryParametersPresenter.h"
 
-#include <QDebug>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QSpinBox>
 
-
-Q_LOGGING_CATEGORY(QPPLog, "queryParameters.presenter");
-
-
 QueryParametersPresenter::QueryParametersPresenter(QObject* parent) :
     Presenter(parent)
 {
-    qCDebug(QPPLog) << __FUNCTION__;
-
     connect(&view().maxResultsInput(), &QSpinBox::valueChanged, &model().maxResults, &Observable<int>::setValue);
     connect(&model().maxResults, &Observable<int>::valueChanged, this, &QueryParametersPresenter::onMaxResultsChanged);
 
@@ -62,16 +55,12 @@ int QueryParametersPresenter::maxResults() const
 
 void QueryParametersPresenter::onMaxResultsChanged()
 {
-    qCDebug(QPPLog) << __FUNCTION__;
-
     QSignalBlocker blocker(view().maxResultsInput());
     view().setMaxResultsInput(model().maxResults());
 }
 
 void QueryParametersPresenter::onKeywordsChanged()
 {
-    qCDebug(QPPLog) << __FUNCTION__;
-
     view().setKeywordsInput(model().keywords());
 
     emit keywordsChanged(model().keywords());
@@ -79,7 +68,5 @@ void QueryParametersPresenter::onKeywordsChanged()
 
 void QueryParametersPresenter::onLocationChanged()
 {
-    qCDebug(QPPLog) << __FUNCTION__;
-
     view().setLocationInput(model().location());
 }

@@ -2,9 +2,6 @@
 
 #include "RequestStrategy/AbstractRequestStrategy.h"
 
-
-Q_LOGGING_CATEGORY(RequestManagerLog, "network.requestManager");
-
 RequestManager::RequestManager(AbstractRequestStrategy* const strategy, QObject* parent) :
     QObject(parent),
     m_strategy(strategy)

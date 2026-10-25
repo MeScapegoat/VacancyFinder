@@ -1,12 +1,10 @@
 #pragma once
-// std
 
-// Qt
 #include <QFileSystemWatcher>
-#include <QThread>
 #include <QLoggingCategory>
+#include <QObject>
+#include <QThread>
 
-// custom
 
 
 Q_DECLARE_LOGGING_CATEGORY(LoggerLog);

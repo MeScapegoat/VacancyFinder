@@ -9,10 +9,6 @@
 #include <Vacancy.h>
 #include <VacancyOperations.h>
 
-
-Q_LOGGING_CATEGORY(RVOPLog, "resultViewOptions.presenter");
-
-
 ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) : 
     Presenter(parent)
 {

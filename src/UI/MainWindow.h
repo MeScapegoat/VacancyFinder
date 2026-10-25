@@ -1,9 +1,5 @@
 #pragma once
-#include <QLoggingCategory>
 #include <QMainWindow>
-
-
-Q_DECLARE_LOGGING_CATEGORY(MainWindowLog);
 
 
 class MainWindow : public QMainWindow

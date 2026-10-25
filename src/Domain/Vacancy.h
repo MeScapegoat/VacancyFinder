@@ -1,15 +1,12 @@
 #pragma once
 
-#include <optional>
-
-#include <QLoggingCategory>
-#include <QUrl>
-#include <QString>
 #include <QDate>
 #include <QDebug>
+#include <QString>
+#include <QUrl>
 
+#include <optional>
 
-Q_DECLARE_LOGGING_CATEGORY(VacancyLog);
 
 using Months = size_t;
 

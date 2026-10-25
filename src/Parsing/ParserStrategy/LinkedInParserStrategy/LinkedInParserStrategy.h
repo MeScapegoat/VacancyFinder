@@ -1,13 +1,9 @@
 #pragma once
 
-#include <AbstractParserStrategy.h>
-#include <QLoggingCategory>
 #include <QJsonObject>
 
+#include <AbstractParserStrategy.h>
 #include <Vacancy.h>
-
-
-Q_DECLARE_LOGGING_CATEGORY(LinkedInParserStrategyLog);
 
 
 class LinkedInParserStrategy : public AbstractParserStrategy

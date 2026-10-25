@@ -1,8 +1,7 @@
 #pragma once
 
-#include <QObject>
-
 #include <QLoggingCategory>
+#include <QObject>
 
 #include <Vacancy.h>
 

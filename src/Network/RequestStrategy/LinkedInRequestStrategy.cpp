@@ -1,10 +1,12 @@
 #include "LinkedInRequestStrategy.h"
 
 #include <QDebug>
+#include <QLoggingCategory>
 #include <QNetworkCookie>
 #include <QNetworkCookieJar>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QString>
 #include <QUrlQuery>
 
 #include <algorithm>
@@ -108,7 +110,7 @@ void LinkedInRequestStrategy::startNext()
         }
 
         
-        qCDebug(LinkedInRequestStrategyLog) << "Requested url:" << url;
+        qCDebug(LinkedInRequestStrategyLog) << "Requesting URL:" << url;
 
         QNetworkRequest request(url);
         request.setRawHeader("Accept-Language", "en-US,en;q=0.9");
@@ -163,10 +165,11 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
 
     const QNetworkReply::NetworkError errorState = reply->error();
     const QUrl url = reply->url();
+    const QString errorMessage = reply->errorString();
     const QString html = reply->readAll();
     const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
-    qCDebug(LinkedInRequestStrategyLog) << "Received url:" << url;
+    qCDebug(LinkedInRequestStrategyLog) << "Received response for URL:" << url;
 
     reply->deleteLater();
 
@@ -177,13 +180,14 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
         {
             case TooManyRequestsStatusCode:
             {
+                qCWarning(LinkedInRequestStrategyLog) << "Request was rate limited; retrying after" << m_requestCooldown << "ms:" << url;
                 m_requestCooldownTimer.start(m_requestCooldown);
                 addUrl(url);
                 break;
             }
             default:
             {
-                qCWarning(LinkedInRequestStrategyLog) << "something to do with other codes..."; // TODO
+                qCWarning(LinkedInRequestStrategyLog) << "Request failed for" << url << "with network error" << errorState << errorMessage << "and HTTP status" << statusCode;
                 break;
             }
         }
@@ -222,7 +226,7 @@ bool LinkedInRequestStrategy::enqueueUrl(const QUrl& url)
         }
         default:
         {
-            qCWarning(LinkedInRequestStrategyLog) << "Unknown url type:" << url;
+            qCWarning(LinkedInRequestStrategyLog) << "Ignoring unsupported URL:" << url;
             return false;
         }
     }
@@ -293,11 +297,6 @@ void LinkedInRequestStrategy::initCookies(const QUrl& url)
         if (!cookies.isEmpty())
         {
             m_cookiesInitialized = true;
-            qCDebug(LinkedInRequestStrategyLog) << "Cookies initialized:" << cookies.size();
-        }
-        else
-        {
-            qCDebug(LinkedInRequestStrategyLog) << "No cookies received.";
         }
     }
 }
@@ -330,7 +329,7 @@ bool LinkedInRequestStrategy::updateBriefUrlCutoff(const QString& html, const QU
     const qsizetype removed = m_briefUrlsQueue.removeIf(isAfterStartPred);
     emit urlsDequeued(removed);
 
-    qCDebug(LinkedInRequestStrategyLog) << "Removed" << removed << "empty url from queue, starting at" << start;
+    qCDebug(LinkedInRequestStrategyLog) << "Removed" << removed << "later result pages after an empty page at offset" << start;
 
     return true;
 }

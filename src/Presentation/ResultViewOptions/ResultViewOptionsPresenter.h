@@ -1,17 +1,10 @@
 #pragma once
 
+#include <FunctionTypes.h>
 #include <Presenter.hpp>
-
 #include "ResultViewOptionsModel.h"
 #include "ResultViewOptionsView.h"
-
-#include <QLoggingCategory>
-
-#include <FunctionTypes.h>
 #include <VacancyStatus.h>
-
-
-Q_DECLARE_LOGGING_CATEGORY(RVOPLog);
 
 
 class ResultViewOptionsPresenter : public Presenter<ResultViewOptionsView, ResultViewOptionsModel>

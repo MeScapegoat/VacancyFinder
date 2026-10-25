@@ -2,8 +2,6 @@
 
 #include <QStringListModel>
 
-Q_LOGGING_CATEGORY(VBMlog, "vacancyBrowser.model")
-
 VacancyBrowserModel::VacancyBrowserModel(QObject* parent) :
     Model(parent),
     m_vacancyListModel(*new VacancyListModel(this))
@@ -125,8 +123,6 @@ VacancyStatus VacancyBrowserModel::getVacancyStatus(const Vacancy& vacancy) cons
 
 void VacancyBrowserModel::updateVisibleVacancies()
 {
-    qCDebug(VBMlog) << __FUNCTION__;
-
     syncVisibleVacancies();
     applyFiltering();
     applySorting();

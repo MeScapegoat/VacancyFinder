@@ -5,10 +5,6 @@
 
 #include "VacancyDetails.h"
 
-
-Q_LOGGING_CATEGORY(VBPLog, "vacancyBrowser.presenter");
-
-
 VacancyBrowserPresenter::VacancyBrowserPresenter(QObject* parent) :
     Presenter(parent)
 {

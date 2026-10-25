@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QDebug>
 #include <QLoggingCategory>
 #include <QSet>
 #include <QString>
@@ -77,5 +76,3 @@ protected:
     bool m_isIgnoredVisible;
     bool m_isInterestedVisible;
 };
-
-QDebug operator<<(QDebug debug, const AppState& appState);

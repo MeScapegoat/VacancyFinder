@@ -1,11 +1,13 @@
 #include "AppState.h"
 
-#include <QDebug>
+#include <QByteArray>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonParseError>
+#include <QLoggingCategory>
 
 #include <Utils.hpp>
 
@@ -163,9 +165,6 @@ void AppState::setIsInterestedVisible(const bool _isInterestedVisible)
 
 void AppState::saveState()
 {
-    qCDebug(StateLog) << __FUNCTION__;
-    qCDebug(StateLog) << *this;
-
     QJsonObject state;
     state[InterestedVacanciesKey] = QJsonArray::fromStringList(toStringList(m_interestedVacancies));
     state[IgnoredVacanciesKey] = QJsonArray::fromStringList(toStringList(m_ignoredVacancies));
@@ -187,28 +186,38 @@ void AppState::saveState()
     QFile file(StateFileName);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
     {
-        qCWarning(StateLog) << "Couldn't open file:" << QFileInfo(file).absoluteFilePath();
+        qCWarning(StateLog) << "Could not open state file for writing:" << QFileInfo(file).absoluteFilePath() << file.errorString();
         return;
     }
 
-    file.write(QJsonDocument(state).toJson(QJsonDocument::Indented));
+    const QByteArray json = QJsonDocument(state).toJson(QJsonDocument::Indented);
+    if (file.write(json) != json.size())
+        qCWarning(StateLog) << "Could not write state file:" << QFileInfo(file).absoluteFilePath() << file.errorString();
 }
 
 void AppState::loadState()
 {
-    qCDebug(StateLog) << __FUNCTION__;
-
     QFile file(StateFileName);
+    if (!file.exists())
+        return;
+
     if (!file.open(QIODevice::ReadOnly))
     {
-        qCWarning(StateLog) << "Couldn't open file:" << QFileInfo(file).absoluteFilePath();
+        qCWarning(StateLog) << "Could not open state file for reading:" << QFileInfo(file).absoluteFilePath() << file.errorString();
         return;
     }
 
-    const QJsonDocument document = QJsonDocument::fromJson(file.readAll());
+    QJsonParseError parseError;
+    const QJsonDocument document = QJsonDocument::fromJson(file.readAll(), &parseError);
+    if (parseError.error != QJsonParseError::NoError)
+    {
+        qCWarning(StateLog) << "Could not parse state file:" << QFileInfo(file).absoluteFilePath() << parseError.errorString();
+        return;
+    }
+
     if (!document.isObject())
     {
-        qCWarning(StateLog) << "Incorrect json format:" << QFileInfo(file).absoluteFilePath();
+        qCWarning(StateLog) << "State file must contain a JSON object:" << QFileInfo(file).absoluteFilePath();
         return;
     }
 
@@ -230,26 +239,4 @@ void AppState::loadState()
     m_isUnreviewedVisible = state[IsUnreviewedVisibleKey].toBool();
     m_isIgnoredVisible = state[IsIgnoredVisibleKey].toBool();
     m_isInterestedVisible = state[IsInterestedVisibleKey].toBool();
-
-    qCDebug(StateLog) << *this;
-}
-
-QDebug operator<<(QDebug debug, const AppState& appState)
-{
-        QDebugStateSaver saver(debug);
-
-        debug.nospace() << "AppState:" << "\n"
-            << "interestedVacancies size: " << appState.interestedVacancies().size() << "\n"
-            << "ignoredVacancies size:    " << appState.ignoredVacancies().size() << "\n"
-            << "keywords:                 " << appState.keywords() << "\n"
-            << "location:                 " << appState.location() << "\n"
-            << "maxResults:               " << appState.maxResults() << "\n"
-            << "filterMode:               " << appState.filterMode() << "\n"
-            << "filters:                  " << appState.filters() << "\n"
-            << "sortMode:                 " << appState.sortMode() << "\n"
-            << "isUnreviewedVisible:      " << appState.isUnreviewedVisible() << "\n"
-            << "isIgnoredVisible:         " << appState.isIgnoredVisible() << "\n"
-            << "isInterestedVisible:      " << appState.isInterestedVisible();
-
-        return debug;
 }
