@@ -24,7 +24,7 @@ class ParserTest : public ::testing::Test
 protected:
     ParserTest() :
         strategy(*new StrictMock<MockParserStrategy>),
-        parser(&strategy),
+        parser(strategy),
         startedSpy(&parser, &Parser::pageParsingStarted),
         finishedSpy(&parser, &Parser::pageParsingFinished),
         requestDetailsSpy(&parser, &Parser::requestDetails),
@@ -49,7 +49,7 @@ protected:
 
 TEST_F(ParserTest, ConstructorSetsStrategy)
 {
-    EXPECT_EQ(parser.strategy(), &strategy);
+    EXPECT_EQ(&parser.strategy(), &strategy);
 }
 
 TEST_F(ParserTest, ProcessesBriefPage)

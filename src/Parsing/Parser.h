@@ -2,6 +2,9 @@
 
 #include <QLoggingCategory>
 #include <QObject>
+#include <QSet>
+#include <QString>
+#include <QUrl>
 
 #include <Vacancy.h>
 
@@ -16,18 +19,19 @@ class Parser : public QObject
     Q_OBJECT
 
 public:
-    Parser(AbstractParserStrategy* const strategy, QObject* parent = nullptr);
+    // Takes ownership of strategy.
+    Parser(AbstractParserStrategy& strategy, QObject* parent = nullptr);
     ~Parser() = default;
 
 public:
-    const AbstractParserStrategy* const strategy() const;
+    const AbstractParserStrategy& strategy() const;
 
 public slots:
-    void reset();
+    virtual void reset();
 
-    void processPage(const QString& html, const QUrl& url);
+    virtual void processPage(const QString& html, const QUrl& url);
 
-    void interrupt();
+    virtual void interrupt();
 
 signals:
     void pageParsingStarted(int amount = 1);
@@ -43,7 +47,7 @@ private:
     void processDetails(const QString& html, const QUrl& url);
 
 private:
-    AbstractParserStrategy* m_strategy;
+    AbstractParserStrategy& m_strategy;
 
     QSet<QUrl> m_processedBriefPages;
 

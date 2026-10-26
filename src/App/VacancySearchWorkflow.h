@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include <QHash>
 #include <QList>
 #include <QObject>
@@ -13,8 +11,6 @@
 #include <Vacancy.h>
 
 class AbstractSearchUrlProvider;
-class AbstractParserStrategy;
-class AbstractRequestStrategy;
 class Parser;
 class RequestManager;
 class WorkCoordinator;
@@ -26,9 +22,10 @@ class VacancySearchWorkflow : public QObject
     Q_OBJECT
 
 public:
-    VacancySearchWorkflow(AbstractSearchUrlProvider* searchUrlProvider,
-                          AbstractRequestStrategy* requestStrategy,
-                          AbstractParserStrategy* parserStrategy,
+    // Takes ownership of all three dependencies.
+    VacancySearchWorkflow(AbstractSearchUrlProvider& searchUrlProvider,
+                          RequestManager& requestManager,
+                          Parser& parser,
                           QObject* parent = nullptr);
     ~VacancySearchWorkflow() override;
 
@@ -62,7 +59,7 @@ private:
     void storeVacancy(const Vacancy& vacancy);
 
 private:
-    AbstractSearchUrlProvider* m_searchUrlProvider;
+    AbstractSearchUrlProvider& m_searchUrlProvider;
 
     RequestManager& m_requestManager;
     Parser& m_parser;

@@ -28,11 +28,9 @@ target_include_directories(VacancySearchWorkflow PUBLIC
 target_link_libraries(VacancySearchWorkflow
     PUBLIC
         Qt6::Core
+    PRIVATE
         Domain
         AbstractSearchUrlProvider
-    PRIVATE
-        AbstractParserStrategy
-        AbstractRequestStrategy
         Parser
         RequestManager
         WorkCoordinator
@@ -60,6 +58,8 @@ target_link_libraries(LinkedInVacancySearchWorkflow
         LinkedInRequestStrategy
         LinkedInSearchUrlProvider
         NetworkManager
+        Parser
+        RequestManager
         $<$<CONFIG:Release>:LinkedInParserStrategy>
         $<$<CONFIG:Debug>:LinkedInPageCollector>
 )

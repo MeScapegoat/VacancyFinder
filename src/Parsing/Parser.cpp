@@ -9,20 +9,19 @@
 Q_LOGGING_CATEGORY(ParserLog, "parsing.parser");
 
 
-Parser::Parser(AbstractParserStrategy* const strategy, QObject* parent) :
+Parser::Parser(AbstractParserStrategy& strategy, QObject* parent) :
     QObject(parent),
     m_strategy(strategy),
     m_processedBriefs(),
     m_processedDetails(),
     m_isInterrupted(false)
 {
-    Q_ASSERT_X(strategy, __FUNCTION__, "Strategy is nullptr");
-    Q_ASSERT_X(strategy->thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as Parser");
+    Q_ASSERT_X(strategy.thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as Parser");
 
-    m_strategy->setParent(this);
+    strategy.setParent(this);
 }
 
-const AbstractParserStrategy* const Parser::strategy() const
+const AbstractParserStrategy& Parser::strategy() const
 {
     return m_strategy;
 }
@@ -47,7 +46,7 @@ void Parser::processPage(const QString& html, const QUrl& url)
 
     qCDebug(ParserLog) << "Parsing page:" << url;
 
-    const PageType pageType = m_strategy->classifyPage(html);
+    const PageType pageType = m_strategy.classifyPage(html);
     switch (pageType)
     {
         case PageType::Brief:
@@ -84,7 +83,7 @@ void Parser::processBriefs(const QString& html, const QUrl& url)
 
     m_processedBriefPages.insert(url);
 
-    QList<Vacancy> briefs = m_strategy->parseBriefs(html);
+    QList<Vacancy> briefs = m_strategy.parseBriefs(html);
     for (Vacancy& brief : briefs)
     {
         if (m_processedBriefs.contains(brief.url))
@@ -109,7 +108,7 @@ void Parser::processDetails(const QString& html, const QUrl& url)
 
     m_processedDetails.insert(url);
 
-    Vacancy details = m_strategy->parseDetails(html, url);
+    Vacancy details = m_strategy.parseDetails(html, url);
     details.id = m_processedDetails.size();
 
     emit detailsParsed(details);

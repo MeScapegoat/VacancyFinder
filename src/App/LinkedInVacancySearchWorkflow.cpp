@@ -9,24 +9,37 @@
 #include <LinkedInRequestStrategy.h>
 #include <LinkedInSearchUrlProvider.h>
 #include <NetworkManager.h>
+#include <Parser.h>
+#include <RequestManager.h>
 
 
 namespace
 {
-    AbstractParserStrategy* createParserStrategy()
+    AbstractParserStrategy& createParserStrategy()
     {
 #ifdef NDEBUG
-        return new LinkedInParserStrategy();
+        return *new LinkedInParserStrategy();
 #else
-        return new LinkedInPageCollector();
+        return *new LinkedInPageCollector();
 #endif
+    }
+
+    AbstractSearchUrlProvider& createSearchUrlProvider()
+    {
+        return *new LinkedInSearchUrlProvider;
+    }
+
+    RequestManager& createRequestManager()
+    {
+        return *new RequestManager(*new LinkedInRequestStrategy(new NetworkManager));
+    }
+
+    Parser& createParser()
+    {
+        return *new Parser(createParserStrategy());
     }
 }
 
 LinkedInVacancySearchWorkflow::LinkedInVacancySearchWorkflow(QObject* parent) :
-    VacancySearchWorkflow(new LinkedInSearchUrlProvider,
-                          new LinkedInRequestStrategy(new NetworkManager),
-                          createParserStrategy(),
-                          parent)
-{
-}
+    VacancySearchWorkflow(createSearchUrlProvider(), createRequestManager(), createParser(), parent)
+{}

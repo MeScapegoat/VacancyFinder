@@ -2,8 +2,6 @@
 
 #include <QLoggingCategory>
 
-#include <AbstractParserStrategy.h>
-#include <AbstractRequestStrategy.h>
 #include <AbstractSearchUrlProvider.h>
 #include <Parser.h>
 #include <RequestManager.h>
@@ -13,22 +11,25 @@
 Q_LOGGING_CATEGORY(VacancySearchWorkflowLog, "app.vacancySearchWorkflow");
 
 
-VacancySearchWorkflow::VacancySearchWorkflow(AbstractSearchUrlProvider* searchUrlProvider,
-                                             AbstractRequestStrategy* requestStrategy,
-                                             AbstractParserStrategy* parserStrategy,
+VacancySearchWorkflow::VacancySearchWorkflow(AbstractSearchUrlProvider& searchUrlProvider,
+                                             RequestManager& requestManager,
+                                             Parser& parser,
                                              QObject* parent) :
     QObject(parent),
     m_searchUrlProvider(searchUrlProvider),
-    m_requestManager(*new RequestManager(requestStrategy)),
-    m_parser(*new Parser(parserStrategy)),
+    m_requestManager(requestManager),
+    m_parser(parser),
     m_workCoordinator(*new WorkCoordinator(this)),
     m_networkThread(*new QThread(this)),
     m_parserThread(*new QThread(this)),
     m_vacancyByUrl()
 {
-    searchUrlProvider->setParent(this);
+    Q_ASSERT_X(!requestManager.parent(), __FUNCTION__, "requestManager must not have a parent");
+    Q_ASSERT_X(!parser.parent(), __FUNCTION__, "parser must not have a parent");
+    Q_ASSERT_X(requestManager.thread() == thread(), __FUNCTION__, "requestManager must belong to the current thread");
+    Q_ASSERT_X(parser.thread() == thread(), __FUNCTION__, "parser must belong to the current thread");
 
-    Q_ASSERT_X(searchUrlProvider, __FUNCTION__, "searchUrlProvider is nullptr");
+    searchUrlProvider.setParent(this);
 
     m_networkThread.setObjectName("networkThread");
     m_requestManager.moveToThread(&m_networkThread);
@@ -96,7 +97,7 @@ void VacancySearchWorkflow::startSearch(const QList<QUrl> urls)
 
 void VacancySearchWorkflow::startSearch(const QString& keywords, const QString& location, qsizetype maxVacancies)
 {
-    const auto urls = m_searchUrlProvider->createSearchUrls(keywords, location, maxVacancies);
+    const auto urls = m_searchUrlProvider.createSearchUrls(keywords, location, maxVacancies);
     emit urlsRequested(urls);
 }
 

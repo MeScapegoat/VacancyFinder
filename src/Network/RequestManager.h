@@ -1,7 +1,7 @@
 #pragma once
 
+#include <QList>
 #include <QObject>
-
 #include <QUrl>
 
 class AbstractRequestStrategy;
@@ -11,15 +11,16 @@ class RequestManager : public QObject
     Q_OBJECT
 
 public:
-    explicit RequestManager(AbstractRequestStrategy* const strategy, QObject* parent = nullptr);
+    // Takes ownership of strategy.
+    explicit RequestManager(AbstractRequestStrategy& strategy, QObject* parent = nullptr);
     ~RequestManager() = default;
 
 public:
-    const AbstractRequestStrategy* const strategy() const;
+    const AbstractRequestStrategy& strategy() const;
 
 public slots:
-    void addUrls(const QList<QUrl>& urls);
-    void addUrl(const QUrl& url);
+    virtual void addUrls(const QList<QUrl>& urls);
+    virtual void addUrl(const QUrl& url);
 
 signals:
     void reset();
@@ -39,5 +40,5 @@ signals:
     void receivedReply(const QString& html, const QUrl& url);
 
 private:
-    AbstractRequestStrategy* m_strategy;
+    AbstractRequestStrategy& m_strategy;
 };

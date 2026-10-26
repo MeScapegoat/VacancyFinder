@@ -2,43 +2,42 @@
 
 #include "RequestStrategy/AbstractRequestStrategy.h"
 
-RequestManager::RequestManager(AbstractRequestStrategy* const strategy, QObject* parent) :
+RequestManager::RequestManager(AbstractRequestStrategy& strategy, QObject* parent) :
     QObject(parent),
     m_strategy(strategy)
 {
-    Q_ASSERT_X(strategy, __FUNCTION__, "Strategy is nullptr");
-    Q_ASSERT_X(strategy->thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as RequestManager");
+    Q_ASSERT_X(strategy.thread() == thread(), __FUNCTION__, "Strategy must belong to the same thread as RequestManager");
 
-    m_strategy->setParent(this);
+    strategy.setParent(this);
 
-    QObject::connect(this, &RequestManager::reset, m_strategy, &AbstractRequestStrategy::reset);
-    QObject::connect(this, &RequestManager::interrupt, m_strategy, &AbstractRequestStrategy::interrupt);
+    QObject::connect(this, &RequestManager::reset, &m_strategy, &AbstractRequestStrategy::reset);
+    QObject::connect(this, &RequestManager::interrupt, &m_strategy, &AbstractRequestStrategy::interrupt);
 
-    QObject::connect(m_strategy, &AbstractRequestStrategy::urlsEnqueued, this, &RequestManager::urlsEnqueued);
-    QObject::connect(m_strategy, &AbstractRequestStrategy::urlsDequeued, this, &RequestManager::urlsDequeued);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::urlsEnqueued, this, &RequestManager::urlsEnqueued);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::urlsDequeued, this, &RequestManager::urlsDequeued);
 
-    QObject::connect(m_strategy, &AbstractRequestStrategy::requestsStarted, this, &RequestManager::requestsStarted);
-    QObject::connect(m_strategy, &AbstractRequestStrategy::requestsFinished, this, &RequestManager::requestsFinished);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::requestsStarted, this, &RequestManager::requestsStarted);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::requestsFinished, this, &RequestManager::requestsFinished);
 
-    QObject::connect(m_strategy, &AbstractRequestStrategy::meaningfulRepliesReceived, this, &RequestManager::meaningfulRepliesReceived);
-    QObject::connect(m_strategy, &AbstractRequestStrategy::meaninglessRepliesReceived, this, &RequestManager::meaninglessRepliesReceived);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::meaningfulRepliesReceived, this, &RequestManager::meaningfulRepliesReceived);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::meaninglessRepliesReceived, this, &RequestManager::meaninglessRepliesReceived);
 
-    QObject::connect(m_strategy, &AbstractRequestStrategy::vacancyCountDetermined, this, &RequestManager::vacancyCountDetermined);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::vacancyCountDetermined, this, &RequestManager::vacancyCountDetermined);
 
-    QObject::connect(m_strategy, &AbstractRequestStrategy::receivedReply, this, &RequestManager::receivedReply);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::receivedReply, this, &RequestManager::receivedReply);
 }
 
-const AbstractRequestStrategy* const RequestManager::strategy() const
+const AbstractRequestStrategy& RequestManager::strategy() const
 {
     return m_strategy;
 }
 
 void RequestManager::addUrls(const QList<QUrl>& urls)
 {
-    m_strategy->addUrls(urls);
+    m_strategy.addUrls(urls);
 }
 
 void RequestManager::addUrl(const QUrl& url)
 {
-    m_strategy->addUrl(url);
+    m_strategy.addUrl(url);
 }

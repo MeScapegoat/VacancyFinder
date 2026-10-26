@@ -20,16 +20,16 @@ protected:
     AppWorkFlowTest() :
         networkManager(*new NetworkManager(this)),
         strategy(*new LinkedInRequestStrategy(&networkManager)),
-        requestManager(*new RequestManager(&strategy)),
+        requestManager(*new RequestManager(strategy)),
         networkThread(*new QThread(this)),
-        parserStrategy(new LinkedInParserStrategy),
+        parserStrategy(*new LinkedInParserStrategy),
         parser(*new Parser(parserStrategy)),
         parserThread(*new QThread(this)),
         workCoordinatorSpy(&workCoordinator, &WorkCoordinator::allActiveWorkFinished),
         parserBriefSpy(&parser, &Parser::briefParsed),
         parserDetailsSpy(&parser, &Parser::detailsParsed)
     {
-        parserStrategy->setParent(&parser);
+        parserStrategy.setParent(&parser);
         strategy.setParent(&requestManager);
 
         networkThread.setObjectName("networkThread");
@@ -121,7 +121,7 @@ protected:
     RequestManager& requestManager;
     QThread& networkThread;
 
-    AbstractParserStrategy* parserStrategy;
+    AbstractParserStrategy& parserStrategy;
     Parser& parser;
     QThread& parserThread;
 

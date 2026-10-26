@@ -60,7 +60,7 @@ class RequestManagerTest : public testing::Test
 protected:
     RequestManagerTest() :
         m_strategy(*new MockRequestStrategy),
-        m_manager(&m_strategy),
+        m_manager(m_strategy),
         urlsEnqueuedSpy(&m_manager, &RequestManager::urlsEnqueued),
         urlsDequeuedSpy(&m_manager, &RequestManager::urlsDequeued),
         requestsStartedSpy(&m_manager, &RequestManager::requestsStarted),
@@ -177,7 +177,7 @@ protected:
 
 TEST_F(RequestManagerTest, ConstructorSetsStrategyAndConnectsSignals)
 {
-    ASSERT_EQ(m_manager.strategy(), &m_strategy);
+    ASSERT_EQ(&m_manager.strategy(), &m_strategy);
 
     emitAllStrategySignals(m_strategy);
     verifyAllReceivedManagerSignals();

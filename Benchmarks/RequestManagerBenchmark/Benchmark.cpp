@@ -110,7 +110,7 @@ private:
             results.append({config, {}});
         networkManager = new NetworkManager(this);
         strategy = new LinkedInRequestStrategy(networkManager, config.requestsPerSecond, config.requestCooldownMs, config.maxConcurrent, this);
-        requestManager = new RequestManager(strategy, this);
+        requestManager = new RequestManager(*strategy, this);
         workCoordinator = new WorkCoordinator(this);
 
         QObject::connect(requestManager, &RequestManager::urlsEnqueued, workCoordinator, &WorkCoordinator::workStarted);
