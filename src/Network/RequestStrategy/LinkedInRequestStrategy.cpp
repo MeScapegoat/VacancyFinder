@@ -59,15 +59,15 @@ LinkedInRequestStrategy::LinkedInRequestStrategy(AbstractNetworkManager* const n
 
 void LinkedInRequestStrategy::reset()
 {
-    AbstractRequestStrategy::reset();
-
-    cancelAll();
+    interrupt();
 
     m_networkManager->setCookieJar(new QNetworkCookieJar(m_networkManager));
     m_cookiesInitialized = false;
 
     m_minStart = std::nullopt;
     m_vacancyCountDetermined = false;
+
+    AbstractRequestStrategy::reset();
 }
 
 void LinkedInRequestStrategy::startNext()
@@ -155,13 +155,11 @@ void LinkedInRequestStrategy::interrupt()
 
 void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
 {
-    if (m_isInterrupted)
+    if (m_isInterrupted || !m_activeReplies.remove(reply))
     {
         reply->deleteLater();
         return;
     }
-
-    m_activeReplies.remove(reply);
 
     const QNetworkReply::NetworkError errorState = reply->error();
     const QUrl url = reply->url();
