@@ -1,7 +1,6 @@
 #include "VacancyBrowserPresenter.h"
 
-#include <QListView>
-#include <QStringListModel>
+#include <QModelIndex>
 
 #include "VacancyDetails.h"
 
@@ -9,7 +8,7 @@ VacancyBrowserPresenter::VacancyBrowserPresenter(QObject* parent) :
     Presenter(parent)
 {
 
-    QObject::connect(&view().vacancyList(), &VacancyBrowserView::VacancyList::clicked, this, &VacancyBrowserPresenter::openVacancyDetails);
+    QObject::connect(&view().vacancyList(), &VacancyList::clicked, this, &VacancyBrowserPresenter::openVacancyDetails);
 
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::ignoreButtonPressed,     this, &VacancyBrowserPresenter::onIgnoreButtonPressed);
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::interestedButtonPressed, this, &VacancyBrowserPresenter::onInterestButtonPressed);

@@ -1,16 +1,14 @@
 #pragma once
 
-#include <View.h>
 #include <QWidget>
 
-class QListView;
+#include <VacancyList.h>
+#include <View.h>
+
 class VacancyDetails;
 
 class VacancyBrowserView : public View
 {
-public:
-    using VacancyList = QListView; // TODO: make pretty
-
 public:
     explicit VacancyBrowserView(QWidget* parent = nullptr);
     ~VacancyBrowserView() = default;

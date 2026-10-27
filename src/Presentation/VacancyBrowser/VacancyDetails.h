@@ -10,7 +10,6 @@ class QStackedLayout;
 class QPushButton;
 class Vacancy;
 
-// TODO: make pretty
 class VacancyDetails : public QWidget
 {
     Q_OBJECT
@@ -43,8 +42,9 @@ private:
     QLabel& industryLabel;
     QLabel& expirationDateLabel;
     QTextBrowser& vacancyDesc;
+    QWidget& metadataPanel;
 
-
+    QWidget& statusButtonsPanel;
     QStackedLayout& statusButtonsLayout;
 
     QPushButton& ignoreButton;

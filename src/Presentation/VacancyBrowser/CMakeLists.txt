@@ -2,6 +2,12 @@ add_library(VacancyBrowser
     VacancyBrowserModel.h
     VacancyBrowserModel.cpp
 
+    VacancyListModel.h
+    VacancyListModel.cpp
+
+    VacancyList.h
+    VacancyList.cpp
+
     VacancyBrowserView.h
     VacancyBrowserView.cpp
 

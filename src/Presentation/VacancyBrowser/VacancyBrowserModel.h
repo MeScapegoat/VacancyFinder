@@ -1,22 +1,24 @@
 #pragma once
 
+#include <QHash>
+#include <QList>
+#include <QSet>
 #include <QUrl>
+#include <QVector>
+
+#include <functional>
+#include <optional>
 
 #include <FunctionTypes.h>
 #include <Model.h>
 #include <Vacancy.h>
+#include <VacancyListModel.h>
 #include <VacancyStatus.h>
-
 
 using constVacancyRef = std::reference_wrapper<const Vacancy>;
 
-class QStringListModel;
-
 class VacancyBrowserModel : public Model
 {
-public:
-    using VacancyListModel = QStringListModel; // TODO: make pretty
-
 public:
     VacancyBrowserModel(QObject* parent = nullptr);
     ~VacancyBrowserModel() = default;

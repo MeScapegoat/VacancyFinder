@@ -1,7 +1,5 @@
 #include "VacancyBrowserModel.h"
 
-#include <QStringListModel>
-
 VacancyBrowserModel::VacancyBrowserModel(QObject* parent) :
     Model(parent),
     m_vacancyListModel(*new VacancyListModel(this))
@@ -59,12 +57,12 @@ void VacancyBrowserModel::setInterestedVacancies(const QSet<QUrl>& interestedVac
     m_interestedVacancies = interestedVacancies;
 }
 
-VacancyBrowserModel::VacancyListModel& VacancyBrowserModel::vacancyListModel()
+VacancyListModel& VacancyBrowserModel::vacancyListModel()
 {
     return m_vacancyListModel;
 }
 
-const VacancyBrowserModel::VacancyListModel& VacancyBrowserModel::vacancyListModel() const
+const VacancyListModel& VacancyBrowserModel::vacancyListModel() const
 {
     return m_vacancyListModel;
 }
@@ -162,26 +160,7 @@ void VacancyBrowserModel::applySorting()
 
 void VacancyBrowserModel::updateVacancyListModel()
 {
-    QStringList data;
-
-    for (const Vacancy* vacancy : m_visibleVacancies)
-    {
-        const QString& id = QString::number(data.size() + 1);
-        const QString& title = vacancy->title;
-        const QString& companyName = vacancy->companyName;
-        const qsizetype& companyNameWidth = companyName.size() + 8;
-        const QString& age = QString::number(vacancy->date.daysTo(QDate::currentDate()));
-        const QString& location = vacancy->location;
-
-        data.append(QString("%1. %2\n%3\n%4\n%5 days ago")
-                    .arg(id.leftJustified(3))
-                    .arg(title)
-                    .arg(companyName)
-                    .arg(location)
-                    .arg(age));
-    }
-
-    m_vacancyListModel.setStringList(data);
+    m_vacancyListModel.setVacancies(m_visibleVacancies, m_ignoredVacancies, m_interestedVacancies);
 }
 
 bool VacancyBrowserModel::passesFilterStatus(const Vacancy* vacancy)
