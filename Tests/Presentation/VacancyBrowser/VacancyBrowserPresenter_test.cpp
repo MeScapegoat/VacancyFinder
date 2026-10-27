@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 
+#include <QItemSelectionModel>
 #include <QList>
 #include <QListView>
 #include <QModelIndex>
 #include <QPushButton>
 #include <QSet>
+#include <QSignalBlocker>
 #include <QString>
 #include <QStringListModel>
 #include <QTextBrowser>
@@ -36,11 +38,10 @@ protected:
         return vacancy;
     }
 
-    void openFirstVacancy()
+    void selectFirstVacancy()
     {
         const QModelIndex index = model().vacancyListModel().index(0, 0);
         view().vacancyList().setCurrentIndex(index);
-        Q_EMIT view().vacancyList().clicked(index);
     }
 
     QPushButton* buttonWithText(const QString& text)
@@ -120,11 +121,28 @@ TEST_F(VacancyBrowserPresenterTest, SelectingVacancyDisplaysItsDescription)
     vacancy.description = "Build useful tools.";
     onVacanciesReady({vacancy});
 
-    openFirstVacancy();
+    selectFirstVacancy();
 
     QTextBrowser* description = view().vacancyDetails().findChild<QTextBrowser*>();
     ASSERT_NE(description, nullptr);
     EXPECT_EQ(description->toPlainText(), vacancy.description);
+}
+
+TEST_F(VacancyBrowserPresenterTest, ChangingCurrentSelectionUpdatesDisplayedDetails)
+{
+    Vacancy firstVacancy = makeVacancy("First", QUrl("first"));
+    firstVacancy.description = "First description.";
+    Vacancy secondVacancy = makeVacancy("Second", QUrl("second"));
+    secondVacancy.description = "Second description.";
+    onVacanciesReady({firstVacancy, secondVacancy});
+    const Vacancy* selectedVacancy = model().visibleVacancies()[1];
+
+    selectFirstVacancy();
+    view().vacancyList().setCurrentIndex(model().vacancyListModel().index(1, 0));
+
+    QTextBrowser* description = view().vacancyDetails().findChild<QTextBrowser*>();
+    ASSERT_NE(description, nullptr);
+    EXPECT_EQ(description->toPlainText(), selectedVacancy->description);
 }
 
 TEST_F(VacancyBrowserPresenterTest, StatusActionsUpdateVacancyMetadata)
@@ -132,33 +150,63 @@ TEST_F(VacancyBrowserPresenterTest, StatusActionsUpdateVacancyMetadata)
     const Vacancy vacancy = makeVacancy("Developer", QUrl("developer"));
     onVacanciesReady({vacancy});
 
-    openFirstVacancy();
+    selectFirstVacancy();
     QPushButton* ignoreButton = buttonWithText("Not interested");
     ASSERT_NE(ignoreButton, nullptr);
     ignoreButton->click();
     EXPECT_TRUE(ignoredVacancies().contains(vacancy.url));
     EXPECT_EQ(model().getVacancyStatus(vacancy), VacancyStatus::Ignored);
 
-    openFirstVacancy();
+    selectFirstVacancy();
     QPushButton* removeIgnoreButton = buttonWithText("Remove from not interested list");
     ASSERT_NE(removeIgnoreButton, nullptr);
     removeIgnoreButton->click();
     EXPECT_FALSE(ignoredVacancies().contains(vacancy.url));
     EXPECT_EQ(model().getVacancyStatus(vacancy), VacancyStatus::Unreviewed);
 
-    openFirstVacancy();
+    selectFirstVacancy();
     QPushButton* interestedButton = buttonWithText("Interested");
     ASSERT_NE(interestedButton, nullptr);
     interestedButton->click();
     EXPECT_TRUE(interestedVacancies().contains(vacancy.url));
     EXPECT_EQ(model().getVacancyStatus(vacancy), VacancyStatus::Interested);
 
-    openFirstVacancy();
+    selectFirstVacancy();
     QPushButton* removeInterestedButton = buttonWithText("Remove from interested list");
     ASSERT_NE(removeInterestedButton, nullptr);
     removeInterestedButton->click();
     EXPECT_FALSE(interestedVacancies().contains(vacancy.url));
     EXPECT_EQ(model().getVacancyStatus(vacancy), VacancyStatus::Unreviewed);
+}
+
+TEST_F(VacancyBrowserPresenterTest, StatusActionUsesVacancyShownInDetails)
+{
+    Vacancy firstVacancy = makeVacancy("First", QUrl("first"));
+    firstVacancy.description = "First description.";
+    Vacancy secondVacancy = makeVacancy("Second", QUrl("second"));
+    secondVacancy.description = "Second description.";
+    onVacanciesReady({firstVacancy, secondVacancy});
+    const QUrl displayedVacancyUrl = model().visibleVacancies()[0]->url;
+    const QUrl selectedVacancyUrl = model().visibleVacancies()[1]->url;
+    const QString displayedDescription = model().visibleVacancies()[0]->description;
+
+    selectFirstVacancy();
+    QPushButton* interestedButton = buttonWithText("Interested");
+    ASSERT_NE(interestedButton, nullptr);
+
+    {
+        const QSignalBlocker blocker(view().vacancyList().selectionModel());
+        view().vacancyList().setCurrentIndex(model().vacancyListModel().index(1, 0));
+
+        QTextBrowser* description = view().vacancyDetails().findChild<QTextBrowser*>();
+        ASSERT_NE(description, nullptr);
+        EXPECT_EQ(description->toPlainText(), displayedDescription);
+
+        interestedButton->click();
+    }
+
+    EXPECT_TRUE(interestedVacancies().contains(displayedVacancyUrl));
+    EXPECT_FALSE(interestedVacancies().contains(selectedVacancyUrl));
 }
 
 TEST_F(VacancyBrowserPresenterTest, StatusActionsWithoutSelectionLeaveMetadataUnchanged)

@@ -1,5 +1,6 @@
 #include "VacancyBrowserPresenter.h"
 
+#include <QItemSelectionModel>
 #include <QModelIndex>
 
 #include "VacancyDetails.h"
@@ -8,8 +9,6 @@ VacancyBrowserPresenter::VacancyBrowserPresenter(QObject* parent) :
     Presenter(parent)
 {
 
-    QObject::connect(&view().vacancyList(), &VacancyList::clicked, this, &VacancyBrowserPresenter::openVacancyDetails);
-
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::ignoreButtonPressed,     this, &VacancyBrowserPresenter::onIgnoreButtonPressed);
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::interestedButtonPressed, this, &VacancyBrowserPresenter::onInterestButtonPressed);
 
@@ -17,6 +16,7 @@ VacancyBrowserPresenter::VacancyBrowserPresenter(QObject* parent) :
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::removeInterestedButtonPressed, this, &VacancyBrowserPresenter::onRemoveInterestButtonPressed);
 
     view().vacancyList().setModel(&model().vacancyListModel());
+    QObject::connect(view().vacancyList().selectionModel(), &QItemSelectionModel::currentChanged, this, &VacancyBrowserPresenter::openVacancyDetails);
 
     view().vacancyDetails().close();
 }
@@ -43,6 +43,7 @@ void VacancyBrowserPresenter::setInterestedVacancies(const QSet<QUrl>& intereste
 
 void VacancyBrowserPresenter::reset()
 {
+    m_currentVacancyUrl.reset();
     model().vacancyByUrl().clear();
     model().visibleVacancies().clear();
 
@@ -86,9 +87,12 @@ void VacancyBrowserPresenter::openVacancyDetails(const QModelIndex& index)
     auto vacancy = model().getVisibleVacancy(id);
     if (!vacancy.has_value())
     {
+        m_currentVacancyUrl.reset();
+        view().vacancyDetails().close();
         return;
     }
 
+    m_currentVacancyUrl = vacancy->get().url;
     const VacancyStatus status = model().getVacancyStatus(vacancy.value());
 
     view().vacancyDetails().open(vacancy.value(), status);
@@ -140,24 +144,22 @@ void VacancyBrowserPresenter::onRemoveInterestButtonPressed()
 
 bool VacancyBrowserPresenter::addCurrentVacancyToStatusList(QSet<QUrl>& statusVacancyList)
 {
-    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-    if (!vacancy)
+    if (!m_currentVacancyUrl || !model().vacancyByUrl().contains(*m_currentVacancyUrl))
         return false;
 
     const qsizetype oldSize = statusVacancyList.size();
 
-    statusVacancyList.insert(vacancy->get().url);
+    statusVacancyList.insert(*m_currentVacancyUrl);
 
     return oldSize != statusVacancyList.size();
 }
 
 bool VacancyBrowserPresenter::removeCurrentVacancyFromStatusList(QSet<QUrl>& statusVacancyList)
 {
-    const std::optional<constVacancyRef> vacancy = getCurrentVacancy();
-    if (!vacancy)
+    if (!m_currentVacancyUrl || !model().vacancyByUrl().contains(*m_currentVacancyUrl))
         return false;
 
-    return statusVacancyList.remove(vacancy->get().url);
+    return statusVacancyList.remove(*m_currentVacancyUrl);
 }
 
 void VacancyBrowserPresenter::updateStatusButtons(VacancyStatus status)
@@ -166,17 +168,6 @@ void VacancyBrowserPresenter::updateStatusButtons(VacancyStatus status)
 
     view().vacancyDetails().updateCurrentStatusButton(status);
 
+    m_currentVacancyUrl.reset();
     view().vacancyDetails().close();
-}
-
-std::optional<constVacancyRef> VacancyBrowserPresenter::getCurrentVacancy() const
-{
-    const QModelIndex& index = view().vacancyList().currentIndex();
-
-    if (!index.isValid())
-        return std::nullopt;
-
-    const int id = index.row();
-
-    return model().getVisibleVacancy(id);
 }

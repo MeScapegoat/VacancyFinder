@@ -3,6 +3,8 @@
 #include <QList>
 #include <QUrl>
 
+#include <optional>
+
 #include <FunctionTypes.h>
 #include <Presenter.hpp>
 #include <Vacancy.h>
@@ -53,5 +55,5 @@ private:
     void updateStatusButtons(VacancyStatus status);
 
 private:
-    std::optional<constVacancyRef> getCurrentVacancy() const;
+    std::optional<QUrl> m_currentVacancyUrl;
 };
