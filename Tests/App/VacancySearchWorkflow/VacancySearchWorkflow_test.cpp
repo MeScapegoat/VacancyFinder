@@ -83,7 +83,7 @@ namespace
             return PageType::Unknown;
         }
 
-        QList<Vacancy> parseBriefs(const QString&) const override
+        QList<Vacancy> parseSummaries(const QString&) const override
         {
             return {};
         }
@@ -147,7 +147,7 @@ namespace
             m_urlAddedSpy(&m_requestManager, &TestRequestManager::urlAdded),
             m_pageClassifiedSpy(&m_parserStrategy, &TestParserStrategy::pageClassified),
             m_vacancyCountDeterminedSpy(&m_workflow, &VacancySearchWorkflow::vacancyCountDetermined),
-            m_briefReadySpy(&m_workflow, &VacancySearchWorkflow::briefReady),
+            m_summaryReadySpy(&m_workflow, &VacancySearchWorkflow::summaryReady),
             m_detailsReadySpy(&m_workflow, &VacancySearchWorkflow::detailsReady),
             m_requestManagerInterruptSpy(&m_requestManager, &RequestManager::interrupt),
             m_parserInterruptSpy(&m_parser, &TestParser::interruptCalled),
@@ -171,7 +171,7 @@ namespace
         QSignalSpy m_urlAddedSpy;
         QSignalSpy m_pageClassifiedSpy;
         QSignalSpy m_vacancyCountDeterminedSpy;
-        QSignalSpy m_briefReadySpy;
+        QSignalSpy m_summaryReadySpy;
         QSignalSpy m_detailsReadySpy;
         QSignalSpy m_requestManagerInterruptSpy;
         QSignalSpy m_parserInterruptSpy;
@@ -251,15 +251,15 @@ TEST_F(VacancySearchWorkflowTest, ParserRequestDetailsCallsRequestManagerAddUrl)
     EXPECT_EQ(m_urlAddedSpy.at(0).at(0).toUrl(), vacancyUrl);
 }
 
-TEST_F(VacancySearchWorkflowTest, ParserBriefParsedEmitsBriefReady)
+TEST_F(VacancySearchWorkflowTest, ParserSummaryParsedEmitsSummaryReady)
 {
-    const Vacancy brief = makeVacancy(QUrl(QStringLiteral("https://jobs.example/brief")), QStringLiteral("Brief"));
-    emit m_parser.briefParsed(brief);
+    const Vacancy summary = makeVacancy(QUrl(QStringLiteral("https://jobs.example/summary")), QStringLiteral("Summary"));
+    emit m_parser.summaryParsed(summary);
 
-    ASSERT_EQ(m_briefReadySpy.count(), 1);
-    const Vacancy readyBrief = qvariant_cast<Vacancy>(m_briefReadySpy.at(0).at(0));
-    EXPECT_EQ(readyBrief.url, brief.url);
-    EXPECT_EQ(readyBrief.title, brief.title);
+    ASSERT_EQ(m_summaryReadySpy.count(), 1);
+    const Vacancy readySummary = qvariant_cast<Vacancy>(m_summaryReadySpy.at(0).at(0));
+    EXPECT_EQ(readySummary.url, summary.url);
+    EXPECT_EQ(readySummary.title, summary.title);
 }
 
 TEST_F(VacancySearchWorkflowTest, ParserDetailsParsedEmitsDetailsReady)
@@ -300,7 +300,7 @@ TEST_F(VacancySearchWorkflowTest, ResetStartsFreshWorkAndEmitsOnlyItsCompletedVa
     m_workflow.startSearch({oldSearchUrl});
     QTRY_COMPARE(m_urlsAddedSpy.count(), 1);
     emit m_requestManager.urlsEnqueued();
-    emit m_parser.briefParsed(makeVacancy(oldVacancyUrl, QStringLiteral("Old vacancy")));
+    emit m_parser.summaryParsed(makeVacancy(oldVacancyUrl, QStringLiteral("Old vacancy")));
     EXPECT_EQ(m_vacanciesReadySpy.count(), 0);
 
     emit m_workflow.reset();
@@ -311,8 +311,8 @@ TEST_F(VacancySearchWorkflowTest, ResetStartsFreshWorkAndEmitsOnlyItsCompletedVa
     QTRY_COMPARE(m_urlsAddedSpy.count(), 2);
     emit m_requestManager.urlsEnqueued();
 
-    const Vacancy newBrief = makeVacancy(newVacancyUrl, QStringLiteral("New vacancy"));
-    emit m_parser.briefParsed(newBrief);
+    const Vacancy newSummary = makeVacancy(newVacancyUrl, QStringLiteral("New vacancy"));
+    emit m_parser.summaryParsed(newSummary);
     emit m_parser.requestDetails(newVacancyUrl);
     QTRY_COMPARE(m_urlAddedSpy.count(), 1);
     emit m_requestManager.urlsEnqueued();
@@ -331,7 +331,7 @@ TEST_F(VacancySearchWorkflowTest, ResetStartsFreshWorkAndEmitsOnlyItsCompletedVa
     const QList<Vacancy> vacancies = m_vacanciesReadySpy.at(0).at(0).value<QList<Vacancy>>();
     ASSERT_EQ(vacancies.size(), 1);
     EXPECT_EQ(vacancies.first().url, newVacancyUrl);
-    EXPECT_EQ(vacancies.first().title, newBrief.title);
+    EXPECT_EQ(vacancies.first().title, newSummary.title);
     EXPECT_EQ(vacancies.first().description, newDetails.description);
 }
 

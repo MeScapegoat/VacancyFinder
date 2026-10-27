@@ -14,7 +14,7 @@ Q_DECLARE_LOGGING_CATEGORY(LinkedInRequestStrategyLog);
 enum class UrlType
 {
     Unknown = 0,
-    Brief,
+    Summary,
     Details
 };
 
@@ -64,13 +64,13 @@ private:
     // LinkedIn may return meaningful replies up to a certain start, followed by
     // empty HTML responses. Once the cutoff is detected, remove the later URLs
     // to avoid processing them unnecessarily.
-    bool updateBriefUrlCutoff(const QString& html, const QUrl& url);
+    bool updateSummaryUrlCutoff(const QString& html, const QUrl& url);
 
 private:
     QSet<QNetworkReply*> m_activeReplies;
 
     QQueue<QUrl> m_detailsUrlsQueue;
-    QQueue<QUrl> m_briefUrlsQueue;
+    QQueue<QUrl> m_summaryUrlsQueue;
 
     QTimer m_requestTimer;
     QTimer m_requestCooldownTimer;

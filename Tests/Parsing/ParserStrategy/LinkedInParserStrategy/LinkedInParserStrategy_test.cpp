@@ -6,9 +6,9 @@
 #include <LinkedInParserStrategy/LinkedInParserStrategy.h>
 
 
-TEST(LinkedInParserStrategy, ClassifyBriefPage)
+TEST(LinkedInParserStrategy, ClassifySummaryPage)
 {
-    QFile file(":/full_briefs.html");
+    QFile file(":/full_summaries.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
     const QString html = file.readAll();
@@ -16,7 +16,7 @@ TEST(LinkedInParserStrategy, ClassifyBriefPage)
     const LinkedInParserStrategy strategy;
     const PageType pageType = strategy.classifyPage(html);
 
-    EXPECT_EQ(pageType, PageType::Brief);
+    EXPECT_EQ(pageType, PageType::Summary);
 }
 
 TEST(LinkedInParserStrategy, ClassifyHtmlDetailsPage)
@@ -45,41 +45,41 @@ TEST(LinkedInParserStrategy, ClassifyJsonDetailsPage)
     EXPECT_EQ(pageType, PageType::Details);
 }
 
-TEST(LinkedInParserStrategy, FullBriefs)
+TEST(LinkedInParserStrategy, FullSummaries)
 {
-    QFile file(":/full_briefs.html");
+    QFile file(":/full_summaries.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
     const QString html = file.readAll();
 
     const LinkedInParserStrategy strategy;
-    const QList<Vacancy> briefs = strategy.parseBriefs(html);
+    const QList<Vacancy> summaries = strategy.parseSummaries(html);
 
-    EXPECT_EQ(briefs.size(), 10);
+    EXPECT_EQ(summaries.size(), 10);
 }
 
-TEST(LinkedInParserStrategy, PartialBriefs)
+TEST(LinkedInParserStrategy, PartialSummaries)
 {
-    QFile file(":/partial_briefs.html");
+    QFile file(":/partial_summaries.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
     const QString html = file.readAll();
 
     const LinkedInParserStrategy strategy;
-    const QList<Vacancy> briefs = strategy.parseBriefs(html);
-    EXPECT_EQ(briefs.size(), 6);
+    const QList<Vacancy> summaries = strategy.parseSummaries(html);
+    EXPECT_EQ(summaries.size(), 6);
 }
 
-TEST(LinkedInParserStrategy, EmptyBriefs)
+TEST(LinkedInParserStrategy, EmptySummaries)
 {
-    QFile file(":/empty_briefs.html");
+    QFile file(":/empty_summaries.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
     const QString html = file.readAll();
 
     const LinkedInParserStrategy strategy;
-    const QList<Vacancy> briefs = strategy.parseBriefs(html);
-    EXPECT_EQ(briefs.size(), 0);
+    const QList<Vacancy> summaries = strategy.parseSummaries(html);
+    EXPECT_EQ(summaries.size(), 0);
 }
 
 TEST(LinkedInParserStrategy, ParseHtmlDetails)

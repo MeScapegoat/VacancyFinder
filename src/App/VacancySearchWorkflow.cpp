@@ -60,7 +60,7 @@ VacancySearchWorkflow::VacancySearchWorkflow(AbstractSearchUrlProvider& searchUr
     // Parser::pageParsingStarted is not connected due to optimization
     QObject::connect(&m_parser, &Parser::pageParsingFinished,   &m_workCoordinator, &WorkCoordinator::workFinished);
 
-    QObject::connect(&m_parser, &Parser::briefParsed,           this, &VacancySearchWorkflow::onBriefParsed);
+    QObject::connect(&m_parser, &Parser::summaryParsed,           this, &VacancySearchWorkflow::onSummaryParsed);
     QObject::connect(&m_parser, &Parser::detailsParsed,         this, &VacancySearchWorkflow::onDetailsParsed);
 
 
@@ -115,11 +115,11 @@ void VacancySearchWorkflow::storeVacancy(const Vacancy& vacancy)
     }
 }
 
-void VacancySearchWorkflow::onBriefParsed(const Vacancy& vacancy)
+void VacancySearchWorkflow::onSummaryParsed(const Vacancy& vacancy)
 {
     storeVacancy(vacancy);
 
-    emit briefReady(vacancy);
+    emit summaryReady(vacancy);
 }
 
 void VacancySearchWorkflow::onDetailsParsed(const Vacancy& vacancy)

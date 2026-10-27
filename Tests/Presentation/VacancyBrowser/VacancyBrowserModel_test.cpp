@@ -67,22 +67,22 @@ TEST_F(VacancyBrowserModelTest, AddingSameUrlDoesNotCreateDuplicate)
 
 TEST_F(VacancyBrowserModelTest, AddingSameUrlFillsMissingVacancyDetails)
 {
-    const Vacancy brief = makeVacancy("url", "Developer", "First Company", QString());
+    const Vacancy summary = makeVacancy("url", "Developer", "First Company", QString());
 
     Vacancy details{};
-    details.url = brief.url;
+    details.url = summary.url;
     details.title = "Updated title";
     details.companyName = "Updated company";
     details.location = "Budapest";
     details.description = "Full description";
     details.level = "Senior";
 
-    model.addVacancy(brief);
+    model.addVacancy(summary);
     model.addVacancy(details);
 
-    const Vacancy& merged = model.vacancyByUrl().constFind(brief.url).value();
-    EXPECT_EQ(merged.title, brief.title);
-    EXPECT_EQ(merged.companyName, brief.companyName);
+    const Vacancy& merged = model.vacancyByUrl().constFind(summary.url).value();
+    EXPECT_EQ(merged.title, summary.title);
+    EXPECT_EQ(merged.companyName, summary.companyName);
     EXPECT_EQ(merged.location, details.location);
     EXPECT_EQ(merged.description, details.description);
     ASSERT_TRUE(merged.level.has_value());

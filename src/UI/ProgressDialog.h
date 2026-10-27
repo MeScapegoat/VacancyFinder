@@ -17,7 +17,7 @@ public:
 
 public slots:
     void updateVacancyCount(int count);
-    void updateBrief(const Vacancy& vacancy);
+    void updateSummary(const Vacancy& vacancy);
     void updateDetails(const Vacancy& vacancy);
     void updateError(QNetworkReply::NetworkError);
     void start(qsizetype maxVacancies);
@@ -28,8 +28,8 @@ public:
 
 private:
     QPushButton& m_stopButton;
-    QLabel& briefLabel;
-    QProgressBar& briefsProgressBar;
+    QLabel& summaryLabel;
+    QProgressBar& summariesProgressBar;
     QLabel& detailsLabel;
     QProgressBar& allDetailsProgressBar;
     QLabel& errorLabel;

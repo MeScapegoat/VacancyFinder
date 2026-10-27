@@ -70,7 +70,7 @@ namespace
         QList<QNetworkReply*> m_pendingReplies;
     };
 
-    QUrl briefUrl(int start = 0)
+    QUrl summaryUrl(int start = 0)
     {
         static const QString url("https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=C%2B%2B&location=Belgrade&start=%1");
         return url.arg(start);
@@ -139,7 +139,7 @@ namespace
 
 TEST_F(LinkedInRequestStrategyTest, AddUrlEmitsUrlsEnqueued)
 {
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
 
     ASSERT_EQ(urlsEnqueuedSpy.count(), 1);
     EXPECT_EQ(urlsEnqueuedSpy.at(0).at(0).toULongLong(), 1);
@@ -149,9 +149,9 @@ TEST_F(LinkedInRequestStrategyTest, AddUrlsEmitsNumberOfUrlsEnqueued)
 {
     const QList<QUrl> urls
     {
-        briefUrl(0),
-        briefUrl(10),
-        briefUrl(20),
+        summaryUrl(0),
+        summaryUrl(10),
+        summaryUrl(20),
     };
 
     strategy->addUrls(urls);
@@ -162,18 +162,18 @@ TEST_F(LinkedInRequestStrategyTest, AddUrlsEmitsNumberOfUrlsEnqueued)
 
 TEST_F(LinkedInRequestStrategyTest, StartNextSendsRequestStartedAndUrlDequeued)
 {
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
     strategy->startNext();
 
     EXPECT_EQ(startedSpy.count(), 1);
     EXPECT_EQ(urlsDequeuedSpy.count(), 1);
 }
 
-TEST_F(LinkedInRequestStrategyTest, BriefReplyWithResultsIsMeaningful)
+TEST_F(LinkedInRequestStrategyTest, SummaryReplyWithResultsIsMeaningful)
 {
     const QByteArray html = "<html><body><li>Job 1</li></body></html>";
 
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
 
     manager->respondWith(200, html);
 
@@ -185,11 +185,11 @@ TEST_F(LinkedInRequestStrategyTest, BriefReplyWithResultsIsMeaningful)
     EXPECT_EQ(receivedReplySpy.count(), 1);
 }
 
-TEST_F(LinkedInRequestStrategyTest, EmptyBriefReplyIsMeaningless)
+TEST_F(LinkedInRequestStrategyTest, EmptySummaryReplyIsMeaningless)
 {
     const QByteArray html = "<html><body>No jobs</body></html>";
 
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
 
     manager->respondWith(200, html, QNetworkReply::NoError);
 
@@ -220,12 +220,12 @@ TEST_F(LinkedInRequestStrategyTest, SuccessfulDetailsReplyEmitsReceivedReply)
     EXPECT_EQ(receivedReplySpy.at(0).at(1).toUrl(), detailsUrl());
 }
 
-TEST_F(LinkedInRequestStrategyTest, BriefUrlsAreProcessedBeforeDetailsUrls)
+TEST_F(LinkedInRequestStrategyTest, SummaryUrlsAreProcessedBeforeDetailsUrls)
 {
     const QList<QUrl> urls
     {
         detailsUrl(),
-        briefUrl()
+        summaryUrl()
     };
 
     manager->respondWith(200, "<html><body><li>Job 1</li></body></html>");
@@ -235,7 +235,7 @@ TEST_F(LinkedInRequestStrategyTest, BriefUrlsAreProcessedBeforeDetailsUrls)
     manager->finish();
 
     ASSERT_EQ(receivedReplySpy.count(), 1);
-    EXPECT_EQ(receivedReplySpy.at(0).at(1).toUrl(), briefUrl());
+    EXPECT_EQ(receivedReplySpy.at(0).at(1).toUrl(), summaryUrl());
 
     strategy->startNext();
     manager->finish();
@@ -255,12 +255,12 @@ TEST(LinkedInRequestStrategyConcurrencyTest, AllowsConcurrentRequestsAfterCookie
     cookie.setPath("/");
     ASSERT_TRUE(manager->cookieJar()->insertCookie(cookie));
 
-    strategy.addUrl(briefUrl(0));
+    strategy.addUrl(summaryUrl(0));
     strategy.startNext();
     ASSERT_EQ(startedSpy.count(), 1);
     manager->finishNextReply();
 
-    strategy.addUrls({briefUrl(10), briefUrl(20)});
+    strategy.addUrls({summaryUrl(10), summaryUrl(20)});
     strategy.startNext();
     strategy.startNext();
 
@@ -276,7 +276,7 @@ TEST(LinkedInRequestStrategyConcurrencyTest, KeepsRequestsSerializedWithoutCooki
     LinkedInRequestStrategy strategy(manager, 8, 5000, 3);
     QSignalSpy startedSpy(&strategy, &AbstractRequestStrategy::requestsStarted);
 
-    strategy.addUrls({briefUrl(0), briefUrl(10)});
+    strategy.addUrls({summaryUrl(0), summaryUrl(10)});
     strategy.startNext();
     ASSERT_EQ(startedSpy.count(), 1);
 
@@ -291,7 +291,7 @@ TEST(LinkedInRequestStrategyConcurrencyTest, KeepsRequestsSerializedWithoutCooki
 
 TEST_F(LinkedInRequestStrategyTest, NetworkErrorEmitsMeaninglessReply)
 {
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
 
     manager->respondWith(500, {}, QNetworkReply::InternalServerError);
 
@@ -307,9 +307,9 @@ TEST_F(LinkedInRequestStrategyTest, TooManyRequestsStartsCooldown)
 {
     const QList<QUrl> urls
     {
-        briefUrl(0),
-        briefUrl(10),
-        briefUrl(20)
+        summaryUrl(0),
+        summaryUrl(10),
+        summaryUrl(20)
     };
 
     QSignalSpy meaninglessSpy(strategy, &LinkedInRequestStrategy::meaninglessRepliesReceived);
@@ -349,7 +349,7 @@ TEST_F(LinkedInRequestStrategyTest, InterruptPreventsNewRequests)
 {
     strategy->interrupt();
 
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
 
     strategy->startNext();
 
@@ -361,7 +361,7 @@ TEST_F(LinkedInRequestStrategyTest, ResetAllowsRequestsAgain)
 {
     strategy->interrupt();
     strategy->reset();
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
 
     strategy->startNext();
 
@@ -412,13 +412,13 @@ TEST_F(LinkedInRequestStrategyTest, VacancyCountIsDeterminedOnlyOnce)
     EXPECT_EQ(vacancyCountSpy.count(), 1);
 }
 
-TEST_F(LinkedInRequestStrategyTest, EmptyBriefReplyRemovesLaterUrlsFromQueue)
+TEST_F(LinkedInRequestStrategyTest, EmptySummaryReplyRemovesLaterUrlsFromQueue)
 {
     const QList<QUrl> urls
     {
-        briefUrl(0),
-        briefUrl(10),
-        briefUrl(20),
+        summaryUrl(0),
+        summaryUrl(10),
+        summaryUrl(20),
         detailsUrl(),
     };
 
@@ -442,17 +442,17 @@ TEST_F(LinkedInRequestStrategyTest, EmptyBriefReplyRemovesLaterUrlsFromQueue)
     EXPECT_EQ(receivedReplySpy.at(0).at(1).toUrl(), detailsUrl());
 }
 
-TEST_F(LinkedInRequestStrategyTest, ResetClearsTheBriefUrlCutoff)
+TEST_F(LinkedInRequestStrategyTest, ResetClearsTheSummaryUrlCutoff)
 {
     manager->respondWith(200, "<html>No jobs</html>");
-    strategy->addUrl(briefUrl(0));
+    strategy->addUrl(summaryUrl(0));
     strategy->startNext();
     manager->finish();
 
     ASSERT_EQ(meaninglessSpy.count(), 1);
 
     strategy->reset();
-    strategy->addUrls({briefUrl(10), briefUrl(20)});
+    strategy->addUrls({summaryUrl(10), summaryUrl(20)});
     strategy->startNext();
     manager->finish();
 
@@ -463,7 +463,7 @@ TEST_F(LinkedInRequestStrategyTest, ResetClearsTheBriefUrlCutoff)
 
 TEST_F(LinkedInRequestStrategyTest, InterruptCancelsActiveReplies)
 {
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
 
     strategy->startNext();
 
@@ -478,7 +478,7 @@ TEST_F(LinkedInRequestStrategyTest, InterruptCancelsActiveReplies)
 TEST_F(LinkedInRequestStrategyTest, InterruptedReplyIsIgnored)
 {
     manager->respondWith(200, "<html><body><li>Job</li></body></html>");
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
     strategy->startNext();
     ASSERT_EQ(startedSpy.count(), 1);
 
@@ -493,7 +493,7 @@ TEST_F(LinkedInRequestStrategyTest, InterruptedReplyIsIgnored)
 
 TEST_F(LinkedInRequestStrategyTest, TooManyRequestsRequeuesUrl)
 {
-    strategy->addUrl(briefUrl());
+    strategy->addUrl(summaryUrl());
 
     manager->respondWith(429, {}, QNetworkReply::UnknownNetworkError);
 
@@ -508,7 +508,7 @@ TEST_F(LinkedInRequestStrategyTest, TooManyRequestsRequeuesUrl)
 
 TEST_F(LinkedInRequestStrategyTest, ResetClearsQueuedUrls)
 {
-    strategy->addUrl(briefUrl(0));
+    strategy->addUrl(summaryUrl(0));
     strategy->addUrl(detailsUrl(0));
 
     strategy->reset();
@@ -532,9 +532,9 @@ TEST_F(LinkedInRequestStrategyTest, ResetResetsVacancyCountDetermined)
     EXPECT_EQ(vacancyCountSpy.count(), 2);
 }
 
-TEST_F(LinkedInRequestStrategyTest, ClassifyUrlWithQueryAsBrief)
+TEST_F(LinkedInRequestStrategyTest, ClassifyUrlWithQueryAsSummary)
 {
-    EXPECT_EQ(clasifyUrl(briefUrl()), UrlType::Brief);
+    EXPECT_EQ(clasifyUrl(summaryUrl()), UrlType::Summary);
 }
 
 TEST_F(LinkedInRequestStrategyTest, ClassifyUrlWithoutQueryAsDetails)
@@ -544,7 +544,7 @@ TEST_F(LinkedInRequestStrategyTest, ClassifyUrlWithoutQueryAsDetails)
 
 TEST_F(LinkedInRequestStrategyTest, GetStartExtractsStartParameter)
 {
-    EXPECT_EQ(getStart(briefUrl(20)), 20);
+    EXPECT_EQ(getStart(summaryUrl(20)), 20);
 }
 
 TEST_F(LinkedInRequestStrategyTest, GetStartReturnsZeroWhenParameterIsMissing)
@@ -554,15 +554,15 @@ TEST_F(LinkedInRequestStrategyTest, GetStartReturnsZeroWhenParameterIsMissing)
 
 TEST_F(LinkedInRequestStrategyTest, IsAfterStartReturnsTrueForGreaterStart)
 {
-    EXPECT_TRUE(isAfterStart(10, briefUrl(20)));
+    EXPECT_TRUE(isAfterStart(10, summaryUrl(20)));
 }
 
 TEST_F(LinkedInRequestStrategyTest, IsAfterStartReturnsFalseForEqualStart)
 {
-    EXPECT_FALSE(isAfterStart(10, briefUrl(10)));
+    EXPECT_FALSE(isAfterStart(10, summaryUrl(10)));
 }
 
 TEST_F(LinkedInRequestStrategyTest, IsAfterStartReturnsFalseForSmallerStart)
 {
-    EXPECT_FALSE(isAfterStart(10, briefUrl(5)));
+    EXPECT_FALSE(isAfterStart(10, summaryUrl(5)));
 }

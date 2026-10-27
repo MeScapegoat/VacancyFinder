@@ -17,6 +17,6 @@ public:
 public: // AbstractParserStrategy
     virtual PageType classifyPage(const QString& html) const override;
 
-    virtual QList<Vacancy> parseBriefs(const QString& html) const override;
+    virtual QList<Vacancy> parseSummaries(const QString& html) const override;
     virtual Vacancy parseDetails(const QString& html, const QUrl& url) const override;
 };

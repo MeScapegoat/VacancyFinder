@@ -3,7 +3,7 @@
 #include <QJsonDocument>
 #include <QRegularExpression>
 
-#include "LinkedInBriefVacancyExtractor.h"
+#include "LinkedInSummaryVacancyExtractor.h"
 #include "LinkedInDetailsHtmlVacancyExtractor.h"
 #include "LinkedInDetailsJsonVacancyExtractor.h"
 #include <Utils.hpp>
@@ -14,21 +14,21 @@ PageType LinkedInParserStrategy::classifyPage(const QString& html) const
     if (html.contains("description"))
         return PageType::Details;
 
-    return PageType::Brief;
+    return PageType::Summary;
 }
 
-QList<Vacancy> LinkedInParserStrategy::parseBriefs(const QString& html) const
+QList<Vacancy> LinkedInParserStrategy::parseSummaries(const QString& html) const
 {
-    const QStringList briefs = extractVacancyBriefs(html);
+    const QStringList summaries = extractVacancySummaries(html);
 
-    LinkedInBriefVacancyExtractor extractor;
+    LinkedInSummaryVacancyExtractor extractor;
 
     QList<Vacancy> vacancies;
-    vacancies.reserve(briefs.size());
+    vacancies.reserve(summaries.size());
 
-    for (const QString& brief : briefs)
+    for (const QString& summary : summaries)
     {
-        extractor.setHtml(brief);
+        extractor.setHtml(summary);
 
         vacancies.push_back(extractor.vacancy());
     }

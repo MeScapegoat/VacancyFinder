@@ -3,48 +3,48 @@
 #include <QFile>
 #include <QDir>
 
-#include <LinkedInParserStrategy/LinkedInBriefVacancyExtractor.h>
+#include <LinkedInParserStrategy/LinkedInSummaryVacancyExtractor.h>
 
 
-TEST(LinkedInBriefVacancyExtractor, FullBriefs)
+TEST(LinkedInSummaryVacancyExtractor, FullSummaries)
 {
-    QFile file(":/full_briefs.html");
+    QFile file(":/full_summaries.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
     const QString html = file.readAll();
 
-    const QStringList briefs = extractVacancyBriefs(html);
-    ASSERT_EQ(briefs.size(), 10);
+    const QStringList summaries = extractVacancySummaries(html);
+    ASSERT_EQ(summaries.size(), 10);
 }
 
-TEST(LinkedInBriefVacancyExtractor, PartialBriefs)
+TEST(LinkedInSummaryVacancyExtractor, PartialSummaries)
 {
-    QFile file(":/partial_briefs.html");
+    QFile file(":/partial_summaries.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
     const QString html = file.readAll();
 
-    const QStringList briefs = extractVacancyBriefs(html);
-    ASSERT_EQ(briefs.size(), 6);
+    const QStringList summaries = extractVacancySummaries(html);
+    ASSERT_EQ(summaries.size(), 6);
 }
 
-TEST(LinkedInBriefVacancyExtractor, EmptyBriefs)
+TEST(LinkedInSummaryVacancyExtractor, EmptySummaries)
 {
-    QFile file(":/empty_briefs.html");
+    QFile file(":/empty_summaries.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
     const QString html = file.readAll();
 
-    const QStringList briefs = extractVacancyBriefs(html);
-    ASSERT_EQ(briefs.size(), 0);
+    const QStringList summaries = extractVacancySummaries(html);
+    ASSERT_EQ(summaries.size(), 0);
 }
 
-TEST(LinkedInBriefVacancyExtractor, NormalUrl1)
+TEST(LinkedInSummaryVacancyExtractor, NormalUrl1)
 {
     QFile file(":/normal_url_1.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
-    LinkedInBriefVacancyExtractor extractor;
+    LinkedInSummaryVacancyExtractor extractor;
     extractor.setHtml(file.readAll());
 
     const Vacancy vacancy = extractor.vacancy();
@@ -68,12 +68,12 @@ TEST(LinkedInBriefVacancyExtractor, NormalUrl1)
     EXPECT_FALSE(vacancy.expirationDate.has_value());
 }
 
-TEST(LinkedInBriefVacancyExtractor, NormalUrl2)
+TEST(LinkedInSummaryVacancyExtractor, NormalUrl2)
 {
     QFile file(":/normal_url_2.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
-    LinkedInBriefVacancyExtractor extractor;
+    LinkedInSummaryVacancyExtractor extractor;
     extractor.setHtml(file.readAll());
 
     const Vacancy vacancy = extractor.vacancy();
@@ -97,12 +97,12 @@ TEST(LinkedInBriefVacancyExtractor, NormalUrl2)
     EXPECT_FALSE(vacancy.expirationDate.has_value());
 }
 
-TEST(LinkedInBriefVacancyExtractor, AlternateUrl1)
+TEST(LinkedInSummaryVacancyExtractor, AlternateUrl1)
 {
     QFile file(":/alternate_url_1.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
-    LinkedInBriefVacancyExtractor extractor;
+    LinkedInSummaryVacancyExtractor extractor;
     extractor.setHtml(file.readAll());
 
     const Vacancy vacancy = extractor.vacancy();
@@ -128,12 +128,12 @@ TEST(LinkedInBriefVacancyExtractor, AlternateUrl1)
     EXPECT_FALSE(vacancy.expirationDate.has_value());
 }
 
-TEST(LinkedInBriefVacancyExtractor, AlternateUrl2)
+TEST(LinkedInSummaryVacancyExtractor, AlternateUrl2)
 {
     QFile file(":/alternate_url_2.html");
     ASSERT_TRUE(file.open(QIODevice::ReadOnly | QIODevice::Text));
 
-    LinkedInBriefVacancyExtractor extractor;
+    LinkedInSummaryVacancyExtractor extractor;
     extractor.setHtml(file.readAll());
 
     const Vacancy vacancy = extractor.vacancy();

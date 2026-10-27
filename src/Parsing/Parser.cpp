@@ -12,7 +12,7 @@ Q_LOGGING_CATEGORY(ParserLog, "parsing.parser");
 Parser::Parser(AbstractParserStrategy& strategy, QObject* parent) :
     QObject(parent),
     m_strategy(strategy),
-    m_processedBriefs(),
+    m_processedSummaries(),
     m_processedDetails(),
     m_isInterrupted(false)
 {
@@ -28,8 +28,8 @@ const AbstractParserStrategy& Parser::strategy() const
 
 void Parser::reset()
 {
-    m_processedBriefPages.clear();
-    m_processedBriefs.clear();
+    m_processedSummaryPages.clear();
+    m_processedSummaries.clear();
     m_processedDetails.clear();
 
     m_isInterrupted = false;
@@ -49,9 +49,9 @@ void Parser::processPage(const QString& html, const QUrl& url)
     const PageType pageType = m_strategy.classifyPage(html);
     switch (pageType)
     {
-        case PageType::Brief:
+        case PageType::Summary:
         {
-            processBriefs(html, url);
+            processSummaries(html, url);
             break;
         }
         case PageType::Details:
@@ -74,28 +74,28 @@ void Parser::interrupt()
     m_isInterrupted = true;
 }
 
-void Parser::processBriefs(const QString& html, const QUrl& url)
+void Parser::processSummaries(const QString& html, const QUrl& url)
 {
-    if (m_processedBriefPages.contains(url))
+    if (m_processedSummaryPages.contains(url))
     {
         return;
     }
 
-    m_processedBriefPages.insert(url);
+    m_processedSummaryPages.insert(url);
 
-    QList<Vacancy> briefs = m_strategy.parseBriefs(html);
-    for (Vacancy& brief : briefs)
+    QList<Vacancy> summaries = m_strategy.parseSummaries(html);
+    for (Vacancy& summary : summaries)
     {
-        if (m_processedBriefs.contains(brief.url))
+        if (m_processedSummaries.contains(summary.url))
         {
             continue;
         }
-        m_processedBriefs.insert(brief.url);
+        m_processedSummaries.insert(summary.url);
 
-        brief.id = m_processedBriefs.size();
+        summary.id = m_processedSummaries.size();
 
-        emit requestDetails(brief.url);
-        emit briefParsed(brief);
+        emit requestDetails(summary.url);
+        emit summaryParsed(summary);
     }
 }
 

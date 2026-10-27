@@ -37,21 +37,21 @@ signals:
     void pageParsingStarted(int amount = 1);
     void pageParsingFinished(int amount = 1);
 
-    void briefParsed(Vacancy); // TODO: pass by smart pointer?
+    void summaryParsed(Vacancy); // TODO: pass by smart pointer?
     void detailsParsed(Vacancy); // TODO: pass by smart pointer?
 
     void requestDetails(const QUrl& url);
 
 private:
-    void processBriefs(const QString& html, const QUrl& url);
+    void processSummaries(const QString& html, const QUrl& url);
     void processDetails(const QString& html, const QUrl& url);
 
 private:
     AbstractParserStrategy& m_strategy;
 
-    QSet<QUrl> m_processedBriefPages;
+    QSet<QUrl> m_processedSummaryPages;
 
-    QSet<QUrl> m_processedBriefs;
+    QSet<QUrl> m_processedSummaries;
     QSet<QUrl> m_processedDetails;
 
     bool m_isInterrupted;

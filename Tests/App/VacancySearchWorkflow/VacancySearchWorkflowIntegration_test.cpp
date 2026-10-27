@@ -21,7 +21,7 @@ protected:
         parser(*new Parser(*new LinkedInParserStrategy)),
         workflow(*new VacancySearchWorkflow(searchUrlProvider, requestManager, parser, this)),
         allActiveWorkFinishedSpy(&workflow, &VacancySearchWorkflow::allActiveWorkFinished),
-        briefReadySpy(&workflow, &VacancySearchWorkflow::briefReady),
+        summaryReadySpy(&workflow, &VacancySearchWorkflow::summaryReady),
         detailsReadySpy(&workflow, &VacancySearchWorkflow::detailsReady),
         vacanciesReadySpy(&workflow, &VacancySearchWorkflow::vacanciesReady)
     {}
@@ -38,7 +38,7 @@ protected:
 
     bool waitForActiveSearch()
     {
-        if (briefReadySpy.count() == 0 && !briefReadySpy.wait(120'000))
+        if (summaryReadySpy.count() == 0 && !summaryReadySpy.wait(120'000))
         {
             ADD_FAILURE() << "Timed out waiting for a parsed vacancy before interrupt";
             return false;
@@ -58,13 +58,13 @@ protected:
         ASSERT_TRUE(allActiveWorkFinishedSpy.wait(timeoutMilliseconds)) << "Timed out waiting for all active work to finish";
 
         EXPECT_EQ(allActiveWorkFinishedSpy.count(), 1);
-        EXPECT_GE(briefReadySpy.count(), minVacancies);
-        EXPECT_EQ(briefReadySpy.count(), detailsReadySpy.count());
+        EXPECT_GE(summaryReadySpy.count(), minVacancies);
+        EXPECT_EQ(summaryReadySpy.count(), detailsReadySpy.count());
 
         ASSERT_EQ(vacanciesReadySpy.count(), 1);
         const QList<Vacancy> vacancies = vacanciesReadySpy.at(0).at(0).value<QList<Vacancy>>();
         EXPECT_FALSE(vacancies.isEmpty());
-        EXPECT_EQ(vacancies.size(), briefReadySpy.count());
+        EXPECT_EQ(vacancies.size(), summaryReadySpy.count());
     }
 
     LinkedInSearchUrlProvider& searchUrlProvider;
@@ -73,7 +73,7 @@ protected:
     VacancySearchWorkflow& workflow;
 
     QSignalSpy allActiveWorkFinishedSpy;
-    QSignalSpy briefReadySpy;
+    QSignalSpy summaryReadySpy;
     QSignalSpy detailsReadySpy;
     QSignalSpy vacanciesReadySpy;
 };
@@ -134,11 +134,11 @@ TEST_F(VacancySearchWorkflowIntegrationTest, InterruptStopsFurtherParsing)
     if (allActiveWorkFinishedSpy.count() == 0)
         ASSERT_TRUE(allActiveWorkFinishedSpy.wait(240'000)) << "Timed out waiting for all active work to finish after interrupt";
 
-    const int parsedBriefsAfterInterrupt = briefReadySpy.count();
+    const int parsedSummariesAfterInterrupt = summaryReadySpy.count();
     const int parsedDetailsAfterInterrupt = detailsReadySpy.count();
 
     EXPECT_EQ(allActiveWorkFinishedSpy.count(), 1);
-    EXPECT_LT(briefReadySpy.count(), maxVacancies);
-    EXPECT_EQ(briefReadySpy.count(), parsedBriefsAfterInterrupt);
+    EXPECT_LT(summaryReadySpy.count(), maxVacancies);
+    EXPECT_EQ(summaryReadySpy.count(), parsedSummariesAfterInterrupt);
     EXPECT_EQ(detailsReadySpy.count(), parsedDetailsAfterInterrupt);
 }

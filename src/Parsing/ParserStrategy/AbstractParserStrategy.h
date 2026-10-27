@@ -9,7 +9,7 @@
 enum class PageType
 {
     Unknown,
-    Brief,
+    Summary,
     Details,
 
 
@@ -28,6 +28,6 @@ public:
 public:
     virtual PageType classifyPage(const QString& html) const = 0;
 
-    virtual QList<Vacancy> parseBriefs(const QString& html) const = 0;
+    virtual QList<Vacancy> parseSummaries(const QString& html) const = 0;
     virtual Vacancy parseDetails(const QString& html, const QUrl& url) const = 0;
 };

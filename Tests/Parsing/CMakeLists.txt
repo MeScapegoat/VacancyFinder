@@ -35,9 +35,9 @@ qt_add_resources(html_resources
 		ParserStrategy/LinkedInParserStrategy/html_resources/alternate_url_1.html
         ParserStrategy/LinkedInParserStrategy/html_resources/alternate_url_2.html
 
-		ParserStrategy/LinkedInParserStrategy/html_resources/full_briefs.html
-        ParserStrategy/LinkedInParserStrategy/html_resources/partial_briefs.html
-		ParserStrategy/LinkedInParserStrategy/html_resources/empty_briefs.html
+		ParserStrategy/LinkedInParserStrategy/html_resources/full_summaries.html
+        ParserStrategy/LinkedInParserStrategy/html_resources/partial_summaries.html
+		ParserStrategy/LinkedInParserStrategy/html_resources/empty_summaries.html
 	OUTPUT_TARGETS html_resources_output_targets
 )
 
@@ -49,20 +49,20 @@ set_target_properties(html_resources			 PROPERTIES FOLDER "Tests/Parsing/ParserS
 
 
 
-add_executable(LinkedInBriefVacancyExtractor_test
-	ParserStrategy/LinkedInParserStrategy/LinkedInBriefVacancyExtractor_test.cpp
+add_executable(LinkedInSummaryVacancyExtractor_test
+	ParserStrategy/LinkedInParserStrategy/LinkedInSummaryVacancyExtractor_test.cpp
 )
 
-target_link_libraries(LinkedInBriefVacancyExtractor_test
+target_link_libraries(LinkedInSummaryVacancyExtractor_test
 	PRIVATE
 		LinkedInParserStrategy
 		html_resources
 		GTest::gtest_main
 )
 
-set_target_properties(LinkedInBriefVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy")
+set_target_properties(LinkedInSummaryVacancyExtractor_test PROPERTIES FOLDER "Tests/Parsing/ParserStrategy/LinkedInParserStrategy")
 
-gtest_discover_tests(LinkedInBriefVacancyExtractor_test PROPERTIES LABELS "unit;Parsing")
+gtest_discover_tests(LinkedInSummaryVacancyExtractor_test PROPERTIES LABELS "unit;Parsing")
 
 
 

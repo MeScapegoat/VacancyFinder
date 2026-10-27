@@ -17,8 +17,8 @@
 ProgressDialog::ProgressDialog(QWidget* parent) :
     QDialog(parent),
     m_stopButton(*new QPushButton),
-    briefLabel(*new QLabel),
-    briefsProgressBar(*new QProgressBar),
+    summaryLabel(*new QLabel),
+    summariesProgressBar(*new QProgressBar),
     detailsLabel(*new QLabel),
     allDetailsProgressBar(*new QProgressBar),
     errorLabel(*new QLabel)
@@ -53,31 +53,31 @@ ProgressDialog::ProgressDialog(QWidget* parent) :
     title.setFont(titleFont);
     layout.addWidget(&title);
 
-    QFrame& briefsCard = *new QFrame(&dialogFrame);
-    briefsCard.setFrameShape(QFrame::StyledPanel);
-    briefsCard.setBackgroundRole(QPalette::AlternateBase);
-    briefsCard.setAutoFillBackground(true);
+    QFrame& summariesCard = *new QFrame(&dialogFrame);
+    summariesCard.setFrameShape(QFrame::StyledPanel);
+    summariesCard.setBackgroundRole(QPalette::AlternateBase);
+    summariesCard.setAutoFillBackground(true);
 
-    QVBoxLayout& briefsLayout = *new QVBoxLayout(&briefsCard);
-    briefsLayout.setContentsMargins(14, 12, 14, 12);
-    briefsLayout.setSpacing(7);
+    QVBoxLayout& summariesLayout = *new QVBoxLayout(&summariesCard);
+    summariesLayout.setContentsMargins(14, 12, 14, 12);
+    summariesLayout.setSpacing(7);
 
-    QLabel& briefsHeading = *new QLabel("Vacancy summaries", &briefsCard);
-    QFont sectionFont = briefsHeading.font();
+    QLabel& summariesHeading = *new QLabel("Vacancy summaries", &summariesCard);
+    QFont sectionFont = summariesHeading.font();
     sectionFont.setWeight(QFont::DemiBold);
-    briefsHeading.setFont(sectionFont);
-    briefsLayout.addWidget(&briefsHeading);
+    summariesHeading.setFont(sectionFont);
+    summariesLayout.addWidget(&summariesHeading);
 
-    briefLabel.setTextFormat(Qt::PlainText);
-    briefLabel.setWordWrap(true);
-    briefsLayout.addWidget(&briefLabel);
+    summaryLabel.setTextFormat(Qt::PlainText);
+    summaryLabel.setWordWrap(true);
+    summariesLayout.addWidget(&summaryLabel);
 
-    briefsProgressBar.setTextVisible(true);
-    briefsProgressBar.setFormat("%v / %m");
-    briefsProgressBar.setMinimumHeight(20);
-    briefsLayout.addWidget(&briefsProgressBar);
+    summariesProgressBar.setTextVisible(true);
+    summariesProgressBar.setFormat("%v / %m");
+    summariesProgressBar.setMinimumHeight(20);
+    summariesLayout.addWidget(&summariesProgressBar);
 
-    layout.addWidget(&briefsCard, 1);
+    layout.addWidget(&summariesCard, 1);
 
     QFrame& detailsCard = *new QFrame(&dialogFrame);
     detailsCard.setFrameShape(QFrame::StyledPanel);
@@ -139,20 +139,20 @@ QPushButton& ProgressDialog::stopButton()
 
 void ProgressDialog::updateVacancyCount(int count)
 {
-    briefsProgressBar.setMaximum(count);
+    summariesProgressBar.setMaximum(count);
     allDetailsProgressBar.setMaximum(count);
 }
 
-void ProgressDialog::updateBrief(const Vacancy& vacancy)
+void ProgressDialog::updateSummary(const Vacancy& vacancy)
 {
-    static constexpr const char* briefPattern = "Processed summary #%1 — %2 at %3";
+    static constexpr const char* summaryPattern = "Processed summary #%1 — %2 at %3";
 
-    briefLabel.setText(QString(briefPattern)
+    summaryLabel.setText(QString(summaryPattern)
                        .arg(vacancy.id)
                        .arg(vacancy.title)
                        .arg(vacancy.companyName));
 
-    briefsProgressBar.setValue(vacancy.id);
+    summariesProgressBar.setValue(vacancy.id);
 }
 
 void ProgressDialog::updateDetails(const Vacancy& vacancy)
@@ -190,13 +190,13 @@ void ProgressDialog::updateError(QNetworkReply::NetworkError err)
 
 void ProgressDialog::start(qsizetype maxVacancies)
 {
-    briefsProgressBar.setRange(0, maxVacancies);
-    briefsProgressBar.setValue(0);
+    summariesProgressBar.setRange(0, maxVacancies);
+    summariesProgressBar.setValue(0);
 
     allDetailsProgressBar.setRange(0, maxVacancies);
     allDetailsProgressBar.setValue(0);
 
-    briefLabel.setText("Processing summaries...");
+    summaryLabel.setText("Processing summaries...");
     detailsLabel.setText("Processing vacancy details...");
 
     errorLabel.setText("");

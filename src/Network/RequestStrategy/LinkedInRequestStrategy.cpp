@@ -40,7 +40,7 @@ LinkedInRequestStrategy::LinkedInRequestStrategy(AbstractNetworkManager* const n
                                                  QObject* parent) :
     AbstractRequestStrategy(networkManager, parent),
     m_activeReplies(),
-    m_briefUrlsQueue(),
+    m_summaryUrlsQueue(),
     m_detailsUrlsQueue(),
     m_requestTimer(this),
     m_requestCooldownTimer(this),
@@ -86,7 +86,7 @@ void LinkedInRequestStrategy::startNext()
     if (m_requestCooldownTimer.isActive())
         return;
 
-    if (!m_vacancyCountDetermined && m_briefUrlsQueue.isEmpty())
+    if (!m_vacancyCountDetermined && m_summaryUrlsQueue.isEmpty())
     {
         m_vacancyCountDetermined = true;
         emit vacancyCountDetermined(m_detailsUrlsQueue.size());
@@ -100,9 +100,9 @@ void LinkedInRequestStrategy::startNext()
         emit urlsDequeued();
 
         QUrl url;
-        if (!m_briefUrlsQueue.isEmpty())
+        if (!m_summaryUrlsQueue.isEmpty())
         {
-            url = m_briefUrlsQueue.dequeue();
+            url = m_summaryUrlsQueue.dequeue();
         }
         else
         {
@@ -199,7 +199,7 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
 
     initCookies(url);
 
-    if (updateBriefUrlCutoff(html, url))
+    if (updateSummaryUrlCutoff(html, url))
     {
         emit meaninglessRepliesReceived();
         return;
@@ -214,9 +214,9 @@ bool LinkedInRequestStrategy::enqueueUrl(const QUrl& url)
     const UrlType urlType = clasifyUrl(url);
     switch (urlType)
     {
-        case UrlType::Brief:
+        case UrlType::Summary:
         {
-            m_briefUrlsQueue.enqueue(url);
+            m_summaryUrlsQueue.enqueue(url);
             return true;
         }
         case UrlType::Details:
@@ -234,10 +234,10 @@ bool LinkedInRequestStrategy::enqueueUrl(const QUrl& url)
 
 void LinkedInRequestStrategy::clearQueues()
 {
-    if (!m_briefUrlsQueue.isEmpty())
+    if (!m_summaryUrlsQueue.isEmpty())
     {
-        emit urlsDequeued(m_briefUrlsQueue.size());
-        m_briefUrlsQueue.clear();
+        emit urlsDequeued(m_summaryUrlsQueue.size());
+        m_summaryUrlsQueue.clear();
     }
 
     if (!m_detailsUrlsQueue.isEmpty())
@@ -249,7 +249,7 @@ void LinkedInRequestStrategy::clearQueues()
 
 bool LinkedInRequestStrategy::hasPendingRequests() const
 {
-    return !m_briefUrlsQueue.isEmpty() || !m_detailsUrlsQueue.isEmpty();
+    return !m_summaryUrlsQueue.isEmpty() || !m_detailsUrlsQueue.isEmpty();
 }
 
 void LinkedInRequestStrategy::cancelAll()
@@ -301,9 +301,9 @@ void LinkedInRequestStrategy::initCookies(const QUrl& url)
     }
 }
 
-bool LinkedInRequestStrategy::updateBriefUrlCutoff(const QString& html, const QUrl& url)
+bool LinkedInRequestStrategy::updateSummaryUrlCutoff(const QString& html, const QUrl& url)
 {
-    if (clasifyUrl(url) != UrlType::Brief)
+    if (clasifyUrl(url) != UrlType::Summary)
     {
         return false;
     }
@@ -326,7 +326,7 @@ bool LinkedInRequestStrategy::updateBriefUrlCutoff(const QString& html, const QU
         return isAfterStart(start, url);
     };
 
-    const qsizetype removed = m_briefUrlsQueue.removeIf(isAfterStartPred);
+    const qsizetype removed = m_summaryUrlsQueue.removeIf(isAfterStartPred);
     emit urlsDequeued(removed);
 
     qCDebug(LinkedInRequestStrategyLog) << "Removed" << removed << "later result pages after an empty page at offset" << start;
@@ -337,7 +337,7 @@ bool LinkedInRequestStrategy::updateBriefUrlCutoff(const QString& html, const QU
 UrlType clasifyUrl(const QUrl& url)
 {
     if (url.hasQuery())
-        return UrlType::Brief;
+        return UrlType::Summary;
 
     return UrlType::Details;
 }

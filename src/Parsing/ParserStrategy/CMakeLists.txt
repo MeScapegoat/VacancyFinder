@@ -20,8 +20,8 @@ add_library(LinkedInParserStrategy
     LinkedInParserStrategy/LinkedInParserStrategy.h
     LinkedInParserStrategy/LinkedInParserStrategy.cpp
 
-    LinkedInParserStrategy/LinkedInBriefVacancyExtractor.h
-    LinkedInParserStrategy/LinkedInBriefVacancyExtractor.cpp
+    LinkedInParserStrategy/LinkedInSummaryVacancyExtractor.h
+    LinkedInParserStrategy/LinkedInSummaryVacancyExtractor.cpp
 
     LinkedInParserStrategy/LinkedInDetailsHtmlVacancyExtractor.h
     LinkedInParserStrategy/LinkedInDetailsHtmlVacancyExtractor.cpp

@@ -51,7 +51,7 @@ VacancyFinder::VacancyFinder(QObject* parent) :
 
     // VacancySearchWorkflow
     QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::vacancyCountDetermined, &progressDialog, &ProgressDialog::updateVacancyCount);
-    QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::briefReady, &progressDialog, &ProgressDialog::updateBrief);
+    QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::summaryReady, &progressDialog, &ProgressDialog::updateSummary);
     QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::detailsReady, &progressDialog, &ProgressDialog::updateDetails);
     QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::vacanciesReady, &vacancyBrowserPresenter, &VacancyBrowserPresenter::onVacanciesReady);
     QObject::connect(&vacancySearchWorkflow, &VacancySearchWorkflow::allActiveWorkFinished, &progressDialog, &ProgressDialog::accept);

@@ -44,11 +44,11 @@ signals:
 
     void urlsRequested(const QList<QUrl>& urls);
 
-    void briefReady(const Vacancy& vacancy);
+    void summaryReady(const Vacancy& vacancy);
     void detailsReady(const Vacancy& vacancy);
 
 private slots:
-    void onBriefParsed(const Vacancy& vacancy);
+    void onSummaryParsed(const Vacancy& vacancy);
     void onDetailsParsed(const Vacancy& vacancy);
 
     void onWorkFinished();

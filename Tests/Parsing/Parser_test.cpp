@@ -15,7 +15,7 @@ class MockParserStrategy : public AbstractParserStrategy
 {
 public:
     MOCK_METHOD(PageType, classifyPage, (const QString& html), (const, override));
-    MOCK_METHOD(QList<Vacancy>, parseBriefs, (const QString& html), (const, override));
+    MOCK_METHOD(QList<Vacancy>, parseSummaries, (const QString& html), (const, override));
     MOCK_METHOD(Vacancy, parseDetails, (const QString& html, const QUrl& url), (const, override));
 };
 
@@ -28,7 +28,7 @@ protected:
         startedSpy(&parser, &Parser::pageParsingStarted),
         finishedSpy(&parser, &Parser::pageParsingFinished),
         requestDetailsSpy(&parser, &Parser::requestDetails),
-        briefParsedSpy(&parser, &Parser::briefParsed),
+        summaryParsedSpy(&parser, &Parser::summaryParsed),
         detailsParsedSpy(&parser, &Parser::detailsParsed)
     {
 
@@ -43,7 +43,7 @@ protected:
 
     QSignalSpy requestDetailsSpy;
 
-    QSignalSpy briefParsedSpy;
+    QSignalSpy summaryParsedSpy;
     QSignalSpy detailsParsedSpy;
 };
 
@@ -52,17 +52,17 @@ TEST_F(ParserTest, ConstructorSetsStrategy)
     EXPECT_EQ(&parser.strategy(), &strategy);
 }
 
-TEST_F(ParserTest, ProcessesBriefPage)
+TEST_F(ParserTest, ProcessesSummaryPage)
 {
-    const QString html = "brief html";
+    const QString html = "summary html";
     const QUrl url("url");
     Vacancy vacancy;
     vacancy.url = QUrl("Vacancy url");
 
     EXPECT_CALL(strategy, classifyPage(html))
-        .WillOnce(Return(PageType::Brief));
+        .WillOnce(Return(PageType::Summary));
 
-    EXPECT_CALL(strategy, parseBriefs(html))
+    EXPECT_CALL(strategy, parseSummaries(html))
         .WillOnce(Return(QList<Vacancy>{vacancy}));
 
     parser.processPage(html, url);
@@ -70,37 +70,37 @@ TEST_F(ParserTest, ProcessesBriefPage)
     EXPECT_EQ(startedSpy.count(), 1);
     EXPECT_EQ(finishedSpy.count(), 1);
     EXPECT_EQ(requestDetailsSpy.count(), 1);
-    ASSERT_EQ(briefParsedSpy.count(), 1);
+    ASSERT_EQ(summaryParsedSpy.count(), 1);
 
-    const Vacancy parsedVacancy = qvariant_cast<Vacancy>(briefParsedSpy.at(0).at(0));
+    const Vacancy parsedVacancy = qvariant_cast<Vacancy>(summaryParsedSpy.at(0).at(0));
 
     EXPECT_EQ(parsedVacancy.url, vacancy.url);
     EXPECT_EQ(parsedVacancy.id, 1);
 }
 
-TEST_F(ParserTest, DoesNotParseSameBriefPageTwice)
+TEST_F(ParserTest, DoesNotParseSameSummaryPageTwice)
 {
-    const QString html = "brief html";
+    const QString html = "summary html";
     const QUrl url("url");
     Vacancy vacancy;
     vacancy.url = QUrl("Vacancy url");
 
     EXPECT_CALL(strategy, classifyPage(html))
         .Times(2)
-        .WillRepeatedly(Return(PageType::Brief));
+        .WillRepeatedly(Return(PageType::Summary));
 
-    EXPECT_CALL(strategy, parseBriefs(html))
+    EXPECT_CALL(strategy, parseSummaries(html))
         .WillOnce(Return(QList<Vacancy>{vacancy}));
 
     parser.processPage(html, url);
     parser.processPage(html, url);
 
-    EXPECT_EQ(briefParsedSpy.count(), 1);
+    EXPECT_EQ(summaryParsedSpy.count(), 1);
 }
 
-TEST_F(ParserTest, DoesNotParseDuplicateBriefs)
+TEST_F(ParserTest, DoesNotParseDuplicateSummaries)
 {
-    const QString html = "brief html";
+    const QString html = "summary html";
     const QUrl url1("url 1");
     const QUrl url2("url 2");
 
@@ -112,25 +112,25 @@ TEST_F(ParserTest, DoesNotParseDuplicateBriefs)
 
     EXPECT_CALL(strategy, classifyPage(html))
         .Times(2)
-        .WillRepeatedly(Return(PageType::Brief));
+        .WillRepeatedly(Return(PageType::Summary));
 
-    EXPECT_CALL(strategy, parseBriefs(html))
+    EXPECT_CALL(strategy, parseSummaries(html))
         .WillOnce(Return(QList<Vacancy>{first}))
         .WillOnce(Return(QList<Vacancy>{duplicate}));
 
     parser.processPage(html, url1);
     parser.processPage(html, url2);
 
-    ASSERT_EQ(briefParsedSpy.count(), 1);
+    ASSERT_EQ(summaryParsedSpy.count(), 1);
     EXPECT_EQ(requestDetailsSpy.count(), 1);
 
-    const Vacancy parsedVacancy = qvariant_cast<Vacancy>(briefParsedSpy.at(0).at(0));
+    const Vacancy parsedVacancy = qvariant_cast<Vacancy>(summaryParsedSpy.at(0).at(0));
     EXPECT_EQ(parsedVacancy.id, 1);
 }
 
-TEST_F(ParserTest, AssignsIncrementingIdsToBriefs)
+TEST_F(ParserTest, AssignsIncrementingIdsToSummaries)
 {
-    const QString html = "brief html";
+    const QString html = "summary html";
     const QUrl url("url");
 
     Vacancy first;
@@ -140,17 +140,17 @@ TEST_F(ParserTest, AssignsIncrementingIdsToBriefs)
     second.url = QUrl("Vacancy url 2");
 
     EXPECT_CALL(strategy, classifyPage(html))
-        .WillOnce(Return(PageType::Brief));
+        .WillOnce(Return(PageType::Summary));
 
-    EXPECT_CALL(strategy, parseBriefs(html))
+    EXPECT_CALL(strategy, parseSummaries(html))
         .WillOnce(Return(QList<Vacancy>{first, second}));
 
     parser.processPage(html, url);
 
-    ASSERT_EQ(briefParsedSpy.count(), 2);
+    ASSERT_EQ(summaryParsedSpy.count(), 2);
 
-    const Vacancy parsedFirst = qvariant_cast<Vacancy>(briefParsedSpy.at(0).at(0));
-    const Vacancy parsedSecond = qvariant_cast<Vacancy>(briefParsedSpy.at(1).at(0));
+    const Vacancy parsedFirst = qvariant_cast<Vacancy>(summaryParsedSpy.at(0).at(0));
+    const Vacancy parsedSecond = qvariant_cast<Vacancy>(summaryParsedSpy.at(1).at(0));
 
     EXPECT_EQ(parsedFirst.id, 1);
     EXPECT_EQ(parsedSecond.id, 2);
@@ -211,13 +211,13 @@ TEST_F(ParserTest, UnknownPageTypeDoesNotParseAnything)
 
     parser.processPage(html, url);
 
-    EXPECT_EQ(briefParsedSpy.count(), 0);
+    EXPECT_EQ(summaryParsedSpy.count(), 0);
     EXPECT_EQ(detailsParsedSpy.count(), 0);
 }
 
 TEST_F(ParserTest, InterruptPreventsProcessing)
 {
-    const QString html = "brief html";
+    const QString html = "summary html";
     const QUrl url("url");
 
     parser.interrupt();
@@ -233,7 +233,7 @@ TEST_F(ParserTest, InterruptPreventsProcessing)
 
 TEST_F(ParserTest, ResetAllowsPreviouslyProcessedPagesToBeProcessedAgain)
 {
-    const QString html = "brief html";
+    const QString html = "summary html";
     const QUrl url("url");
 
     Vacancy vacancy;
@@ -241,9 +241,9 @@ TEST_F(ParserTest, ResetAllowsPreviouslyProcessedPagesToBeProcessedAgain)
 
     EXPECT_CALL(strategy, classifyPage(html))
         .Times(2)
-        .WillRepeatedly(Return(PageType::Brief));
+        .WillRepeatedly(Return(PageType::Summary));
 
-    EXPECT_CALL(strategy, parseBriefs(html))
+    EXPECT_CALL(strategy, parseSummaries(html))
         .Times(2)
         .WillRepeatedly(Return(QList<Vacancy>{vacancy}));
 
@@ -253,10 +253,10 @@ TEST_F(ParserTest, ResetAllowsPreviouslyProcessedPagesToBeProcessedAgain)
 
     parser.processPage(html, url);
 
-    ASSERT_EQ(briefParsedSpy.count(), 2);
+    ASSERT_EQ(summaryParsedSpy.count(), 2);
 
-    const Vacancy first = qvariant_cast<Vacancy>(briefParsedSpy.at(0).at(0));
-    const Vacancy second = qvariant_cast<Vacancy>(briefParsedSpy.at(1).at(0));
+    const Vacancy first = qvariant_cast<Vacancy>(summaryParsedSpy.at(0).at(0));
+    const Vacancy second = qvariant_cast<Vacancy>(summaryParsedSpy.at(1).at(0));
 
     EXPECT_EQ(first.id, 1);
     EXPECT_EQ(second.id, 1);
@@ -264,7 +264,7 @@ TEST_F(ParserTest, ResetAllowsPreviouslyProcessedPagesToBeProcessedAgain)
 
 TEST_F(ParserTest, ResetClearsInterrupt)
 {
-    const QString html = "brief html";
+    const QString html = "summary html";
     const QUrl url("url");
 
     Vacancy vacancy;
@@ -274,12 +274,12 @@ TEST_F(ParserTest, ResetClearsInterrupt)
     parser.reset();
 
     EXPECT_CALL(strategy, classifyPage(html))
-        .WillOnce(Return(PageType::Brief));
+        .WillOnce(Return(PageType::Summary));
 
-    EXPECT_CALL(strategy, parseBriefs(html))
+    EXPECT_CALL(strategy, parseSummaries(html))
         .WillOnce(Return(QList<Vacancy>{vacancy}));
 
     parser.processPage(html, url);
 
-    EXPECT_EQ(briefParsedSpy.count(), 1);
+    EXPECT_EQ(summaryParsedSpy.count(), 1);
 }

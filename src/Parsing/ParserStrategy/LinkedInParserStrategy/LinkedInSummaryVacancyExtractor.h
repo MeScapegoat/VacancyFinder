@@ -5,11 +5,11 @@
 #include <QString>
 
 
-class LinkedInBriefVacancyExtractor : public VacancyExtractor
+class LinkedInSummaryVacancyExtractor : public VacancyExtractor
 {
 public:
-    LinkedInBriefVacancyExtractor() = default;
-    ~LinkedInBriefVacancyExtractor() = default;
+    LinkedInSummaryVacancyExtractor() = default;
+    ~LinkedInSummaryVacancyExtractor() = default;
 
 public:
     void setHtml(const QString& html);
@@ -26,4 +26,4 @@ private:
     QString html;
 };
 
-QStringList extractVacancyBriefs(const QString& html);
+QStringList extractVacancySummaries(const QString& html);
