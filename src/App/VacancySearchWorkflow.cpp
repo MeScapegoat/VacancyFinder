@@ -55,13 +55,14 @@ VacancySearchWorkflow::VacancySearchWorkflow(AbstractSearchUrlProvider& searchUr
     QObject::connect(&m_requestManager, &RequestManager::vacancyCountDetermined,     this, &VacancySearchWorkflow::vacancyCountDetermined);
 
 
-    QObject::connect(&m_parser, &Parser::requestDetails,        &m_requestManager, &RequestManager::addUrl);
+    // Ensure child URLs are registered before the parser reports the page complete.
+    QObject::connect(&m_parser, &Parser::requestDetails, &m_requestManager, &RequestManager::addUrl, Qt::BlockingQueuedConnection);
 
     // Parser::pageParsingStarted is not connected due to optimization
-    QObject::connect(&m_parser, &Parser::pageParsingFinished,   &m_workCoordinator, &WorkCoordinator::workFinished);
+    QObject::connect(&m_parser, &Parser::pageParsingFinished, &m_workCoordinator, &WorkCoordinator::workFinished);
 
-    QObject::connect(&m_parser, &Parser::summaryParsed,           this, &VacancySearchWorkflow::onSummaryParsed);
-    QObject::connect(&m_parser, &Parser::detailsParsed,         this, &VacancySearchWorkflow::onDetailsParsed);
+    QObject::connect(&m_parser, &Parser::summaryParsed, this, &VacancySearchWorkflow::onSummaryParsed);
+    QObject::connect(&m_parser, &Parser::detailsParsed, this, &VacancySearchWorkflow::onDetailsParsed);
 
 
     QObject::connect(this, &VacancySearchWorkflow::interrupt, &m_requestManager, &RequestManager::interrupt);
@@ -83,11 +84,11 @@ VacancySearchWorkflow::VacancySearchWorkflow(AbstractSearchUrlProvider& searchUr
 
 VacancySearchWorkflow::~VacancySearchWorkflow()
 {
-    m_networkThread.quit();
-    m_networkThread.wait();
-
     m_parserThread.quit();
     m_parserThread.wait();
+
+    m_networkThread.quit();
+    m_networkThread.wait();
 }
 
 void VacancySearchWorkflow::startSearch(const QList<QUrl> urls)
