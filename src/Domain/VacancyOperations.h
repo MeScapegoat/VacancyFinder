@@ -5,7 +5,6 @@
 class Vacancy;
 
 
-bool offFilter();
 bool containsAnyFilter(const QStringList& filterWords, const Vacancy* vacancy);
 bool containsAllFilter(const QStringList& filterWords, const Vacancy* vacancy);
 bool excludesAnyFilter(const QStringList& filterWords, const Vacancy* vacancy);

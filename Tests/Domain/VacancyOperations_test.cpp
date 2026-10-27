@@ -15,11 +15,6 @@ namespace
     }
 }
 
-TEST(VacancyOperationsTest, OffFilter)
-{
-    EXPECT_TRUE(offFilter());
-}
-
 TEST(VacancyOperationsTest, ContainsAnyFilter)
 {
     Vacancy vacancy = makeVacancy("C++ Qt Developer");

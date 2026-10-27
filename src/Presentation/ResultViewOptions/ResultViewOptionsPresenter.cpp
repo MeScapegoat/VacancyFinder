@@ -9,6 +9,29 @@
 #include <Vacancy.h>
 #include <VacancyOperations.h>
 
+namespace
+{
+    int normalizeFilterMode(const int filterMode)
+    {
+        if (filterMode < static_cast<int>(FilterMode::Off) || filterMode >= static_cast<int>(FilterMode::COUNT))
+        {
+            return static_cast<int>(FilterMode::Off);
+        }
+
+        return filterMode;
+    }
+
+    int normalizeSortMode(const int sortMode)
+    {
+        if (sortMode < static_cast<int>(SortMode::Off) || sortMode >= static_cast<int>(SortMode::COUNT))
+        {
+            return static_cast<int>(SortMode::Off);
+        }
+
+        return sortMode;
+    }
+}
+
 ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) : 
     Presenter(parent)
 {
@@ -16,12 +39,12 @@ ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) :
     insertSorts();
 
 
-    connect(&view().filterMode(), &QComboBox::currentIndexChanged, &model().currentFilterMode, &Observable<int>::setValue);
+    connect(&view().filterMode(), &QComboBox::currentIndexChanged, this, &ResultViewOptionsPresenter::setFilterMode);
     connect(&model().currentFilterMode, &Observable<int>::valueChanged, this, &ResultViewOptionsPresenter::onCurrentFilterIndexChanged);
     onCurrentFilterIndexChanged();
 
 
-    connect(&view().sortMode(), &QComboBox::currentIndexChanged, &model().currentSortMode, &Observable<int>::setValue);
+    connect(&view().sortMode(), &QComboBox::currentIndexChanged, this, &ResultViewOptionsPresenter::setSortMode);
     connect(&model().currentSortMode, &Observable<int>::valueChanged, this, &ResultViewOptionsPresenter::onCurrentSortIndexChanged);
     onCurrentSortIndexChanged();
 
@@ -57,7 +80,8 @@ ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) :
 
 void ResultViewOptionsPresenter::setFilterMode(int filterMode)
 {
-    model().currentFilterMode = filterMode;
+    const int normalizedFilterMode = normalizeFilterMode(filterMode);
+    model().currentFilterMode = normalizedFilterMode;
 }
 
 int ResultViewOptionsPresenter::filterMode() const
@@ -82,7 +106,8 @@ QString ResultViewOptionsPresenter::filterWords() const
 
 void ResultViewOptionsPresenter::setSortMode(int sortMode)
 {
-    model().currentSortMode = sortMode;
+    const int normalizedSortMode = normalizeSortMode(sortMode);
+    model().currentSortMode = normalizedSortMode;
 }
 
 int ResultViewOptionsPresenter::sortMode() const
@@ -144,14 +169,16 @@ void ResultViewOptionsPresenter::setKeywords(const QString& keywords)
 
 void ResultViewOptionsPresenter::onCurrentSortIndexChanged()
 {
-    view().setSortMode(model().currentSortMode());
+    const int normalizedSortMode = normalizeSortMode(model().currentSortMode());
+    view().setSortMode(normalizedSortMode);
 
     emit vacancySortComparatorChanged(vacancySortComparator());
 }
 
 void ResultViewOptionsPresenter::onCurrentFilterIndexChanged()
 {
-    view().setFilterMode(model().currentFilterMode());
+    const int normalizedFilterMode = normalizeFilterMode(model().currentFilterMode());
+    view().setFilterMode(normalizedFilterMode);
 
     emit vacancyFilterChanged(vacancyFilter());
 }
@@ -193,10 +220,7 @@ void ResultViewOptionsPresenter::insertFilters()
 {
     auto& filterMode = view().filterMode();
 
-    VacancyFilter offFilterCallback = [](const Vacancy* vacancy) -> bool
-    {
-        return offFilter();
-    };
+    VacancyFilter offFilterCallback;
     filterMode.insertItem(static_cast<qsizetype>(FilterMode::Off), QObject::tr("Off"), std::move(offFilterCallback));
 
 

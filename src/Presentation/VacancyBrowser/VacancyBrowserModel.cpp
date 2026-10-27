@@ -140,11 +140,18 @@ void VacancyBrowserModel::syncVisibleVacancies()
 
 void VacancyBrowserModel::applyFiltering()
 {
-    Q_ASSERT_X(passesWordFilter, __FUNCTION__, "passesWordFilter function is not set");
-
     auto shouldRemoveVacancy = [this](const Vacancy* vacancy) -> bool
     {
-        return !passesWordFilter(vacancy) || !passesFilterStatus(vacancy);
+        if (passesWordFilter)
+        {
+            const bool passesWords = passesWordFilter(vacancy);
+            if (!passesWords)
+            {
+                return true;
+            }
+        }
+
+        return !passesFilterStatus(vacancy);
     };
 
     m_visibleVacancies.removeIf(shouldRemoveVacancy);

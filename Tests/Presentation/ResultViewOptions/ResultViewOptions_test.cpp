@@ -183,7 +183,11 @@ TEST_F(ResultViewOptionsPresenterTest, ChangingFilterModeUpdatesVacancyFilter)
         setFilterMode(i);
 
         EXPECT_EQ(&view().filterMode().currentFunction(), &vacancyFilter());
-        EXPECT_TRUE(vacancyFilter());
+
+        if (i == static_cast<int>(FilterMode::Off))
+            EXPECT_FALSE(vacancyFilter());
+        else
+            EXPECT_TRUE(vacancyFilter());
     }
 
     EXPECT_EQ(vacancyFilterChangedSpy.count(), static_cast<int>(FilterMode::COUNT));

@@ -1,7 +1,7 @@
 #include <QComboBox>
-
 #include <QList>
 #include <QWidget>
+
 
 
 template<typename Function>
@@ -10,7 +10,8 @@ class CallableComboBox: public QComboBox
 public:
     explicit CallableComboBox(QWidget* parent = nullptr) :
         QComboBox(parent),
-        m_functions()
+        m_functions(),
+        m_emptyFunction()
     {
     }
 
@@ -29,7 +30,13 @@ public:
 
     const Function& currentFunction() const
     {
-        return m_functions[currentIndex()];
+        const qsizetype index = currentIndex();
+        if (index < 0 || index >= m_functions.size())
+        {
+            return m_emptyFunction;
+        }
+
+        return m_functions.at(index);
     }
 
 private:
@@ -45,4 +52,5 @@ private:
 
 private:
     QList<Function> m_functions;
+    Function m_emptyFunction;
 };

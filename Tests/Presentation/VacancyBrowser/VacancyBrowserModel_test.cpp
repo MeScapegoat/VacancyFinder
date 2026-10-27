@@ -221,6 +221,32 @@ TEST_F(VacancyBrowserModelTest, AppliesAssignedFilter)
     EXPECT_EQ(model.visibleVacancies().first()->title, qtVacancy.title);
 }
 
+TEST_F(VacancyBrowserModelTest, EmptyFilterSkipsWordFilteringButStillAppliesStatusFilter)
+{
+    const Vacancy unreviewedVacancy = makeVacancy("url1", "Unreviewed");
+    const Vacancy ignoredVacancy = makeVacancy("url2", "Ignored");
+
+    model.addVacancy(unreviewedVacancy);
+    model.addVacancy(ignoredVacancy);
+    model.ignoredVacancies().insert(ignoredVacancy.url);
+    model.setVisibleStatuses({VacancyStatus::Unreviewed});
+    model.setVacancyFilter(VacancyFilter{});
+
+    model.updateVisibleVacancies();
+
+    ASSERT_EQ(model.visibleVacancies().size(), 1);
+    EXPECT_EQ(model.visibleVacancies().first()->title, unreviewedVacancy.title);
+
+    model.setVacancyFilter([](const Vacancy*)
+    {
+        return true;
+    });
+    model.updateVisibleVacancies();
+
+    ASSERT_EQ(model.visibleVacancies().size(), 1);
+    EXPECT_EQ(model.visibleVacancies().first()->title, unreviewedVacancy.title);
+}
+
 TEST_F(VacancyBrowserModelTest, AppliesAssignedSortComparator)
 {
     const Vacancy vacancy1= makeVacancy("url1", "AAAA");

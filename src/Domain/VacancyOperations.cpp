@@ -4,11 +4,6 @@
 #include <QStringList>
 #include <QString>
 
-bool offFilter()
-{
-    return true;
-}
-
 bool containsAnyFilter(const QStringList& filterWords, const Vacancy* vacancy)
 {
     if (filterWords.isEmpty())
