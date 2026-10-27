@@ -2,9 +2,9 @@
 
 #include <QDialog>
 #include <QLabel>
-#include <QPushButton>
-#include <QProgressBar>
 #include <QNetworkReply>
+#include <QProgressBar>
+#include <QPushButton>
 
 class Vacancy;
 
@@ -30,10 +30,7 @@ private:
     QPushButton& m_stopButton;
     QLabel& briefLabel;
     QProgressBar& briefsProgressBar;
-
-
     QLabel& detailsLabel;
     QProgressBar& allDetailsProgressBar;
-
     QLabel& errorLabel;
 };
