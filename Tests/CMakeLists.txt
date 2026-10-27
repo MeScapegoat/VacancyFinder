@@ -58,28 +58,27 @@ set_target_properties(main_for_qt_tests PROPERTIES FOLDER "Tests/Support")
 
 # General
 
-add_executable(app_workflow_test
-	app_workflow_test.cpp
-	
+add_executable(VacancySearchWorkflowIntegration_test
+	App/VacancySearchWorkflow/VacancySearchWorkflowIntegration_test.cpp
 )
 
-target_link_libraries(app_workflow_test
+target_link_libraries(VacancySearchWorkflowIntegration_test
 	PRIVATE
 		main_for_qt_tests
-		WorkCoordinator
+		VacancySearchWorkflow
+		LinkedInSearchUrlProvider
 		NetworkManager
-		RequestManager
-		Parser
 		LinkedInParserStrategy
 		LinkedInRequestStrategy
+		Parser
+		RequestManager
 		GTest::gtest
-		Qt6::Widgets
 		Qt6::Test
 )
 
-set_target_properties(app_workflow_test PROPERTIES FOLDER "Tests/App/Integration")
+set_target_properties(VacancySearchWorkflowIntegration_test PROPERTIES FOLDER "Tests/App/VacancySearchWorkflow/Integration")
 
-gtest_discover_tests(app_workflow_test PROPERTIES LABELS integration)
+gtest_discover_tests(VacancySearchWorkflowIntegration_test PROPERTIES LABELS integration)
 
 
 
