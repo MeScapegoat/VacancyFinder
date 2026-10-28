@@ -4,6 +4,8 @@
 #include <QDir>
 #include <QFile>
 #include <QLoggingCategory>
+#include <QRegularExpression>
+#include <QTextDocumentFragment>
 
 
 Q_LOGGING_CATEGORY(UtilsLog, "utils");
@@ -21,13 +23,18 @@ QString removeSpaces(QString str)
 
 QString extract(const QString& html, const QString& pattern)
 {
+    return decodeHtml(extractRaw(html, pattern));
+}
+
+QString extractRaw(const QString& html, const QString& pattern)
+{
     const QRegularExpression regex(pattern, QRegularExpression::DotMatchesEverythingOption);
 
     const QRegularExpressionMatch match = regex.match(html);
 
     if (match.hasMatch())
     {
-        return decodeHtml(match.captured(1).trimmed());
+        return match.captured(1).trimmed();
     }
 
     return QString();
@@ -76,14 +83,34 @@ QSet<QUrl> toUrlSet(const QStringList& stringList)
 
 QString decodeHtml(QString text)
 {
-    text.replace("&amp;", "&");
-    text.replace("&quot;", "\"");
-    text.replace("&#39;", "'");
-    text.replace("&lt;", "<");
-    text.replace("&gt;", ">");
-    text.replace("&nbsp;", " ");
+    static const QRegularExpression entityPattern(R"(&(?:#[xX][0-9A-Fa-f]+|#\d+|[A-Za-z][A-Za-z0-9]*);?)");
 
-    return text;
+    while (true)
+    {
+        QString decodedText;
+        qsizetype previousEnd = 0;
+        QRegularExpressionMatchIterator matches = entityPattern.globalMatch(text);
+
+        while (matches.hasNext())
+        {
+            const QRegularExpressionMatch match = matches.next();
+            const QString entity = match.captured();
+            const QString decodedEntity = QTextDocumentFragment::fromHtml(entity).toPlainText();
+
+            decodedText += text.mid(previousEnd, match.capturedStart() - previousEnd);
+            decodedText += (decodedEntity.isEmpty() || decodedEntity == entity) ? entity : decodedEntity;
+            previousEnd = match.capturedEnd();
+        }
+
+        decodedText += text.mid(previousEnd);
+
+        if (decodedText == text)
+        {
+            return decodedText;
+        }
+
+        text.swap(decodedText);
+    }
 }
 
 void saveToFile(const QString& str, const QString& fileName, const QString& folderName)

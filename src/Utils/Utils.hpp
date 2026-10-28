@@ -12,6 +12,7 @@
 QString removeSpaces(QString str);
 
 QString extract(const QString& html, const QString& pattern);
+QString extractRaw(const QString& html, const QString& pattern);
 QStringList extractAll(const QString& html, const QString& pattern);
 QStringList toStringList(const QSet<QUrl>& urlSet);
 QSet<QUrl> toUrlSet(const QStringList& stringList);

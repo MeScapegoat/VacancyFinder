@@ -22,7 +22,7 @@ QString LinkedInDetailsJsonVacancyExtractor::title() const
     const QJsonValue title = json.value(titleFieldName);
     if (title.isString())
     {
-        return title.toString();
+        return decodeHtml(title.toString());
     }
 
     return VacancyExtractor::title();
@@ -206,7 +206,7 @@ QJsonObject extractJsonObject(const QString& html)
 {
     static constexpr auto jsonObjectPattern = R"REGEX(<script\b[^>]*type="application/ld\+json"[^>]*>(.*?)</script>)REGEX";
 
-    const QString jsonText = extract(html, jsonObjectPattern);
+    const QString jsonText = extractRaw(html, jsonObjectPattern);
     const QJsonDocument document = QJsonDocument::fromJson(jsonText.toUtf8());
 
     return document.object();

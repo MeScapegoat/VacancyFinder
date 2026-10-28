@@ -59,7 +59,19 @@ TEST(UtilsTest, ExtractAllTrimsAndDecodesEveryCapture)
 
 TEST(UtilsTest, DecodeHtmlReplacesSupportedEntities)
 {
-    EXPECT_EQ(decodeHtml("&amp;&quot;&#39;&lt;tag&gt;&nbsp;text"), QString("&\"'<tag> text"));
+    EXPECT_EQ(decodeHtml("&amp;&quot;&#39;&lt;tag&gt;&nbsp;text &copy; &#x1F600;"), QString("&\"'<tag> text © 😀"));
+}
+
+TEST(UtilsTest, DecodeHtmlPreservesMarkupWhileDecodingEntities)
+{
+    EXPECT_EQ(decodeHtml("<strong>R&amp;D</strong>"), QString("<strong>R&D</strong>"));
+}
+
+TEST(UtilsTest, DecodeHtmlDecodesNestedEntities)
+{
+    EXPECT_EQ(decodeHtml("&amp;amp;"), QString("&"));
+    EXPECT_EQ(decodeHtml("&amp;amp;amp;"), QString("&"));
+    EXPECT_EQ(decodeHtml("<strong>&amp;amp;</strong>"), QString("<strong>&</strong>"));
 }
 
 TEST(UtilsTest, PrintWritesValuesAndSkipsEmptyOptionals)

@@ -10,6 +10,7 @@ target_include_directories(Utils PUBLIC
 )
 
 target_link_libraries(Utils PUBLIC Qt6::Core)
+target_link_libraries(Utils PRIVATE Qt6::Gui)
 
 set_target_properties(Utils PROPERTIES FOLDER "src/Utils")
 

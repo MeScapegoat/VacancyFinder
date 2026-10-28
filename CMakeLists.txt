@@ -20,6 +20,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Qt6 
     REQUIRED COMPONENTS 
         Core
+        Gui
         Network
         Widgets
         Test)
