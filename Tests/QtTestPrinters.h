@@ -4,7 +4,7 @@
 
 #include <QString>
 
-void PrintTo(const QString& string, std::ostream* os)
+inline void PrintTo(const QString& string, std::ostream* os)
 {
     *os << string.toStdString();
 }

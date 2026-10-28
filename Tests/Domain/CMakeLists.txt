@@ -6,7 +6,6 @@ target_link_libraries(VacancyOperations_test
 	PRIVATE
 		main_for_qt_tests
 		VacancyOperations
-		QtTestPrinters
 		Qt::Test
 )
 
@@ -24,7 +23,6 @@ target_link_libraries(Vacancy_test
 	PRIVATE
 		Domain
 		GTest::gtest_main
-		QtTestPrinters
 )
 
 set_target_properties(Vacancy_test PROPERTIES FOLDER "Tests/Domain")
@@ -41,7 +39,6 @@ target_link_libraries(VacancyExtractor_test
 	PRIVATE
 		Domain
 		GTest::gtest_main
-		QtTestPrinters
 )
 
 set_target_properties(VacancyExtractor_test PROPERTIES FOLDER "Tests/Domain")

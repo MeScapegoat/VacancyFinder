@@ -4,28 +4,7 @@ include(GoogleTest)
 
 # Helpers
 
-add_library(test_helpers 
-	INTERFACE
-		test_utils.hpp
-		test_helpers.hpp)
-
-target_link_libraries(test_helpers
-	INTERFACE
-		Utils
-		GTest::gtest
-		Qt6::Test
-		Qt6::Widgets
-)
-
-target_include_directories(test_helpers INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-set_target_properties(test_helpers PROPERTIES FOLDER "Tests/Support")
-
-
-
-add_library(QtTestPrinters
+add_library(QtTestPrinters INTERFACE
 	QtTestPrinters.h)
 
 target_link_libraries(QtTestPrinters
@@ -35,6 +14,12 @@ target_link_libraries(QtTestPrinters
 
 target_include_directories(QtTestPrinters INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+link_libraries(QtTestPrinters)
+
+target_precompile_headers(QtTestPrinters INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/QtTestPrinters.h>"
 )
 
 set_target_properties(QtTestPrinters PROPERTIES FOLDER "Tests/Support")
