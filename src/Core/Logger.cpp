@@ -9,6 +9,7 @@
 #include <QThread>
 
 #include <cstdio>
+#include <mutex>
 
 Q_LOGGING_CATEGORY(LoggerLog, "logger");
 
@@ -17,17 +18,7 @@ Logger::Logger()
     qInstallMessageHandler(myMessageHandler);
     qSetMessagePattern("[%{time dd-MM-yyyy HH:mm:ss:zzz}][%{function}][%ThreadName]: %{message}");
 
-    QObject::connect(&logRulesWatcher, &QFileSystemWatcher::fileChanged, this, &Logger::applyLogRules, Qt::DirectConnection);
-
-    logThread.setObjectName("LogThread");
-    logRulesWatcher.moveToThread(&logThread);
-    logThread.start();
-}
-
-Logger::~Logger()
-{
-    logThread.quit();
-    logThread.wait();
+    QObject::connect(&logRulesWatcher, &QFileSystemWatcher::fileChanged, this, &Logger::applyLogRules);
 }
 
 void Logger::setLogRulesPath(const QString& path)
@@ -64,6 +55,9 @@ void Logger::applyLogRules(const QString& path)
 
 void myMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
+    static std::mutex messageHandlerMutex;
+    const std::lock_guard<std::mutex> lock(messageHandlerMutex);
+
     QString logMessage = qFormatLogMessage(type, context, msg);
     QThread* currentThread = QThread::currentThread();
     logMessage.replace("%ThreadName", currentThread->objectName());
