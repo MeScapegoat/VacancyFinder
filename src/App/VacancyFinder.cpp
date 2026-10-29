@@ -69,6 +69,7 @@ VacancyFinder::VacancyFinder(QObject* parent) :
 VacancyFinder::~VacancyFinder()
 {
     saveState();
+    mainWindow.deleteLater();
 }
 
 void VacancyFinder::loadInterested()

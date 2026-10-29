@@ -13,10 +13,6 @@ using Months = size_t;
 class Vacancy
 {
 public:
-    Vacancy() = default;
-    ~Vacancy() = default;
-
-public:
     qsizetype count(const QString& str, Qt::CaseSensitivity cs = Qt::CaseInsensitive) const noexcept;
     bool contains(const QString& str, Qt::CaseSensitivity cs = Qt::CaseSensitive) const noexcept;
 
