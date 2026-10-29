@@ -24,10 +24,11 @@ public:
     void setMaxResults(int maxResults);
     int maxResults() const;
 
+    void setLoadInterestedButtonVisible(bool isVisible);
+
 signals:
     void searchRequested();
     void loadInterestedRequested();
-    void resetRequested();
 
     void keywordsChanged(const QString& keywords);
 

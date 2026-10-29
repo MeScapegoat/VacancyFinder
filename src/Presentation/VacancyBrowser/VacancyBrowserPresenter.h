@@ -41,6 +41,9 @@ public slots:
     void setVacancyFilter(const VacancyFilter& filter);
     void setVacancySortComparator(const VacancySortComparator& sortComparator);
 
+signals:
+    void interestedVacanciesChanged();
+
 private slots:
     void openVacancyDetails(const QModelIndex& index);
 

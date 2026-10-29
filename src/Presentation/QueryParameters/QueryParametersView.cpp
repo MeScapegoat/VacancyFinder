@@ -14,8 +14,7 @@ QueryParametersView::QueryParametersView(QWidget* parent) :
     m_locationInput(*new QLineEdit),
     m_maxResultsInput(*new QSpinBox),
     m_searchButton(*new QPushButton),
-    m_searchInterestedButton(*new QPushButton),
-    m_resetButton(*new QPushButton)
+    m_searchInterestedButton(*new QPushButton)
 {
     QHBoxLayout& mainLayout = *new QHBoxLayout;
 
@@ -24,9 +23,9 @@ QueryParametersView::QueryParametersView(QWidget* parent) :
     QLabel& locationLabel = *new QLabel(tr("Location:"));
     QLabel& maxResultsLabel = *new QLabel(tr("Max amount of processed vacancies:"));
     m_maxResultsInput.setRange(1, 999);
-    m_searchButton.setText(tr("Search"));
+    m_searchButton.setText(tr("Start new search"));
     m_searchInterestedButton.setText(tr("Load interested"));
-    m_resetButton.setText(tr("Reset"));
+    m_searchInterestedButton.setVisible(false);
 
 
     mainLayout.addWidget(&keywordsLabel);
@@ -40,7 +39,6 @@ QueryParametersView::QueryParametersView(QWidget* parent) :
 
     mainLayout.addWidget(&m_searchButton);
     mainLayout.addWidget(&m_searchInterestedButton);
-    mainLayout.addWidget(&m_resetButton);
 
     setLayout(&mainLayout);
 }
@@ -93,16 +91,6 @@ const QPushButton& QueryParametersView::searchInterestedButton() const
 QPushButton& QueryParametersView::searchInterestedButton()
 {
     return m_searchInterestedButton;
-}
-
-const QPushButton& QueryParametersView::resetButton() const
-{
-    return m_resetButton;
-}
-
-QPushButton& QueryParametersView::resetButton()
-{
-    return m_resetButton;
 }
 
 void QueryParametersView::setKeywordsInput(const QString& keywords)

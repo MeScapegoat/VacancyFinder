@@ -19,8 +19,6 @@ QueryParametersPresenter::QueryParametersPresenter(QObject* parent) :
     connect(&view().searchButton(), &QPushButton::released, this, &QueryParametersPresenter::searchRequested);
 
     connect(&view().searchInterestedButton(), &QPushButton::released, this, &QueryParametersPresenter::loadInterestedRequested);
-
-    connect(&view().resetButton(), &QPushButton::released, this, &QueryParametersPresenter::resetRequested);
 }
 
 void QueryParametersPresenter::setKeywords(const QString& keywords)
@@ -51,6 +49,11 @@ void QueryParametersPresenter::setMaxResults(int maxResults)
 int QueryParametersPresenter::maxResults() const
 {
     return model().maxResults();
+}
+
+void QueryParametersPresenter::setLoadInterestedButtonVisible(bool isVisible)
+{
+    view().searchInterestedButton().setVisible(isVisible);
 }
 
 void QueryParametersPresenter::onMaxResultsChanged()

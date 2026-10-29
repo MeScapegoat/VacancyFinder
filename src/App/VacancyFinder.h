@@ -37,6 +37,9 @@ protected:
     void saveState();
     void loadState();
 
+private slots:
+    void updateLoadInterestedButtonVisibility();
+
 private:
     QueryParametersPresenter& queryParametersPresenter;
     ResultViewOptionsPresenter& resultViewOptionsPresenter;

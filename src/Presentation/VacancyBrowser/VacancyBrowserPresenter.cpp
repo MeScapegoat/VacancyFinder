@@ -39,6 +39,7 @@ const QSet<QUrl>& VacancyBrowserPresenter::interestedVacancies() const
 void VacancyBrowserPresenter::setInterestedVacancies(const QSet<QUrl>& interestedVacancies)
 {
     model().setInterestedVacancies(interestedVacancies);
+    emit interestedVacanciesChanged();
 }
 
 void VacancyBrowserPresenter::reset()
@@ -117,6 +118,7 @@ void VacancyBrowserPresenter::onInterestButtonPressed()
     if (needUpdate)
     {
         updateStatusButtons(VacancyStatus::Interested);
+        emit interestedVacanciesChanged();
     }
 }
 
@@ -139,6 +141,7 @@ void VacancyBrowserPresenter::onRemoveInterestButtonPressed()
     if (needUpdate)
     {
         updateStatusButtons(VacancyStatus::Unreviewed);
+        emit interestedVacanciesChanged();
     }
 }
 

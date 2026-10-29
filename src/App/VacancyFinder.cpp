@@ -30,8 +30,8 @@ VacancyFinder::VacancyFinder(QObject* parent) :
     // QueryParameters
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::searchRequested, this, &VacancyFinder::sendSearchRequest);
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::loadInterestedRequested, this, &VacancyFinder::loadInterested);
-    QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::resetRequested, this, &VacancyFinder::reset);
     QObject::connect(&queryParametersPresenter, &QueryParametersPresenter::keywordsChanged, &resultViewOptionsPresenter, &ResultViewOptionsPresenter::setKeywords);
+    QObject::connect(&vacancyBrowserPresenter, &VacancyBrowserPresenter::interestedVacanciesChanged, this, &VacancyFinder::updateLoadInterestedButtonVisibility);
 
 
     // ResultViewOptions
@@ -75,6 +75,9 @@ VacancyFinder::~VacancyFinder()
 void VacancyFinder::loadInterested()
 {
     const auto& interestedVacancies = vacancyBrowserPresenter.interestedVacancies();
+    if (interestedVacancies.isEmpty())
+        return;
+
     const int maxVacancies = interestedVacancies.size();
 
 
@@ -92,8 +95,14 @@ void VacancyFinder::sendSearchRequest()
     qCInfo(VacancyFinderLog) << "Starting vacancy search; maximum results:" << maxVacancies;
 
 
+    emit reset();
     vacancySearchWorkflow.startSearch(keywords, location, maxVacancies);
     emit openProgressDialog(maxVacancies);
+}
+
+void VacancyFinder::updateLoadInterestedButtonVisibility()
+{
+    queryParametersPresenter.setLoadInterestedButtonVisible(!vacancyBrowserPresenter.interestedVacancies().isEmpty());
 }
 
 void VacancyFinder::saveState()

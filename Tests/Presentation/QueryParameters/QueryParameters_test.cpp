@@ -18,14 +18,12 @@ protected:
     QueryParametersPresenterTest() :
         keywordsChangedSpy(this, &QueryParametersPresenter::keywordsChanged),
         searchRequestedSpy(this, &QueryParametersPresenter::searchRequested),
-        loadInterestedRequestedSpy(this, &QueryParametersPresenter::loadInterestedRequested),
-        resetRequestedSpy(this, &QueryParametersPresenter::resetRequested)
+        loadInterestedRequestedSpy(this, &QueryParametersPresenter::loadInterestedRequested)
     {}
 
     QSignalSpy keywordsChangedSpy;
     QSignalSpy searchRequestedSpy;
     QSignalSpy loadInterestedRequestedSpy;
-    QSignalSpy resetRequestedSpy;
 };
 
 
@@ -130,12 +128,18 @@ TEST_F(QueryParametersPresenterTest, SearchRequest)
 
 TEST_F(QueryParametersPresenterTest, LoadInterestedRequested)
 {
+    setLoadInterestedButtonVisible(true);
     QTest::mouseClick(&view().searchInterestedButton(), Qt::LeftButton);
     EXPECT_EQ(loadInterestedRequestedSpy.count(), 1);
 }
 
-TEST_F(QueryParametersPresenterTest, ResetRequest)
+TEST_F(QueryParametersPresenterTest, LoadInterestedButtonVisibility)
 {
-    QTest::mouseClick(&view().resetButton(), Qt::LeftButton);
-    EXPECT_EQ(resetRequestedSpy.count(), 1);
+    EXPECT_TRUE(view().searchInterestedButton().isHidden());
+
+    setLoadInterestedButtonVisible(true);
+    EXPECT_FALSE(view().searchInterestedButton().isHidden());
+
+    setLoadInterestedButtonVisible(false);
+    EXPECT_TRUE(view().searchInterestedButton().isHidden());
 }

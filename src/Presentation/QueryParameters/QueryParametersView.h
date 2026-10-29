@@ -33,9 +33,6 @@ public:
     const QPushButton& searchInterestedButton() const;
     QPushButton& searchInterestedButton();
 
-    const QPushButton& resetButton() const;
-    QPushButton& resetButton();
-
     void setKeywordsInput(const QString& keywords);
     void setLocationInput(const QString& location);
     void setMaxResultsInput(int maxResults);
@@ -47,5 +44,4 @@ private:
 
     QPushButton& m_searchButton;
     QPushButton& m_searchInterestedButton;
-    QPushButton& m_resetButton;
 };
