@@ -7,9 +7,10 @@ ResultViewOptionsModel::ResultViewOptionsModel(QObject* parent) :
     currentSortMode(static_cast<int>(SortMode::Off)),
     currentFilterMode(static_cast<int>(FilterMode::Off)),
     filterWordList(),
-    isUnreviewedVisible(),
-    isIgnoredVisible(),
-    isInterestedVisible()
+    isUnreviewedVisible(true),
+    isIgnoredVacanciesVisible(true),
+    isIgnoredCompaniesVisible(true),
+    isInterestedVisible(true)
 {
 }
 

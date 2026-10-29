@@ -11,6 +11,7 @@ VacancyBrowserPresenter::VacancyBrowserPresenter(QObject* parent) :
 
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::ignoreButtonPressed,     this, &VacancyBrowserPresenter::onIgnoreButtonPressed);
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::interestedButtonPressed, this, &VacancyBrowserPresenter::onInterestButtonPressed);
+    QObject::connect(&view().vacancyDetails(), &VacancyDetails::companyIgnoreButtonPressed, this, &VacancyBrowserPresenter::onCompanyIgnoreButtonPressed);
 
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::removeIgnoreButtonPressed,     this, &VacancyBrowserPresenter::onRemoveIgnoreButtonPressed);
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::removeInterestedButtonPressed, this, &VacancyBrowserPresenter::onRemoveInterestButtonPressed);
@@ -29,6 +30,16 @@ const QSet<QUrl>& VacancyBrowserPresenter::ignoredVacancies() const
 void VacancyBrowserPresenter::setIgnoredVacancies(const QSet<QUrl>& ignoredVacancies)
 {
     model().setIgnoredVacancies(ignoredVacancies);
+}
+
+const QSet<QUrl>& VacancyBrowserPresenter::ignoredCompanies() const
+{
+    return model().ignoredCompanies();
+}
+
+void VacancyBrowserPresenter::setIgnoredCompanies(const QSet<QUrl>& ignoredCompanies)
+{
+    model().setIgnoredCompanies(ignoredCompanies);
 }
 
 const QSet<QUrl>& VacancyBrowserPresenter::interestedVacancies() const
@@ -72,6 +83,12 @@ void VacancyBrowserPresenter::setVisibleStatuses(QList<VacancyStatus> statuses)
     model().setVisibleStatuses(statuses);
 }
 
+void VacancyBrowserPresenter::setIgnoredCompaniesVisible(bool isVisible)
+{
+    model().setIgnoredCompaniesVisible(isVisible);
+    updateVisibleVacancies();
+}
+
 void VacancyBrowserPresenter::setVacancyFilter(const VacancyFilter& filter)
 {
     model().setVacancyFilter(filter);
@@ -95,8 +112,10 @@ void VacancyBrowserPresenter::openVacancyDetails(const QModelIndex& index)
 
     m_currentVacancyUrl = vacancy->get().url;
     const VacancyStatus status = model().getVacancyStatus(vacancy.value());
+    const QUrl& companyUrl = vacancy->get().companyUrl;
+    const bool isCompanyIgnored = model().ignoredCompanies().contains(companyUrl);
 
-    view().vacancyDetails().open(vacancy.value(), status);
+    view().vacancyDetails().open(vacancy.value(), status, isCompanyIgnored, !companyUrl.isEmpty());
 }
 
 void VacancyBrowserPresenter::onIgnoreButtonPressed()
@@ -143,6 +162,27 @@ void VacancyBrowserPresenter::onRemoveInterestButtonPressed()
         updateStatusButtons(VacancyStatus::Unreviewed);
         emit interestedVacanciesChanged();
     }
+}
+
+void VacancyBrowserPresenter::onCompanyIgnoreButtonPressed()
+{
+    if (!m_currentVacancyUrl || !model().vacancyByUrl().contains(*m_currentVacancyUrl))
+        return;
+
+    const Vacancy& currentVacancy = model().vacancyByUrl().value(*m_currentVacancyUrl);
+    const QUrl& companyUrl = currentVacancy.companyUrl;
+    if (companyUrl.isEmpty())
+        return;
+
+    QSet<QUrl>& ignoredCompanies = model().ignoredCompanies();
+    if (!ignoredCompanies.remove(companyUrl))
+    {
+        ignoredCompanies.insert(companyUrl);
+    }
+
+    updateVisibleVacancies();
+    m_currentVacancyUrl.reset();
+    view().vacancyDetails().close();
 }
 
 bool VacancyBrowserPresenter::addCurrentVacancyToStatusList(QSet<QUrl>& statusVacancyList)

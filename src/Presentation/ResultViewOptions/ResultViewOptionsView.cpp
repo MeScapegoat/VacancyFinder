@@ -17,7 +17,8 @@ ResultViewOptionsView::ResultViewOptionsView(QWidget* parent) :
     m_sortMode(*new CallableComboBox<VacancySortComparator>()),
     m_filterLineEdit(*new QLineEdit),
     m_unreviewedCheckBox(*new QCheckBox),
-    m_ignoredCheckBox(*new QCheckBox),
+    m_ignoredVacanciesCheckBox(*new QCheckBox),
+    m_ignoredCompaniesCheckBox(*new QCheckBox),
     m_interestedCheckBox(*new QCheckBox)
 {
     QHBoxLayout& mainLayout = *new QHBoxLayout;
@@ -51,16 +52,18 @@ ResultViewOptionsView::ResultViewOptionsView(QWidget* parent) :
     
     QLabel& visibleVacanciesLabel = *new QLabel(tr("Show:"));
 
-    m_unreviewedCheckBox.setText(tr("Unreviewed"));
-    m_ignoredCheckBox.setText(tr("Ignored"));
-    m_interestedCheckBox.setText(tr("Interested"));
+    m_unreviewedCheckBox.setText(tr("Unreviewed vacancies"));
+    m_ignoredVacanciesCheckBox.setText(tr("Ignored vacancies"));
+    m_ignoredCompaniesCheckBox.setText(tr("Show ignored companies"));
+    m_interestedCheckBox.setText(tr("Interested vacancies"));
 
     visibleVacanciesOptions.addWidget(&m_unreviewedCheckBox);
-    visibleVacanciesOptions.addWidget(&m_ignoredCheckBox);
+    visibleVacanciesOptions.addWidget(&m_ignoredVacanciesCheckBox);
     visibleVacanciesOptions.addWidget(&m_interestedCheckBox);
 
     visibleVacanciesLayout.addWidget(&visibleVacanciesLabel);
     visibleVacanciesLayout.addLayout(&visibleVacanciesOptions);
+    visibleVacanciesLayout.addWidget(&m_ignoredCompaniesCheckBox);
 
     mainLayout.addLayout(&visibleVacanciesLayout);
     
@@ -108,14 +111,24 @@ QCheckBox& ResultViewOptionsView::unreviewedCheckBox()
     return m_unreviewedCheckBox;
 }
 
-const QCheckBox& ResultViewOptionsView::ignoredCheckBox() const
+const QCheckBox& ResultViewOptionsView::ignoredVacanciesCheckBox() const
 {
-    return m_ignoredCheckBox;
+    return m_ignoredVacanciesCheckBox;
 }
 
-QCheckBox& ResultViewOptionsView::ignoredCheckBox()
+QCheckBox& ResultViewOptionsView::ignoredVacanciesCheckBox()
 {
-    return m_ignoredCheckBox;
+    return m_ignoredVacanciesCheckBox;
+}
+
+const QCheckBox& ResultViewOptionsView::ignoredCompaniesCheckBox() const
+{
+    return m_ignoredCompaniesCheckBox;
+}
+
+QCheckBox& ResultViewOptionsView::ignoredCompaniesCheckBox()
+{
+    return m_ignoredCompaniesCheckBox;
 }
 
 const QCheckBox& ResultViewOptionsView::interestedCheckBox() const
@@ -148,9 +161,14 @@ void ResultViewOptionsView::setUnreviewedCheckBox(bool isChecked)
     m_unreviewedCheckBox.setChecked(isChecked);
 }
 
-void ResultViewOptionsView::setIgnoredCheckBox(bool isChecked)
+void ResultViewOptionsView::setIgnoredVacanciesCheckBox(bool isChecked)
 {
-    m_ignoredCheckBox.setChecked(isChecked);
+    m_ignoredVacanciesCheckBox.setChecked(isChecked);
+}
+
+void ResultViewOptionsView::setIgnoredCompaniesCheckBox(bool isChecked)
+{
+    m_ignoredCompaniesCheckBox.setChecked(isChecked);
 }
 
 void ResultViewOptionsView::setInterestedCheckBox(bool isChecked)

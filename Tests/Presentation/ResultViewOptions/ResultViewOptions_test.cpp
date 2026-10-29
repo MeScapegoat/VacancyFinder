@@ -23,13 +23,15 @@ protected:
         resultViewOptionsChangedSpy(this, &ResultViewOptionsPresenter::resultViewOptionsChanged),
         vacancySortComparatorChangedSpy(this, &ResultViewOptionsPresenter::vacancySortComparatorChanged),
         vacancyFilterChangedSpy(this, &ResultViewOptionsPresenter::vacancyFilterChanged),
-        visibleStatusesChangedSpy(this, &ResultViewOptionsPresenter::visibleStatusesChanged)
+        visibleStatusesChangedSpy(this, &ResultViewOptionsPresenter::visibleStatusesChanged),
+        ignoredCompaniesVisibilityChangedSpy(this, &ResultViewOptionsPresenter::ignoredCompaniesVisibilityChanged)
     {}
 
     QSignalSpy resultViewOptionsChangedSpy;
     QSignalSpy vacancySortComparatorChangedSpy;
     QSignalSpy vacancyFilterChangedSpy;
     QSignalSpy visibleStatusesChangedSpy;
+    QSignalSpy ignoredCompaniesVisibilityChangedSpy;
 };
 
 
@@ -40,7 +42,9 @@ TEST_F(ResultViewOptionsPresenterTest, InitialViewStateMatchesModelState)
     EXPECT_EQ(view().filterLineEdit().text(), filterWords());
 
     EXPECT_EQ(view().unreviewedCheckBox().isChecked(), isUnreviewedVisible());
-    EXPECT_EQ(view().ignoredCheckBox().isChecked(), isIgnoredVisible());
+    EXPECT_EQ(view().ignoredVacanciesCheckBox().isChecked(), isIgnoredVacanciesVisible());
+    EXPECT_EQ(view().ignoredCompaniesCheckBox().isChecked(), isIgnoredCompaniesVisible());
+    EXPECT_FALSE(view().ignoredCompaniesCheckBox().isHidden());
     EXPECT_EQ(view().interestedCheckBox().isChecked(), isInterestedVisible());
 }
 
@@ -137,22 +141,45 @@ TEST_F(ResultViewOptionsPresenterTest, ChangingUnreviewedVisibilitySynchronizesV
     EXPECT_EQ(resultViewOptionsChangedSpy.count(), 2);
 }
 
-TEST_F(ResultViewOptionsPresenterTest, ChangingIgnoredVisibilitySynchronizesViewAndModel)
+TEST_F(ResultViewOptionsPresenterTest, ChangingIgnoredVacanciesVisibilitySynchronizesViewAndModel)
 {
-    const bool value1 = !isIgnoredVisible();
-    setIsIgnoredVisible(value1);
-    EXPECT_EQ(isIgnoredVisible(), value1);
-    EXPECT_EQ(model().isIgnoredVisible(), value1);
-    EXPECT_EQ(view().ignoredCheckBox().isChecked(), value1);
+    const bool value1 = !isIgnoredVacanciesVisible();
+    setIsIgnoredVacanciesVisible(value1);
+    EXPECT_EQ(isIgnoredVacanciesVisible(), value1);
+    EXPECT_EQ(model().isIgnoredVacanciesVisible(), value1);
+    EXPECT_EQ(view().ignoredVacanciesCheckBox().isChecked(), value1);
     EXPECT_EQ(resultViewOptionsChangedSpy.count(), 1);
 
 
     const bool value2 = !value1;
-    view().ignoredCheckBox().setChecked(value2);
-    EXPECT_EQ(isIgnoredVisible(), value2);
-    EXPECT_EQ(model().isIgnoredVisible(), value2);
-    EXPECT_EQ(view().ignoredCheckBox().isChecked(), value2);
+    view().ignoredVacanciesCheckBox().setChecked(value2);
+    EXPECT_EQ(isIgnoredVacanciesVisible(), value2);
+    EXPECT_EQ(model().isIgnoredVacanciesVisible(), value2);
+    EXPECT_EQ(view().ignoredVacanciesCheckBox().isChecked(), value2);
     EXPECT_EQ(resultViewOptionsChangedSpy.count(), 2);
+}
+
+TEST_F(ResultViewOptionsPresenterTest, ChangingIgnoredCompaniesVisibilityIsIndependentOfVacancyStatuses)
+{
+    const QList<VacancyStatus> expectedStatuses = visibleStatuses();
+    const bool initialValue = isIgnoredCompaniesVisible();
+    const bool value1 = !initialValue;
+
+    setIsIgnoredCompaniesVisible(value1);
+    EXPECT_EQ(isIgnoredCompaniesVisible(), value1);
+    EXPECT_EQ(model().isIgnoredCompaniesVisible(), value1);
+    EXPECT_EQ(view().ignoredCompaniesCheckBox().isChecked(), value1);
+    EXPECT_EQ(ignoredCompaniesVisibilityChangedSpy.count(), 1);
+    EXPECT_EQ(ignoredCompaniesVisibilityChangedSpy.takeFirst().at(0).toBool(), value1);
+    EXPECT_EQ(visibleStatuses(), expectedStatuses);
+
+    view().ignoredCompaniesCheckBox().setChecked(initialValue);
+    EXPECT_EQ(isIgnoredCompaniesVisible(), initialValue);
+    EXPECT_EQ(model().isIgnoredCompaniesVisible(), initialValue);
+    EXPECT_EQ(view().ignoredCompaniesCheckBox().isChecked(), initialValue);
+    EXPECT_EQ(ignoredCompaniesVisibilityChangedSpy.count(), 1);
+    EXPECT_EQ(ignoredCompaniesVisibilityChangedSpy.takeFirst().at(0).toBool(), initialValue);
+    EXPECT_EQ(visibleStatuses(), expectedStatuses);
 }
 
 TEST_F(ResultViewOptionsPresenterTest, ChangingInterestedVisibilitySynchronizesViewAndModel)
@@ -274,7 +301,7 @@ TEST_F(ResultViewOptionsPresenterTest, VisibleStatusesMatchVisibilitySettings)
 
         setIsUnreviewedVisible(unreviewed);
         setIsInterestedVisible(interested);
-        setIsIgnoredVisible(ignored);
+        setIsIgnoredVacanciesVisible(ignored);
 
         QList<VacancyStatus> expected;
         if (unreviewed) expected.push_back(VacancyStatus::Unreviewed);

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QList>
+#include <QSet>
+#include <QString>
 #include <QUrl>
 
 #include <optional>
@@ -26,6 +28,9 @@ public:
     const QSet<QUrl>& ignoredVacancies() const;
     void setIgnoredVacancies(const QSet<QUrl>& ignoredVacancies);
 
+    const QSet<QUrl>& ignoredCompanies() const;
+    void setIgnoredCompanies(const QSet<QUrl>& ignoredCompanies);
+
     const QSet<QUrl>& interestedVacancies() const;
     void setInterestedVacancies(const QSet<QUrl>& interestedVacancies);
 
@@ -38,6 +43,7 @@ public slots:
     void updateVisibleVacancies();
 
     void setVisibleStatuses(QList<VacancyStatus>);
+    void setIgnoredCompaniesVisible(bool isVisible);
     void setVacancyFilter(const VacancyFilter& filter);
     void setVacancySortComparator(const VacancySortComparator& sortComparator);
 
@@ -51,6 +57,7 @@ private slots:
     void onInterestButtonPressed();
     void onRemoveIgnoreButtonPressed();
     void onRemoveInterestButtonPressed();
+    void onCompanyIgnoreButtonPressed();
 
 private:
     bool addCurrentVacancyToStatusList(QSet<QUrl>& statusVacancyList);

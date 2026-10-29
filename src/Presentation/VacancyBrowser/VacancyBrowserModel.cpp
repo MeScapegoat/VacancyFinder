@@ -1,8 +1,11 @@
 #include "VacancyBrowserModel.h"
 
+#include <QString>
+
 VacancyBrowserModel::VacancyBrowserModel(QObject* parent) :
     Model(parent),
-    m_vacancyListModel(*new VacancyListModel(this))
+    m_vacancyListModel(*new VacancyListModel(this)),
+    m_ignoredCompaniesVisible(true)
 {
 
 }
@@ -40,6 +43,21 @@ const QSet<QUrl>& VacancyBrowserModel::ignoredVacancies() const
 void VacancyBrowserModel::setIgnoredVacancies(const QSet<QUrl>& ignoredVacancies)
 {
     m_ignoredVacancies = ignoredVacancies;
+}
+
+QSet<QUrl>& VacancyBrowserModel::ignoredCompanies()
+{
+    return m_ignoredCompanies;
+}
+
+const QSet<QUrl>& VacancyBrowserModel::ignoredCompanies() const
+{
+    return m_ignoredCompanies;
+}
+
+void VacancyBrowserModel::setIgnoredCompanies(const QSet<QUrl>& ignoredCompanies)
+{
+    m_ignoredCompanies = ignoredCompanies;
 }
 
 QSet<QUrl>& VacancyBrowserModel::interestedVacancies()
@@ -84,6 +102,11 @@ void VacancyBrowserModel::addVacancy(const Vacancy& vacancy)
 void VacancyBrowserModel::setVisibleStatuses(QList<VacancyStatus> statuses)
 {
     m_visibleStatuses = statuses;
+}
+
+void VacancyBrowserModel::setIgnoredCompaniesVisible(bool isVisible)
+{
+    m_ignoredCompaniesVisible = isVisible;
 }
 
 void VacancyBrowserModel::setVacancyFilter(const VacancyFilter& filter)
@@ -142,6 +165,11 @@ void VacancyBrowserModel::applyFiltering()
 {
     auto shouldRemoveVacancy = [this](const Vacancy* vacancy) -> bool
     {
+        if (!passesFilterCompany(vacancy))
+        {
+            return true;
+        }
+
         if (passesWordFilter)
         {
             const bool passesWords = passesWordFilter(vacancy);
@@ -170,7 +198,18 @@ void VacancyBrowserModel::updateVacancyListModel()
     m_vacancyListModel.setVacancies(m_visibleVacancies, m_ignoredVacancies, m_interestedVacancies);
 }
 
-bool VacancyBrowserModel::passesFilterStatus(const Vacancy* vacancy)
+bool VacancyBrowserModel::passesFilterCompany(const Vacancy* vacancy) const
+{
+    if (m_ignoredCompaniesVisible)
+    {
+        return true;
+    }
+
+    const QUrl& companyUrl = vacancy->companyUrl;
+    return companyUrl.isEmpty() || !m_ignoredCompanies.contains(companyUrl);
+}
+
+bool VacancyBrowserModel::passesFilterStatus(const Vacancy* vacancy) const
 {
     const VacancyStatus status = getVacancyStatus(*vacancy);
 

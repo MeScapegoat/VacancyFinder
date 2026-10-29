@@ -22,7 +22,8 @@ public:
     Observable<QStringList> filterWordList;
 
     Observable<bool> isUnreviewedVisible;
-    Observable<bool> isIgnoredVisible;
+    Observable<bool> isIgnoredVacanciesVisible;
+    Observable<bool> isIgnoredCompaniesVisible;
     Observable<bool> isInterestedVisible;
 
 private:

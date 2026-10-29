@@ -25,6 +25,7 @@ protected:
     VacancyBrowserPresenterTest()
     {
         setVisibleStatuses({VacancyStatus::Unreviewed, VacancyStatus::Ignored, VacancyStatus::Interested});
+        setIgnoredCompaniesVisible(false);
         setVacancyFilter([](const Vacancy*)
         {
             return true;
@@ -75,6 +76,36 @@ TEST_F(VacancyBrowserPresenterTest, IgnoredVacanciesGetterAndSetter)
 
     setIgnoredVacancies({});
     EXPECT_TRUE(ignoredVacancies().isEmpty());
+}
+
+TEST_F(VacancyBrowserPresenterTest, CompanyIgnoreActionDoesNotChangeIgnoredVacancies)
+{
+    Vacancy vacancy = makeVacancy("Developer", QUrl("developer"));
+    vacancy.companyName = "Acme";
+    vacancy.companyUrl = QUrl("https://www.linkedin.com/company/acme");
+    onVacanciesReady({vacancy});
+    selectFirstVacancy();
+
+    QPushButton* ignoreCompanyButton = buttonWithText("Ignore company");
+    ASSERT_NE(ignoreCompanyButton, nullptr);
+    ignoreCompanyButton->click();
+
+    const QUrl companyUrl = vacancy.companyUrl;
+    EXPECT_TRUE(ignoredCompanies().contains(companyUrl));
+    EXPECT_TRUE(ignoredVacancies().isEmpty());
+    EXPECT_TRUE(model().visibleVacancies().isEmpty());
+
+    setIgnoredCompaniesVisible(true);
+    ASSERT_EQ(model().visibleVacancies().size(), 1);
+    selectFirstVacancy();
+
+    QPushButton* removeCompanyIgnoreButton = buttonWithText("Remove company from ignored list");
+    ASSERT_NE(removeCompanyIgnoreButton, nullptr);
+    removeCompanyIgnoreButton->click();
+
+    EXPECT_FALSE(ignoredCompanies().contains(companyUrl));
+    EXPECT_TRUE(ignoredVacancies().isEmpty());
+    ASSERT_EQ(model().visibleVacancies().size(), 1);
 }
 
 TEST_F(VacancyBrowserPresenterTest, InterestedVacanciesGetterAndSetter)

@@ -52,7 +52,8 @@ VacancyDetails::VacancyDetails(QWidget* parent) :
     ignoreButton(*new QPushButton),
     interestedButton(*new QPushButton),
     removeIgnoreButton(*new QPushButton),
-    removeInterestedButton(*new QPushButton)
+    removeInterestedButton(*new QPushButton),
+    companyIgnoreButton(*new QPushButton)
 {
     setBackgroundRole(QPalette::Base);
     setAutoFillBackground(true);
@@ -78,6 +79,11 @@ VacancyDetails::VacancyDetails(QWidget* parent) :
     companyFont.setWeight(QFont::DemiBold);
     companyNameLabel.setFont(companyFont);
     mainLayout.addWidget(&companyNameLabel);
+
+    companyIgnoreButton.setMinimumHeight(40);
+    companyIgnoreButton.setCursor(Qt::PointingHandCursor);
+    companyIgnoreButton.hide();
+    mainLayout.addWidget(&companyIgnoreButton);
 
     QGridLayout& metadataLayout = *new QGridLayout(&metadataPanel);
     metadataLayout.setContentsMargins(0, 0, 0, 0);
@@ -157,11 +163,13 @@ VacancyDetails::VacancyDetails(QWidget* parent) :
 
     QObject::connect(&removeIgnoreButton,     &QPushButton::released, this, &VacancyDetails::removeIgnoreButtonPressed);
     QObject::connect(&removeInterestedButton, &QPushButton::released, this, &VacancyDetails::removeInterestedButtonPressed);
+    QObject::connect(&companyIgnoreButton,    &QPushButton::released, this, &VacancyDetails::companyIgnoreButtonPressed);
 }
 
-void VacancyDetails::open(const Vacancy& vacancy, VacancyStatus status)
+void VacancyDetails::open(const Vacancy& vacancy, VacancyStatus status, bool isCompanyIgnored, bool canIgnoreCompany)
 {
     updateCurrentStatusButton(status);
+    updateCompanyIgnoreButton(isCompanyIgnored, canIgnoreCompany);
     metadataPanel.setVisible(true);
     statusButtonsPanel.setVisible(true);
 
@@ -209,6 +217,7 @@ void VacancyDetails::close()
     companyNameLabel.setText(QStringLiteral("Choose a role from the list to see its details."));
     metadataPanel.setVisible(false);
     statusButtonsPanel.setVisible(false);
+    companyIgnoreButton.hide();
 
     vacancyDesc.setHtml(R"(
         <!DOCTYPE html>
@@ -228,4 +237,11 @@ void VacancyDetails::close()
 void VacancyDetails::updateCurrentStatusButton(VacancyStatus status)
 {
     statusButtonsLayout.setCurrentIndex(static_cast<int>(status));
+}
+
+void VacancyDetails::updateCompanyIgnoreButton(bool isIgnored, bool canIgnoreCompany)
+{
+    companyIgnoreButton.setText(isIgnored ? QStringLiteral("Remove company from ignored list")
+                                          : QStringLiteral("Ignore company"));
+    companyIgnoreButton.setVisible(canIgnoreCompany);
 }

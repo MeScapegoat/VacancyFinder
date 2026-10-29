@@ -30,8 +30,11 @@ public:
     void setIsUnreviewedVisible(bool isVisible);
     bool isUnreviewedVisible() const;
 
-    void setIsIgnoredVisible(bool isVisible);
-    bool isIgnoredVisible() const;
+    void setIsIgnoredVacanciesVisible(bool isVisible);
+    bool isIgnoredVacanciesVisible() const;
+
+    void setIsIgnoredCompaniesVisible(bool isVisible);
+    bool isIgnoredCompaniesVisible() const;
 
     void setIsInterestedVisible(bool isVisible);
     bool isInterestedVisible() const;
@@ -48,6 +51,7 @@ signals:
     void vacancyFilterChanged(const VacancyFilter& filter);
 
     void visibleStatusesChanged(QList<VacancyStatus> statuses);
+    void ignoredCompaniesVisibilityChanged(bool isVisible);
 
 private slots:
     void onCurrentSortIndexChanged();
@@ -57,7 +61,8 @@ private slots:
     void onFilterWordsWidgetChanged();
 
     void onUnreviewedVisibleChanged();
-    void onIgnoredVisibleChanged();
+    void onIgnoredVacanciesVisibleChanged();
+    void onIgnoredCompaniesVisibleChanged();
     void onInterestedVisibleChanged();
 
 private:

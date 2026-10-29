@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <QSet>
 #include <QStringListModel>
 
 #include <QtTestPrinters.h>
@@ -30,6 +31,7 @@ protected:
     void SetUp() override
     {
         model.setVisibleStatuses({VacancyStatus::Unreviewed, VacancyStatus::Ignored, VacancyStatus::Interested});
+        model.setIgnoredCompaniesVisible(false);
         model.setVacancyFilter([](const Vacancy*)
         {
             return true;
@@ -42,6 +44,7 @@ TEST_F(VacancyBrowserModelTest, StartsWithEmptyCollections)
     EXPECT_TRUE(model.vacancyByUrl().isEmpty());
     EXPECT_TRUE(model.visibleVacancies().isEmpty());
     EXPECT_TRUE(model.ignoredVacancies().isEmpty());
+    EXPECT_TRUE(model.ignoredCompanies().isEmpty());
     EXPECT_TRUE(model.interestedVacancies().isEmpty());
     EXPECT_EQ(model.vacancyListModel().rowCount(), 0);
 }
@@ -118,6 +121,62 @@ TEST_F(VacancyBrowserModelTest, SetIgnoredVacanciesReplacesSet)
 
     EXPECT_FALSE(model.ignoredVacancies().contains(first));
     EXPECT_TRUE(model.ignoredVacancies().contains(second));
+}
+
+TEST_F(VacancyBrowserModelTest, IgnoredCompanyVisibilityIsSeparateFromIgnoredVacancyStatus)
+{
+    Vacancy ignoredCompanyVacancy = makeVacancy("company-url", "Role", "Intel");
+    ignoredCompanyVacancy.companyUrl = QUrl("https://www.linkedin.com/company/intel-corporation");
+
+    Vacancy sameNameDifferentCompany = makeVacancy("other-company-url", "Other role", "Intel");
+    sameNameDifferentCompany.companyUrl = QUrl("https://www.linkedin.com/company/intel-corporation-2");
+
+    const Vacancy ignoredVacancy = makeVacancy("ignored-vacancy-url", "Other role", "Other company");
+
+    model.addVacancy(ignoredCompanyVacancy);
+    model.addVacancy(sameNameDifferentCompany);
+    model.addVacancy(ignoredVacancy);
+    model.ignoredCompanies().insert(ignoredCompanyVacancy.companyUrl);
+    model.ignoredVacancies().insert(ignoredVacancy.url);
+    model.setVisibleStatuses({VacancyStatus::Unreviewed});
+
+    model.updateVisibleVacancies();
+
+    ASSERT_EQ(model.visibleVacancies().size(), 1);
+    EXPECT_EQ(model.visibleVacancies().first()->url, sameNameDifferentCompany.url);
+
+    model.setIgnoredCompaniesVisible(true);
+    model.updateVisibleVacancies();
+
+    ASSERT_EQ(model.visibleVacancies().size(), 2);
+    QSet<QUrl> visibleUrls;
+    for (const Vacancy* vacancy : model.visibleVacancies())
+    {
+        visibleUrls.insert(vacancy->url);
+    }
+    EXPECT_TRUE(visibleUrls.contains(ignoredCompanyVacancy.url));
+    EXPECT_TRUE(visibleUrls.contains(sameNameDifferentCompany.url));
+    EXPECT_FALSE(visibleUrls.contains(ignoredVacancy.url));
+}
+
+TEST_F(VacancyBrowserModelTest, IgnoredCompanyFilterRunsBeforeWordFilter)
+{
+    Vacancy vacancy = makeVacancy("company-vacancy-url");
+    vacancy.companyUrl = QUrl("https://www.linkedin.com/company/ignored-company");
+    model.addVacancy(vacancy);
+    model.ignoredCompanies().insert(vacancy.companyUrl);
+
+    bool wordFilterCalled = false;
+    model.setVacancyFilter([&wordFilterCalled](const Vacancy*)
+    {
+        wordFilterCalled = true;
+        return true;
+    });
+
+    model.updateVisibleVacancies();
+
+    EXPECT_TRUE(model.visibleVacancies().isEmpty());
+    EXPECT_FALSE(wordFilterCalled);
 }
 
 TEST_F(VacancyBrowserModelTest, SetInterestedVacanciesReplacesSet)

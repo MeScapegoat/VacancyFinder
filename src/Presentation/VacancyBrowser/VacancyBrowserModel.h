@@ -34,6 +34,10 @@ public:
     const QSet<QUrl>& ignoredVacancies() const;
     void setIgnoredVacancies(const QSet<QUrl>& ignoredVacancies);
 
+    QSet<QUrl>& ignoredCompanies();
+    const QSet<QUrl>& ignoredCompanies() const;
+    void setIgnoredCompanies(const QSet<QUrl>& ignoredCompanies);
+
     QSet<QUrl>& interestedVacancies();
     const QSet<QUrl>& interestedVacancies() const;
     void setInterestedVacancies(const QSet<QUrl>& interestedVacancies);
@@ -45,6 +49,7 @@ public:
     void addVacancy(const Vacancy& vacancy);
 
     void setVisibleStatuses(QList<VacancyStatus> statuses);
+    void setIgnoredCompaniesVisible(bool isVisible);
     void setVacancyFilter(const VacancyFilter& filter);
     void setVacancySortComparator(const VacancySortComparator& sortComparator);
 
@@ -62,18 +67,21 @@ private:
     void updateVacancyListModel();
 
 private:
-    bool passesFilterStatus(const Vacancy* vacancy);
+    bool passesFilterCompany(const Vacancy* vacancy) const;
+    bool passesFilterStatus(const Vacancy* vacancy) const;
 
 private:
     QHash<QUrl, Vacancy> m_vacancyByUrl;
     QVector<const Vacancy*> m_visibleVacancies;
 
     QSet<QUrl> m_ignoredVacancies;
+    QSet<QUrl> m_ignoredCompanies;
     QSet<QUrl> m_interestedVacancies;
 
     VacancyListModel& m_vacancyListModel;
 
     QList<VacancyStatus> m_visibleStatuses;
+    bool m_ignoredCompaniesVisible;
     VacancyFilter passesWordFilter;
 
     VacancySortComparator sortPredicate;

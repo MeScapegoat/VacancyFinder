@@ -33,8 +33,11 @@ public:
     const QCheckBox& unreviewedCheckBox() const;
     QCheckBox& unreviewedCheckBox();
 
-    const QCheckBox& ignoredCheckBox() const;
-    QCheckBox& ignoredCheckBox();
+    const QCheckBox& ignoredVacanciesCheckBox() const;
+    QCheckBox& ignoredVacanciesCheckBox();
+
+    const QCheckBox& ignoredCompaniesCheckBox() const;
+    QCheckBox& ignoredCompaniesCheckBox();
 
     const QCheckBox& interestedCheckBox() const;
     QCheckBox& interestedCheckBox();
@@ -43,7 +46,8 @@ public:
     void setFilterLineEdit(const QString& filterWords);
     void setSortMode(int index);
     void setUnreviewedCheckBox(bool isChecked);
-    void setIgnoredCheckBox(bool isChecked);
+    void setIgnoredVacanciesCheckBox(bool isChecked);
+    void setIgnoredCompaniesCheckBox(bool isChecked);
     void setInterestedCheckBox(bool isChecked);
 
 private:
@@ -53,6 +57,7 @@ private:
     CallableComboBox<VacancySortComparator>& m_sortMode;
 
     QCheckBox& m_unreviewedCheckBox;
-    QCheckBox& m_ignoredCheckBox;
+    QCheckBox& m_ignoredVacanciesCheckBox;
+    QCheckBox& m_ignoredCompaniesCheckBox;
     QCheckBox& m_interestedCheckBox;
 };

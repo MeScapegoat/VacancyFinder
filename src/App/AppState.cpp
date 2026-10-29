@@ -21,6 +21,7 @@ namespace
 
     inline constexpr const char* InterestedVacanciesKey = "interestedVacancies";
     inline constexpr const char* IgnoredVacanciesKey = "ignoredVacancies";
+    inline constexpr const char* IgnoredCompaniesKey = "ignoredCompanies";
 
     inline constexpr const char* KeywordsKey = "keywords";
     inline constexpr const char* LocationKey = "location";
@@ -33,13 +34,15 @@ namespace
     inline constexpr const char* SortModeKey = "sortMode";
 
     inline constexpr const char* IsUnreviewedVisibleKey = "isUnreviewedVisible";
-    inline constexpr const char* IsIgnoredVisibleKey = "isIgnoredVisible";
+    inline constexpr const char* IsIgnoredVacanciesVisibleKey = "isIgnoredVisible";
+    inline constexpr const char* IsIgnoredCompaniesVisibleKey = "isIgnoredCompaniesVisible";
     inline constexpr const char* IsInterestedVisibleKey = "isInterestedVisible";
 }
 
 
 AppState::AppState() :
     m_ignoredVacancies(),
+    m_ignoredCompanies(),
     m_interestedVacancies(),
     m_keywords(),
     m_location(),
@@ -48,7 +51,8 @@ AppState::AppState() :
     m_filters(),
     m_sortMode(0),
     m_isUnreviewedVisible(true),
-    m_isIgnoredVisible(true),
+    m_isIgnoredVacanciesVisible(true),
+    m_isIgnoredCompaniesVisible(true),
     m_isInterestedVisible(true)
 {
 }
@@ -61,6 +65,16 @@ const QSet<QUrl> AppState::ignoredVacancies() const
 void AppState::setIgnoredVacancies(const QSet<QUrl> ignoredVacancies)
 {
     m_ignoredVacancies = ignoredVacancies;
+}
+
+const QSet<QUrl> AppState::ignoredCompanies() const
+{
+    return m_ignoredCompanies;
+}
+
+void AppState::setIgnoredCompanies(const QSet<QUrl>& ignoredCompanies)
+{
+    m_ignoredCompanies = ignoredCompanies;
 }
 
 const QSet<QUrl> AppState::interestedVacancies() const
@@ -143,14 +157,24 @@ void AppState::setIsUnreviewedVisible(const bool _isUnreviewedVisible)
     m_isUnreviewedVisible = _isUnreviewedVisible;
 }
 
-const bool AppState::isIgnoredVisible() const
+const bool AppState::isIgnoredVacanciesVisible() const
 {
-    return m_isIgnoredVisible;
+    return m_isIgnoredVacanciesVisible;
 }
 
-void AppState::setIsIgnoredVisible(const bool _isIgnoredVisible)
+void AppState::setIsIgnoredVacanciesVisible(const bool isIgnoredVacanciesVisible)
 {
-    m_isIgnoredVisible = _isIgnoredVisible;
+    m_isIgnoredVacanciesVisible = isIgnoredVacanciesVisible;
+}
+
+const bool AppState::isIgnoredCompaniesVisible() const
+{
+    return m_isIgnoredCompaniesVisible;
+}
+
+void AppState::setIsIgnoredCompaniesVisible(const bool _isIgnoredCompaniesVisible)
+{
+    m_isIgnoredCompaniesVisible = _isIgnoredCompaniesVisible;
 }
 
 const bool AppState::isInterestedVisible() const
@@ -168,6 +192,7 @@ void AppState::saveState()
     QJsonObject state;
     state[InterestedVacanciesKey] = QJsonArray::fromStringList(toStringList(m_interestedVacancies));
     state[IgnoredVacanciesKey] = QJsonArray::fromStringList(toStringList(m_ignoredVacancies));
+    state[IgnoredCompaniesKey] = QJsonArray::fromStringList(toStringList(m_ignoredCompanies));
 
     state[KeywordsKey] = m_keywords;
     state[LocationKey] = m_location;
@@ -180,7 +205,8 @@ void AppState::saveState()
     state[SortModeKey] = m_sortMode;
 
     state[IsUnreviewedVisibleKey] = m_isUnreviewedVisible;
-    state[IsIgnoredVisibleKey] = m_isIgnoredVisible;
+    state[IsIgnoredVacanciesVisibleKey] = m_isIgnoredVacanciesVisible;
+    state[IsIgnoredCompaniesVisibleKey] = m_isIgnoredCompaniesVisible;
     state[IsInterestedVisibleKey] = m_isInterestedVisible;
 
     QFile file(StateFileName);
@@ -225,6 +251,7 @@ void AppState::loadState()
 
     m_interestedVacancies = toUrlSet(state[InterestedVacanciesKey].toVariant().toStringList());
     m_ignoredVacancies = toUrlSet(state[IgnoredVacanciesKey].toVariant().toStringList());
+    m_ignoredCompanies = toUrlSet(state[IgnoredCompaniesKey].toVariant().toStringList());
 
     m_keywords = state[KeywordsKey].toString();
     m_location = state[LocationKey].toString();
@@ -237,6 +264,7 @@ void AppState::loadState()
     m_sortMode = state[SortModeKey].toInt();
 
     m_isUnreviewedVisible = state[IsUnreviewedVisibleKey].toBool();
-    m_isIgnoredVisible = state[IsIgnoredVisibleKey].toBool();
+    m_isIgnoredVacanciesVisible = state[IsIgnoredVacanciesVisibleKey].toBool();
+    m_isIgnoredCompaniesVisible = state[IsIgnoredCompaniesVisibleKey].toBool();
     m_isInterestedVisible = state[IsInterestedVisibleKey].toBool();
 }

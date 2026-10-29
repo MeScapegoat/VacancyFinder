@@ -18,6 +18,9 @@ public:
     const QSet<QUrl> ignoredVacancies() const;
     void setIgnoredVacancies(const QSet<QUrl> ignoredVacancies);
 
+    const QSet<QUrl> ignoredCompanies() const;
+    void setIgnoredCompanies(const QSet<QUrl>& ignoredCompanies);
+
     const QSet<QUrl> interestedVacancies() const;
     void setInterestedVacancies(const QSet<QUrl>& interestedVacancies);
 
@@ -47,8 +50,11 @@ public:
     const bool isUnreviewedVisible() const;
     void setIsUnreviewedVisible(const bool isUnreviewedVisible);
 
-    const bool isIgnoredVisible() const;
-    void setIsIgnoredVisible(const bool isIgnoredVisible);
+    const bool isIgnoredVacanciesVisible() const;
+    void setIsIgnoredVacanciesVisible(const bool isIgnoredVacanciesVisible);
+
+    const bool isIgnoredCompaniesVisible() const;
+    void setIsIgnoredCompaniesVisible(const bool isIgnoredCompaniesVisible);
 
     const bool isInterestedVisible() const;
     void setIsInterestedVisible(const bool isInterestedVisible);
@@ -60,6 +66,7 @@ public:
 
 protected:
     QSet<QUrl> m_ignoredVacancies;
+    QSet<QUrl> m_ignoredCompanies;
     QSet<QUrl> m_interestedVacancies;
 
     QString m_keywords;
@@ -73,6 +80,7 @@ protected:
     int m_sortMode;
 
     bool m_isUnreviewedVisible;
-    bool m_isIgnoredVisible;
+    bool m_isIgnoredVacanciesVisible;
+    bool m_isIgnoredCompaniesVisible;
     bool m_isInterestedVisible;
 };

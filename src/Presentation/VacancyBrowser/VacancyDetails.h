@@ -19,10 +19,11 @@ public:
     ~VacancyDetails() = default;
 
 public:
-    void open(const Vacancy& vacancy, VacancyStatus status);
+    void open(const Vacancy& vacancy, VacancyStatus status, bool isCompanyIgnored, bool canIgnoreCompany);
     void close();
 
     void updateCurrentStatusButton(VacancyStatus status);
+    void updateCompanyIgnoreButton(bool isIgnored, bool canIgnoreCompany);
 
 signals:
     void ignoreButtonPressed();
@@ -30,6 +31,7 @@ signals:
 
     void removeIgnoreButtonPressed();
     void removeInterestedButtonPressed();
+    void companyIgnoreButtonPressed();
 
 private:
     QLabel& titleLabel;
@@ -52,4 +54,5 @@ private:
 
     QPushButton& removeIgnoreButton;
     QPushButton& removeInterestedButton;
+    QPushButton& companyIgnoreButton;
 };

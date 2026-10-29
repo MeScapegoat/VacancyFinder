@@ -35,9 +35,10 @@ VacancyFinder::VacancyFinder(QObject* parent) :
 
 
     // ResultViewOptions
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::vacancyFilterChanged,         &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVacancyFilter);
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::visibleStatusesChanged,       &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVisibleStatuses);
-    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::vacancySortComparatorChanged, &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVacancySortComparator);
+    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::vacancyFilterChanged,              &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVacancyFilter);
+    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::visibleStatusesChanged,            &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVisibleStatuses);
+    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::vacancySortComparatorChanged,      &vacancyBrowserPresenter, &VacancyBrowserPresenter::setVacancySortComparator);
+    QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::ignoredCompaniesVisibilityChanged, &vacancyBrowserPresenter, &VacancyBrowserPresenter::setIgnoredCompaniesVisible);
 
     QObject::connect(&resultViewOptionsPresenter, &ResultViewOptionsPresenter::resultViewOptionsChanged,     &vacancyBrowserPresenter, &VacancyBrowserPresenter::updateVisibleVacancies);
 
@@ -108,6 +109,7 @@ void VacancyFinder::updateLoadInterestedButtonVisibility()
 void VacancyFinder::saveState()
 {
     state.setIgnoredVacancies(vacancyBrowserPresenter.ignoredVacancies());
+    state.setIgnoredCompanies(vacancyBrowserPresenter.ignoredCompanies());
     state.setInterestedVacancies(vacancyBrowserPresenter.interestedVacancies());
 
 
@@ -123,7 +125,8 @@ void VacancyFinder::saveState()
     state.setSortMode(resultViewOptionsPresenter.sortMode());
 
     state.setIsUnreviewedVisible(resultViewOptionsPresenter.isUnreviewedVisible());
-    state.setIsIgnoredVisible(resultViewOptionsPresenter.isIgnoredVisible());
+    state.setIsIgnoredVacanciesVisible(resultViewOptionsPresenter.isIgnoredVacanciesVisible());
+    state.setIsIgnoredCompaniesVisible(resultViewOptionsPresenter.isIgnoredCompaniesVisible());
     state.setIsInterestedVisible(resultViewOptionsPresenter.isInterestedVisible());
 
 
@@ -135,6 +138,7 @@ void VacancyFinder::loadState()
     state.loadState();
 
     vacancyBrowserPresenter.setIgnoredVacancies(state.ignoredVacancies());
+    vacancyBrowserPresenter.setIgnoredCompanies(state.ignoredCompanies());
     vacancyBrowserPresenter.setInterestedVacancies(state.interestedVacancies());
 
 
@@ -150,6 +154,7 @@ void VacancyFinder::loadState()
     resultViewOptionsPresenter.setSortMode(state.sortMode());
 
     resultViewOptionsPresenter.setIsUnreviewedVisible(state.isUnreviewedVisible());
-    resultViewOptionsPresenter.setIsIgnoredVisible(state.isIgnoredVisible());
+    resultViewOptionsPresenter.setIsIgnoredVacanciesVisible(state.isIgnoredVacanciesVisible());
+    resultViewOptionsPresenter.setIsIgnoredCompaniesVisible(state.isIgnoredCompaniesVisible());
     resultViewOptionsPresenter.setIsInterestedVisible(state.isInterestedVisible());
 }

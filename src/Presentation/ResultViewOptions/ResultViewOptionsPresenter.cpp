@@ -55,14 +55,19 @@ ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) :
     onFilterWordsChanged();
 
 
-    connect(&view().unreviewedCheckBox(), &QCheckBox::checkStateChanged, &model().isUnreviewedVisible, &Observable<bool>::setValue);
+    connect(&view().unreviewedCheckBox(), &QCheckBox::toggled, &model().isUnreviewedVisible, &Observable<bool>::setValue);
     connect(&model().isUnreviewedVisible, &Observable<bool>::valueChanged, this, &ResultViewOptionsPresenter::onUnreviewedVisibleChanged);
     onUnreviewedVisibleChanged();
 
 
-    connect(&view().ignoredCheckBox(), &QCheckBox::checkStateChanged, &model().isIgnoredVisible, &Observable<bool>::setValue);
-    connect(&model().isIgnoredVisible, &Observable<bool>::valueChanged, this, &ResultViewOptionsPresenter::onIgnoredVisibleChanged);
-    onIgnoredVisibleChanged();
+    connect(&view().ignoredVacanciesCheckBox(), &QCheckBox::toggled, &model().isIgnoredVacanciesVisible, &Observable<bool>::setValue);
+    connect(&model().isIgnoredVacanciesVisible, &Observable<bool>::valueChanged, this, &ResultViewOptionsPresenter::onIgnoredVacanciesVisibleChanged);
+    onIgnoredVacanciesVisibleChanged();
+
+
+    connect(&view().ignoredCompaniesCheckBox(), &QCheckBox::toggled, &model().isIgnoredCompaniesVisible, &Observable<bool>::setValue);
+    connect(&model().isIgnoredCompaniesVisible, &Observable<bool>::valueChanged, this, &ResultViewOptionsPresenter::onIgnoredCompaniesVisibleChanged);
+    onIgnoredCompaniesVisibleChanged();
 
 
     connect(&view().interestedCheckBox(), &QCheckBox::checkStateChanged, &model().isInterestedVisible, &Observable<bool>::setValue);
@@ -70,12 +75,13 @@ ResultViewOptionsPresenter::ResultViewOptionsPresenter(QObject* parent) :
     onInterestedVisibleChanged();
 
 
-    QObject::connect(&model().currentFilterMode,   &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
-    QObject::connect(&model().filterWordList,      &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
-    QObject::connect(&model().currentSortMode,     &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
-    QObject::connect(&model().isUnreviewedVisible, &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
-    QObject::connect(&model().isIgnoredVisible,    &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
-    QObject::connect(&model().isInterestedVisible, &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model().currentFilterMode,         &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model().filterWordList,            &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model().currentSortMode,           &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model().isUnreviewedVisible,       &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model().isIgnoredCompaniesVisible, &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model().isIgnoredVacanciesVisible, &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
+    QObject::connect(&model().isInterestedVisible,       &AbstractObservable::valueChanged, this, &ResultViewOptionsPresenter::resultViewOptionsChanged);
 }
 
 void ResultViewOptionsPresenter::setFilterMode(int filterMode)
@@ -130,14 +136,24 @@ bool ResultViewOptionsPresenter::isUnreviewedVisible() const
     return model().isUnreviewedVisible();
 }
 
-void ResultViewOptionsPresenter::setIsIgnoredVisible(bool isVisible)
+void ResultViewOptionsPresenter::setIsIgnoredVacanciesVisible(bool isVisible)
 {
-    model().isIgnoredVisible = isVisible;
+    model().isIgnoredVacanciesVisible = isVisible;
 }
 
-bool ResultViewOptionsPresenter::isIgnoredVisible() const
+bool ResultViewOptionsPresenter::isIgnoredVacanciesVisible() const
 {
-    return model().isIgnoredVisible();
+    return model().isIgnoredVacanciesVisible();
+}
+
+void ResultViewOptionsPresenter::setIsIgnoredCompaniesVisible(bool isVisible)
+{
+    model().isIgnoredCompaniesVisible = isVisible;
+}
+
+bool ResultViewOptionsPresenter::isIgnoredCompaniesVisible() const
+{
+    return model().isIgnoredCompaniesVisible();
 }
 
 void ResultViewOptionsPresenter::setIsInterestedVisible(bool isVisible)
@@ -156,7 +172,7 @@ QList<VacancyStatus> ResultViewOptionsPresenter::visibleStatuses() const
     statuses.reserve(static_cast<int>(VacancyStatus::COUNT));
 
     if (model().isUnreviewedVisible()) statuses.push_back(VacancyStatus::Unreviewed);
-    if (model().isIgnoredVisible()) statuses.push_back(VacancyStatus::Ignored);
+    if (model().isIgnoredVacanciesVisible()) statuses.push_back(VacancyStatus::Ignored);
     if (model().isInterestedVisible()) statuses.push_back(VacancyStatus::Interested);
 
     return statuses;
@@ -202,11 +218,18 @@ void ResultViewOptionsPresenter::onUnreviewedVisibleChanged()
     updateVisibleStatuses();
 }
 
-void ResultViewOptionsPresenter::onIgnoredVisibleChanged()
+void ResultViewOptionsPresenter::onIgnoredVacanciesVisibleChanged()
 {
-    view().setIgnoredCheckBox(model().isIgnoredVisible());
+    view().setIgnoredVacanciesCheckBox(model().isIgnoredVacanciesVisible());
 
     updateVisibleStatuses();
+}
+
+void ResultViewOptionsPresenter::onIgnoredCompaniesVisibleChanged()
+{
+    view().setIgnoredCompaniesCheckBox(model().isIgnoredCompaniesVisible());
+
+    emit ignoredCompaniesVisibilityChanged(model().isIgnoredCompaniesVisible());
 }
 
 void ResultViewOptionsPresenter::onInterestedVisibleChanged()
