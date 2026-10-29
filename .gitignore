@@ -11,3 +11,4 @@ Documentation
 /compare_coverage.cmake
 /test_coverage.cmd
 /LastCoverageResults.log
+/deploy.bat

@@ -28,6 +28,11 @@ find_package(Qt6
 qt_standard_project_setup()
 
 qt_add_executable(VacancyFinderApp ${SOURCE_FOLDER_NAME}/main.cpp)
+if(WIN32)
+    set_target_properties(VacancyFinderApp PROPERTIES
+        WIN32_EXECUTABLE "$<CONFIG:Release>"
+    )
+endif()
 
 add_subdirectory(${SOURCE_FOLDER_NAME}/Core)
 add_subdirectory(${SOURCE_FOLDER_NAME}/Domain)
@@ -45,6 +50,13 @@ target_link_libraries(VacancyFinderApp
         VacancyFinder
         Core
         Qt6::Widgets
+)
+
+add_custom_command(TARGET VacancyFinderApp POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/log_rules.ini"
+        "$<TARGET_FILE_DIR:VacancyFinderApp>/log_rules.ini"
+    VERBATIM
 )
 
 

@@ -1,5 +1,7 @@
 
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 #include <iostream>
 
@@ -15,7 +17,9 @@
 
 int main(int argc, char *argv[])
 {
+#ifdef _WIN32
     SetConsoleOutputCP(CP_UTF8);
+#endif
 
     QThread::currentThread()->setObjectName("AppThread");
     QApplication application(argc, argv);
