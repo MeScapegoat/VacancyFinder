@@ -16,7 +16,7 @@ Q_LOGGING_CATEGORY(LoggerLog, "logger");
 Logger::Logger()
 {
     qInstallMessageHandler(myMessageHandler);
-    qSetMessagePattern("[%{time dd-MM-yyyy HH:mm:ss:zzz}][%{function}][%ThreadName]: %{message}");
+    qSetMessagePattern("[%{time dd-MM-yyyy HH:mm:ss:zzz}][%{category}][%ThreadName]: %{message}");
 
     QObject::connect(&logRulesWatcher, &QFileSystemWatcher::fileChanged, this, &Logger::applyLogRules);
 }
