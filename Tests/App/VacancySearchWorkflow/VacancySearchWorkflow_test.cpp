@@ -80,12 +80,12 @@ namespace
         PageType classifyPage(const QString& html) const override
         {
             emit pageClassified(html);
-            return PageType::Unknown;
+            return pageType;
         }
 
         QList<Vacancy> parseSummaries(const QString&) const override
         {
-            return {};
+            return summaries;
         }
 
         Vacancy parseDetails(const QString&, const QUrl&) const override
@@ -95,6 +95,10 @@ namespace
 
     signals:
         void pageClassified(const QString& html) const;
+
+    public:
+        PageType pageType = PageType::Unknown;
+        QList<Vacancy> summaries;
     };
 
     class TestParser final : public Parser
@@ -233,13 +237,27 @@ TEST_F(VacancySearchWorkflowTest, RequestManagerReceivedReplyCallsParserClassify
     EXPECT_EQ(m_pageClassifiedSpy.at(0).at(0).toString(), html);
 }
 
-TEST_F(VacancySearchWorkflowTest, RequestManagerVacancyCountDeterminedReachesWorkflow)
+TEST_F(VacancySearchWorkflowTest, SummaryRequestsFinishedDeterminesVacancyCountFromParsedSummaries)
 {
-    constexpr int vacancyCount = 23;
-    emit m_requestManager.vacancyCountDetermined(vacancyCount);
+    const QString html = QStringLiteral("summary page");
+    const QUrl summaryPageUrl(QStringLiteral("https://jobs.example/search?page=1"));
+    const QUrl firstVacancyUrl(QStringLiteral("https://jobs.example/first"));
+    const QUrl secondVacancyUrl(QStringLiteral("https://jobs.example/second"));
 
-    ASSERT_EQ(m_vacancyCountDeterminedSpy.count(), 1);
-    EXPECT_EQ(m_vacancyCountDeterminedSpy.at(0).at(0).toInt(), vacancyCount);
+    Vacancy firstSummary = makeVacancy(firstVacancyUrl, QStringLiteral("First"));
+    Vacancy secondSummary = makeVacancy(secondVacancyUrl, QStringLiteral("Second"));
+    Vacancy duplicateSummary = secondSummary;
+
+    m_parserStrategy.pageType = PageType::Summary;
+    m_parserStrategy.summaries = {firstSummary, secondSummary, duplicateSummary};
+
+    emit m_requestManager.receivedReply(html, summaryPageUrl);
+    QTRY_COMPARE(m_summaryReadySpy.count(), 2);
+
+    emit m_requestManager.summaryRequestsFinished();
+    QTRY_COMPARE(m_vacancyCountDeterminedSpy.count(), 1);
+
+    EXPECT_EQ(m_vacancyCountDeterminedSpy.at(0).at(0).toInt(), 2);
 }
 
 TEST_F(VacancySearchWorkflowTest, ParserRequestDetailsCallsRequestManagerAddUrl)

@@ -74,6 +74,11 @@ void Parser::interrupt()
     m_isInterrupted = true;
 }
 
+void Parser::summaryRequestsFinished()
+{
+    emit vacancyCountDetermined(m_processedSummaries.size());
+}
+
 void Parser::processSummaries(const QString& html, const QUrl& url)
 {
     if (m_processedSummaryPages.contains(url))

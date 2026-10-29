@@ -67,7 +67,7 @@ protected:
         requestsFinishedSpy(&m_manager, &RequestManager::requestsFinished),
         meaningfulRepliesReceivedSpy(&m_manager, &RequestManager::meaningfulRepliesReceived),
         meaninglessRepliesReceivedSpy(&m_manager, &RequestManager::meaninglessRepliesReceived),
-        vacancyCountDeterminedSpy(&m_manager, &RequestManager::vacancyCountDetermined),
+        summaryRequestsFinishedSpy(&m_manager, &RequestManager::summaryRequestsFinished),
         receivedReplySpy(&m_manager, &RequestManager::receivedReply)
     {
     }
@@ -81,7 +81,7 @@ protected:
         emit strategy.requestsFinished(4);
         emit strategy.meaningfulRepliesReceived(5);
         emit strategy.meaninglessRepliesReceived(6);
-        emit strategy.vacancyCountDetermined(7);
+        emit strategy.summaryRequestsFinished();
         emit strategy.receivedReply(QString("8"), QUrl("9"));
     }
 
@@ -93,7 +93,7 @@ protected:
         EXPECT_EQ(requestsFinishedSpy.count(), 0);
         EXPECT_EQ(meaningfulRepliesReceivedSpy.count(), 0);
         EXPECT_EQ(meaninglessRepliesReceivedSpy.count(), 0);
-        EXPECT_EQ(vacancyCountDeterminedSpy.count(), 0);
+        EXPECT_EQ(summaryRequestsFinishedSpy.count(), 0);
         EXPECT_EQ(receivedReplySpy.count(), 0);
     }
 
@@ -117,8 +117,7 @@ protected:
         ASSERT_EQ(meaninglessRepliesReceivedSpy.count(), 1);
         EXPECT_EQ(meaninglessRepliesReceivedSpy.at(0).at(0).toInt(), 6);
 
-        ASSERT_EQ(vacancyCountDeterminedSpy.count(), 1);
-        EXPECT_EQ(vacancyCountDeterminedSpy.at(0).at(0).toInt(), 7);
+        EXPECT_EQ(summaryRequestsFinishedSpy.count(), 1);
 
         ASSERT_EQ(receivedReplySpy.count(), 1);
         EXPECT_EQ(receivedReplySpy.at(0).at(0).toString(), QString("8"));
@@ -135,45 +134,10 @@ protected:
     QSignalSpy requestsFinishedSpy;
     QSignalSpy meaningfulRepliesReceivedSpy;
     QSignalSpy meaninglessRepliesReceivedSpy;
-    QSignalSpy vacancyCountDeterminedSpy;
+    QSignalSpy summaryRequestsFinishedSpy;
     QSignalSpy receivedReplySpy;
 };
 
-// TODO: Not sure about these
-//TEST(RequestManagerTestConstructor, AssertOnEmptyStrategy)
-//{
-//    EXPECT_DEATH(RequestManager(nullptr), "");
-//}
-//
-//TEST(RequestManagerTestConstructor, AssertOnStrategyFromDifferentThread)
-//{
-//    QThread thread;
-//    MockRequestStrategy strategy2;
-//
-//    ASSERT_TRUE(strategy2.moveToThread(&thread));
-//
-//    auto create = [](AbstractRequestStrategy& strategy)
-//    {
-//        return RequestManager(&strategy);
-//    };
-//
-//    EXPECT_DEATH(create(strategy2), "");
-//}
-//
-//TEST_F(RequestManagerTest, AssertOnEmptyStrategy)
-//{
-//    EXPECT_DEATH(m_manager.setStrategy(nullptr), "");
-//}
-//
-//TEST_F(RequestManagerTest, AssertOnStrategyFromDifferentThread)
-//{
-//    QThread thread;
-//    MockRequestStrategy newStrategy;
-//
-//    newStrategy.moveToThread(&thread);
-//
-//    EXPECT_DEATH(m_manager.setStrategy(&newStrategy), "");
-//}
 
 TEST_F(RequestManagerTest, ConstructorSetsStrategyAndConnectsSignals)
 {

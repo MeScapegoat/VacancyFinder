@@ -22,7 +22,7 @@ RequestManager::RequestManager(AbstractRequestStrategy& strategy, QObject* paren
     QObject::connect(&m_strategy, &AbstractRequestStrategy::meaningfulRepliesReceived, this, &RequestManager::meaningfulRepliesReceived);
     QObject::connect(&m_strategy, &AbstractRequestStrategy::meaninglessRepliesReceived, this, &RequestManager::meaninglessRepliesReceived);
 
-    QObject::connect(&m_strategy, &AbstractRequestStrategy::vacancyCountDetermined, this, &RequestManager::vacancyCountDetermined);
+    QObject::connect(&m_strategy, &AbstractRequestStrategy::summaryRequestsFinished, this, &RequestManager::summaryRequestsFinished);
 
     QObject::connect(&m_strategy, &AbstractRequestStrategy::receivedReply, this, &RequestManager::receivedReply);
 }

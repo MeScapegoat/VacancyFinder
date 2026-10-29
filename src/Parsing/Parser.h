@@ -32,6 +32,7 @@ public slots:
     virtual void processPage(const QString& html, const QUrl& url);
 
     virtual void interrupt();
+    virtual void summaryRequestsFinished();
 
 signals:
     void pageParsingStarted(int amount = 1);
@@ -39,6 +40,7 @@ signals:
 
     void summaryParsed(Vacancy); // TODO: pass by smart pointer?
     void detailsParsed(Vacancy); // TODO: pass by smart pointer?
+    void vacancyCountDetermined(int count);
 
     void requestDetails(const QUrl& url);
 

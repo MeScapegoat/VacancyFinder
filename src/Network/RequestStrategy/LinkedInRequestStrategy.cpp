@@ -39,7 +39,8 @@ LinkedInRequestStrategy::LinkedInRequestStrategy(AbstractNetworkManager* const n
                                                  size_t maxConcurrent, 
                                                  QObject* parent) :
     AbstractRequestStrategy(networkManager, parent),
-    m_activeReplies(),
+    m_activeSummaryReplies(),
+    m_activeDetailsReplies(),
     m_summaryUrlsQueue(),
     m_detailsUrlsQueue(),
     m_requestTimer(this),
@@ -50,7 +51,7 @@ LinkedInRequestStrategy::LinkedInRequestStrategy(AbstractNetworkManager* const n
     m_maxConcurrent(maxConcurrent),
     m_cookiesInitialized(false),
     m_minStart(),
-    m_vacancyCountDetermined(false)
+    m_summaryRequestsFinished(false)
 {
     m_requestCooldownTimer.setSingleShot(true);
 
@@ -65,7 +66,7 @@ void LinkedInRequestStrategy::reset()
     m_cookiesInitialized = false;
 
     m_minStart = std::nullopt;
-    m_vacancyCountDetermined = false;
+    m_summaryRequestsFinished = false;
 
     AbstractRequestStrategy::reset();
 }
@@ -77,7 +78,8 @@ void LinkedInRequestStrategy::startNext()
         return;
     }
 
-    if (!hasPendingRequests() && m_activeReplies.isEmpty())
+    const qsizetype activeReplyCount = m_activeSummaryReplies.size() + m_activeDetailsReplies.size();
+    if (!hasQueuedRequests() && activeReplyCount == 0)
     {
         stopTimers();
         return;
@@ -86,21 +88,16 @@ void LinkedInRequestStrategy::startNext()
     if (m_requestCooldownTimer.isActive())
         return;
 
-    if (!m_vacancyCountDetermined && m_summaryUrlsQueue.isEmpty())
-    {
-        m_vacancyCountDetermined = true;
-        emit vacancyCountDetermined(m_detailsUrlsQueue.size());
-    }
+    const unsigned maxConcurrent = m_cookiesInitialized ? m_maxConcurrent : InitialConcurrencyLimit;
 
-    const unsigned _maxConcurrent = m_cookiesInitialized ? m_maxConcurrent : InitialConcurrencyLimit;
-
-    if (hasPendingRequests() && m_activeReplies.size() < _maxConcurrent)
+    if (hasQueuedRequests() && activeReplyCount < maxConcurrent)
     {
         emit requestsStarted();
         emit urlsDequeued();
 
         QUrl url;
-        if (!m_summaryUrlsQueue.isEmpty())
+        const bool isSummaryRequest = !m_summaryUrlsQueue.isEmpty();
+        if (isSummaryRequest)
         {
             url = m_summaryUrlsQueue.dequeue();
         }
@@ -116,7 +113,14 @@ void LinkedInRequestStrategy::startNext()
         request.setRawHeader("Accept-Language", "en-US,en;q=0.9");
         QNetworkReply* reply = m_networkManager->get(request);
 
-        m_activeReplies.insert(reply);
+        if (isSummaryRequest)
+        {
+            m_activeSummaryReplies.insert(reply);
+        }
+        else
+        {
+            m_activeDetailsReplies.insert(reply);
+        }
     }
 }
 
@@ -155,7 +159,15 @@ void LinkedInRequestStrategy::interrupt()
 
 void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
 {
-    if (m_isInterrupted || !m_activeReplies.remove(reply))
+    if (m_isInterrupted)
+    {
+        reply->deleteLater();
+        return;
+    }
+
+    const bool wasSummaryReply = m_activeSummaryReplies.remove(reply) != 0;
+    const bool wasDetailsReply = m_activeDetailsReplies.remove(reply) != 0;
+    if (!wasSummaryReply && !wasDetailsReply)
     {
         reply->deleteLater();
         return;
@@ -191,6 +203,7 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
         }
 
         emit meaninglessRepliesReceived();
+        emitSummaryRequestsFinishedIfNeeded();
         return;
     }
 
@@ -200,11 +213,13 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
     if (updateSummaryUrlCutoff(html, url))
     {
         emit meaninglessRepliesReceived();
+        emitSummaryRequestsFinishedIfNeeded();
         return;
     }
 
     emit meaningfulRepliesReceived();
     emit receivedReply(html, url);
+    emitSummaryRequestsFinishedIfNeeded();
 }
 
 bool LinkedInRequestStrategy::enqueueUrl(const QUrl& url)
@@ -245,7 +260,7 @@ void LinkedInRequestStrategy::clearQueues()
     }
 }
 
-bool LinkedInRequestStrategy::hasPendingRequests() const
+bool LinkedInRequestStrategy::hasQueuedRequests() const
 {
     return !m_summaryUrlsQueue.isEmpty() || !m_detailsUrlsQueue.isEmpty();
 }
@@ -259,18 +274,24 @@ void LinkedInRequestStrategy::cancelAll()
 
 void LinkedInRequestStrategy::cancelReplies()
 {
-    if (m_activeReplies.isEmpty())
+    const qsizetype activeReplyCount = m_activeSummaryReplies.size() + m_activeDetailsReplies.size();
+    if (activeReplyCount == 0)
     {
         return;
     }
 
-    emit requestsFinished(m_activeReplies.size());
-    for (QNetworkReply* reply : m_activeReplies)
+    emit requestsFinished(activeReplyCount);
+    for (QNetworkReply* reply : m_activeSummaryReplies)
+    {
+        reply->abort();
+    }
+    for (QNetworkReply* reply : m_activeDetailsReplies)
     {
         reply->abort();
     }
 
-    m_activeReplies.clear();
+    m_activeSummaryReplies.clear();
+    m_activeDetailsReplies.clear();
 }
 
 void LinkedInRequestStrategy::stopTimers()
@@ -285,6 +306,17 @@ void LinkedInRequestStrategy::startRequestTimer()
     {
         m_requestTimer.start(m_requestIntervalMs);
     }
+}
+
+void LinkedInRequestStrategy::emitSummaryRequestsFinishedIfNeeded()
+{
+    if (m_summaryRequestsFinished || !m_summaryUrlsQueue.isEmpty() || !m_activeSummaryReplies.isEmpty())
+    {
+        return;
+    }
+
+    m_summaryRequestsFinished = true;
+    emit summaryRequestsFinished();
 }
 
 void LinkedInRequestStrategy::initCookies(const QUrl& url)

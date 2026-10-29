@@ -50,12 +50,13 @@ private:
 
     bool enqueueUrl(const QUrl& url);
     void clearQueues();
-    bool hasPendingRequests() const;
+    bool hasQueuedRequests() const;
 
     void cancelAll();
     void cancelReplies();
     void stopTimers();
     void startRequestTimer();
+    void emitSummaryRequestsFinishedIfNeeded();
     
     void initCookies(const QUrl& url);
 
@@ -67,7 +68,8 @@ private:
     bool updateSummaryUrlCutoff(const QString& html, const QUrl& url);
 
 private:
-    QSet<QNetworkReply*> m_activeReplies;
+    QSet<QNetworkReply*> m_activeSummaryReplies;
+    QSet<QNetworkReply*> m_activeDetailsReplies;
 
     QQueue<QUrl> m_detailsUrlsQueue;
     QQueue<QUrl> m_summaryUrlsQueue;
@@ -82,7 +84,7 @@ private:
 
     bool m_cookiesInitialized;
     std::optional<int> m_minStart;
-    bool m_vacancyCountDetermined;
+    bool m_summaryRequestsFinished;
 };
 
 

@@ -29,7 +29,8 @@ protected:
         finishedSpy(&parser, &Parser::pageParsingFinished),
         requestDetailsSpy(&parser, &Parser::requestDetails),
         summaryParsedSpy(&parser, &Parser::summaryParsed),
-        detailsParsedSpy(&parser, &Parser::detailsParsed)
+        detailsParsedSpy(&parser, &Parser::detailsParsed),
+        vacancyCountDeterminedSpy(&parser, &Parser::vacancyCountDetermined)
     {
 
     }
@@ -45,6 +46,7 @@ protected:
 
     QSignalSpy summaryParsedSpy;
     QSignalSpy detailsParsedSpy;
+    QSignalSpy vacancyCountDeterminedSpy;
 };
 
 TEST_F(ParserTest, ConstructorSetsStrategy)
@@ -126,6 +128,41 @@ TEST_F(ParserTest, DoesNotParseDuplicateSummaries)
 
     const Vacancy parsedVacancy = qvariant_cast<Vacancy>(summaryParsedSpy.at(0).at(0));
     EXPECT_EQ(parsedVacancy.id, 1);
+}
+
+TEST_F(ParserTest, DeterminesVacancyCountFromUniqueProcessedSummariesWhenSummaryRequestsFinish)
+{
+    const QString firstHtml = "first summary html";
+    const QString secondHtml = "second summary html";
+    const QUrl firstPageUrl("first summary page");
+    const QUrl secondPageUrl("second summary page");
+
+    Vacancy first;
+    first.url = QUrl("first vacancy");
+
+    Vacancy second;
+    second.url = QUrl("second vacancy");
+
+    Vacancy duplicate = second;
+
+    EXPECT_CALL(strategy, classifyPage(firstHtml))
+        .WillOnce(Return(PageType::Summary));
+    EXPECT_CALL(strategy, classifyPage(secondHtml))
+        .WillOnce(Return(PageType::Summary));
+    EXPECT_CALL(strategy, parseSummaries(firstHtml))
+        .WillOnce(Return(QList<Vacancy>{first, second}));
+    EXPECT_CALL(strategy, parseSummaries(secondHtml))
+        .WillOnce(Return(QList<Vacancy>{duplicate}));
+
+    parser.processPage(firstHtml, firstPageUrl);
+    parser.processPage(secondHtml, secondPageUrl);
+
+    EXPECT_EQ(vacancyCountDeterminedSpy.count(), 0);
+
+    parser.summaryRequestsFinished();
+
+    ASSERT_EQ(vacancyCountDeterminedSpy.count(), 1);
+    EXPECT_EQ(vacancyCountDeterminedSpy.at(0).at(0).toInt(), 2);
 }
 
 TEST_F(ParserTest, AssignsIncrementingIdsToSummaries)

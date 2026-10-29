@@ -105,7 +105,7 @@ namespace
             meaningfulSpy(strategy, &AbstractRequestStrategy::meaningfulRepliesReceived),
             meaninglessSpy(strategy, &AbstractRequestStrategy::meaninglessRepliesReceived),
 
-            vacancyCountSpy(strategy, &AbstractRequestStrategy::vacancyCountDetermined),
+            summaryRequestsFinishedSpy(strategy, &AbstractRequestStrategy::summaryRequestsFinished),
             receivedReplySpy(strategy, &AbstractRequestStrategy::receivedReply)
         {
             qRegisterMetaType<QNetworkReply*>();
@@ -132,7 +132,7 @@ namespace
         QSignalSpy meaningfulSpy;
         QSignalSpy meaninglessSpy;
 
-        QSignalSpy vacancyCountSpy;
+        QSignalSpy summaryRequestsFinishedSpy;
         QSignalSpy receivedReplySpy;
     };
 }
@@ -270,6 +270,34 @@ TEST(LinkedInRequestStrategyConcurrencyTest, AllowsConcurrentRequestsAfterCookie
     manager->finishNextReply();
 }
 
+TEST(LinkedInRequestStrategyConcurrencyTest, SummaryRequestsFinishAfterEveryQueuedAndActiveSummaryReply)
+{
+    RecordingNetworkManager* manager = new RecordingNetworkManager;
+    LinkedInRequestStrategy strategy(manager, 8, 5000, 3);
+    QSignalSpy summaryRequestsFinishedSpy(&strategy, &AbstractRequestStrategy::summaryRequestsFinished);
+
+    QNetworkCookie cookie("li_at", "token");
+    cookie.setDomain("www.linkedin.com");
+    cookie.setPath("/");
+    ASSERT_TRUE(manager->cookieJar()->insertCookie(cookie));
+
+    strategy.addUrls({summaryUrl(0), summaryUrl(10), summaryUrl(20)});
+    strategy.startNext();
+    ASSERT_EQ(summaryRequestsFinishedSpy.count(), 0);
+
+    manager->finishNextReply();
+    EXPECT_EQ(summaryRequestsFinishedSpy.count(), 0);
+
+    strategy.startNext();
+    strategy.startNext();
+
+    manager->finishNextReply();
+    EXPECT_EQ(summaryRequestsFinishedSpy.count(), 0);
+
+    manager->finishNextReply();
+    EXPECT_EQ(summaryRequestsFinishedSpy.count(), 1);
+}
+
 TEST(LinkedInRequestStrategyConcurrencyTest, KeepsRequestsSerializedWithoutCookies)
 {
     RecordingNetworkManager* manager = new RecordingNetworkManager;
@@ -378,38 +406,30 @@ TEST_F(LinkedInRequestStrategyTest, StartNextDoesNothingWhenIdle)
     EXPECT_EQ(urlsDequeuedSpy.count(), 0);
 }
 
-TEST_F(LinkedInRequestStrategyTest, VacancyCountIsDeterminedWhenOnlyDetailsUrlsRemain)
+TEST_F(LinkedInRequestStrategyTest, SummaryRequestsFinishedEmitsAfterTheLastSummaryReply)
 {
-    const QList<QUrl> urls
-    {
-        detailsUrl(0),
-        detailsUrl(1),
-        detailsUrl(2),
-    };
-
-    strategy->addUrls(urls);
-
+    strategy->addUrl(summaryUrl());
+    manager->respondWith(200, "<html><body><li>Job</li></body></html>");
     strategy->startNext();
+    manager->finish();
 
-    ASSERT_EQ(vacancyCountSpy.count(), 1);
-    EXPECT_EQ(vacancyCountSpy.at(0).at(0).toInt(), 3);
+    ASSERT_EQ(summaryRequestsFinishedSpy.count(), 1);
 }
 
-TEST_F(LinkedInRequestStrategyTest, VacancyCountIsDeterminedOnlyOnce)
+TEST_F(LinkedInRequestStrategyTest, SummaryRequestsFinishedEmitsOnlyOnceWhileDetailsRemain)
 {
-    const QList<QUrl> urls
-    {
-        detailsUrl(0),
-        detailsUrl(1),
-        detailsUrl(2),
-    };
-
-    strategy->addUrls(urls);
-
+    strategy->addUrls({summaryUrl(), detailsUrl()});
+    manager->respondWith(200, "<html><body><li>Job</li></body></html>");
     strategy->startNext();
-    strategy->startNext();
+    manager->finish();
 
-    EXPECT_EQ(vacancyCountSpy.count(), 1);
+    ASSERT_EQ(summaryRequestsFinishedSpy.count(), 1);
+
+    manager->respondWith(200, "<html><body>Job details</body></html>");
+    strategy->startNext();
+    manager->finish();
+
+    EXPECT_EQ(summaryRequestsFinishedSpy.count(), 1);
 }
 
 TEST_F(LinkedInRequestStrategyTest, EmptySummaryReplyRemovesLaterUrlsFromQueue)
@@ -433,6 +453,7 @@ TEST_F(LinkedInRequestStrategyTest, EmptySummaryReplyRemovesLaterUrlsFromQueue)
     EXPECT_EQ(urlsDequeuedSpy.at(1).at(0).toInt(), 2);
     EXPECT_EQ(meaninglessSpy.count(), 1);
     EXPECT_EQ(receivedReplySpy.count(), 0);
+    ASSERT_EQ(summaryRequestsFinishedSpy.count(), 1);
 
     manager->respondWith(200, "<html><body>Job details</body></html>");
     strategy->startNext();
@@ -440,6 +461,7 @@ TEST_F(LinkedInRequestStrategyTest, EmptySummaryReplyRemovesLaterUrlsFromQueue)
 
     ASSERT_EQ(receivedReplySpy.count(), 1);
     EXPECT_EQ(receivedReplySpy.at(0).at(1).toUrl(), detailsUrl());
+    EXPECT_EQ(summaryRequestsFinishedSpy.count(), 1);
 }
 
 TEST_F(LinkedInRequestStrategyTest, ResetClearsTheSummaryUrlCutoff)
@@ -517,19 +539,23 @@ TEST_F(LinkedInRequestStrategyTest, ResetClearsQueuedUrls)
     EXPECT_EQ(startedSpy.count(), 0);
 }
 
-TEST_F(LinkedInRequestStrategyTest, ResetResetsVacancyCountDetermined)
+TEST_F(LinkedInRequestStrategyTest, ResetAllowsSummaryRequestsFinishedToEmitAgain)
 {
-    strategy->addUrl(detailsUrl(0));
+    manager->respondWith(200, "<html><body><li>Job</li></body></html>");
+    strategy->addUrl(summaryUrl());
     strategy->startNext();
+    manager->finish();
 
-    ASSERT_EQ(vacancyCountSpy.count(), 1);
+    ASSERT_EQ(summaryRequestsFinishedSpy.count(), 1);
 
     strategy->reset();
 
-    strategy->addUrl(detailsUrl(0));
+    manager->respondWith(200, "<html><body><li>Job</li></body></html>");
+    strategy->addUrl(summaryUrl());
     strategy->startNext();
+    manager->finish();
 
-    EXPECT_EQ(vacancyCountSpy.count(), 2);
+    EXPECT_EQ(summaryRequestsFinishedSpy.count(), 2);
 }
 
 TEST_F(LinkedInRequestStrategyTest, ClassifyUrlWithQueryAsSummary)

@@ -35,7 +35,7 @@ signals:
     void meaningfulRepliesReceived(int amount = 1);
     void meaninglessRepliesReceived(int amount = 1);
 
-    void vacancyCountDetermined(int count);
+    void summaryRequestsFinished();
 
     void receivedReply(const QString& html, const QUrl& url);
 

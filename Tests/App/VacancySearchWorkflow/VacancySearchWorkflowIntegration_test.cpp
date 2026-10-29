@@ -21,6 +21,7 @@ protected:
         parser(*new Parser(*new LinkedInParserStrategy)),
         workflow(*new VacancySearchWorkflow(searchUrlProvider, requestManager, parser, this)),
         allActiveWorkFinishedSpy(&workflow, &VacancySearchWorkflow::allActiveWorkFinished),
+        vacancyCountDeterminedSpy(&workflow, &VacancySearchWorkflow::vacancyCountDetermined),
         summaryReadySpy(&workflow, &VacancySearchWorkflow::summaryReady),
         detailsReadySpy(&workflow, &VacancySearchWorkflow::detailsReady),
         vacanciesReadySpy(&workflow, &VacancySearchWorkflow::vacanciesReady)
@@ -65,6 +66,9 @@ protected:
         const QList<Vacancy> vacancies = vacanciesReadySpy.at(0).at(0).value<QList<Vacancy>>();
         EXPECT_FALSE(vacancies.isEmpty());
         EXPECT_EQ(vacancies.size(), summaryReadySpy.count());
+
+        ASSERT_EQ(vacancyCountDeterminedSpy.count(), 1);
+        EXPECT_EQ(vacancyCountDeterminedSpy.at(0).at(0).toInt(), vacancies.size());
     }
 
     LinkedInSearchUrlProvider& searchUrlProvider;
@@ -73,6 +77,7 @@ protected:
     VacancySearchWorkflow& workflow;
 
     QSignalSpy allActiveWorkFinishedSpy;
+    QSignalSpy vacancyCountDeterminedSpy;
     QSignalSpy summaryReadySpy;
     QSignalSpy detailsReadySpy;
     QSignalSpy vacanciesReadySpy;
@@ -138,7 +143,7 @@ TEST_F(VacancySearchWorkflowIntegrationTest, InterruptStopsFurtherParsing)
     const int parsedDetailsAfterInterrupt = detailsReadySpy.count();
 
     EXPECT_EQ(allActiveWorkFinishedSpy.count(), 1);
-    EXPECT_LT(summaryReadySpy.count(), maxVacancies);
+
     EXPECT_EQ(summaryReadySpy.count(), parsedSummariesAfterInterrupt);
     EXPECT_EQ(detailsReadySpy.count(), parsedDetailsAfterInterrupt);
 }

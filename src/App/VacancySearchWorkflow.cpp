@@ -52,7 +52,8 @@ VacancySearchWorkflow::VacancySearchWorkflow(AbstractSearchUrlProvider& searchUr
     QObject::connect(&m_requestManager, &RequestManager::urlsDequeued,               &m_workCoordinator, &WorkCoordinator::workFinished);
 
     QObject::connect(&m_requestManager, &RequestManager::receivedReply,              &m_parser, &Parser::processPage);
-    QObject::connect(&m_requestManager, &RequestManager::vacancyCountDetermined,     this, &VacancySearchWorkflow::vacancyCountDetermined);
+    QObject::connect(&m_requestManager, &RequestManager::summaryRequestsFinished,    &m_parser, &Parser::summaryRequestsFinished);
+    QObject::connect(&m_parser, &Parser::vacancyCountDetermined,                     this, &VacancySearchWorkflow::vacancyCountDetermined);
 
 
     // Ensure child URLs are registered before the parser reports the page complete.
