@@ -164,30 +164,6 @@ void ProgressDialog::updateDetails(const Vacancy& vacancy)
     allDetailsProgressBar.setValue(vacancy.id);
 }
 
-void ProgressDialog::updateError(QNetworkReply::NetworkError err)
-{
-    QString errorText;
-    const QString errorTime = "\nTime of error: " + QTime::currentTime().toString();
-    switch (err)
-    {
-        case QNetworkReply::NetworkError::NoError:
-        errorText = "No error occurred";
-        break;
-        case QNetworkReply::NetworkError::ConnectionRefusedError:
-        errorText = "Error: Connection Refused" + errorTime;
-        break;
-        case QNetworkReply::NetworkError::UnknownContentError:
-        errorText = "Error: Unknown Content" + errorTime;
-        break;
-        default:
-        errorText = "Error code: " + QString::number(err) + errorTime;
-        break;
-    }
-
-    errorLabel.setText(errorText);
-    errorLabel.setVisible(true);
-}
-
 void ProgressDialog::start(qsizetype maxVacancies)
 {
     summariesProgressBar.setRange(0, maxVacancies);

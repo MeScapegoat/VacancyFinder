@@ -19,7 +19,6 @@ public slots:
     void updateVacancyCount(int count);
     void updateSummary(const Vacancy& vacancy);
     void updateDetails(const Vacancy& vacancy);
-    void updateError(QNetworkReply::NetworkError);
     void start(qsizetype maxVacancies);
 
 public:
