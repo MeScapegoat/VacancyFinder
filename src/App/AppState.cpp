@@ -47,9 +47,9 @@ AppState::AppState() :
     m_filterMode(0),
     m_filters(),
     m_sortMode(0),
-    m_isUnreviewedVisible(false),
-    m_isIgnoredVisible(false),
-    m_isInterestedVisible(false)
+    m_isUnreviewedVisible(true),
+    m_isIgnoredVisible(true),
+    m_isInterestedVisible(true)
 {
 }
 
