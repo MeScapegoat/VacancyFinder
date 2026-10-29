@@ -199,7 +199,7 @@ std::optional<QDate> LinkedInDetailsJsonVacancyExtractor::expirationDate() const
         return QDate::fromString(expirationDate.toString(), Qt::ISODate);
     }
 
-    return VacancyExtractor::date();
+    return VacancyExtractor::expirationDate();
 };
 
 QJsonObject extractJsonObject(const QString& html)
