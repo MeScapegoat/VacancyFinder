@@ -35,25 +35,31 @@ public:
         const bool isSelected = option.state.testFlag(QStyle::State_Selected);
         const bool isHovered = option.state.testFlag(QStyle::State_MouseOver);
         const QPalette& palette = option.palette;
+        const bool isDarkTheme = palette.color(QPalette::Base).lightness() < 128;
         const QColor backgroundColor = palette.color(isSelected ? QPalette::Highlight : QPalette::Base);
-        const QColor borderColor = palette.color(isSelected ? QPalette::Highlight : isHovered ? QPalette::Light : QPalette::Midlight);
+        const QColor borderColor = palette.color(isSelected ? QPalette::Highlight : isDarkTheme ? QPalette::Midlight : QPalette::Mid);
 
-        painter->setPen(QPen(borderColor, isSelected ? 2.5 : 1.5));
+        painter->setPen(QPen(borderColor, isSelected ? 2.5 : isHovered ? 2 : 1.5));
         painter->setBrush(backgroundColor);
         painter->drawRoundedRect(cardRect, 12, 12);
 
         const QString status = index.data(VacancyListModel::StatusLabelRole).toString();
+        const QColor vacancyTextColor = palette.color(isSelected ? QPalette::HighlightedText : QPalette::Text);
         const QFont baseFont = option.font;
         const QFontMetrics baseMetrics(baseFont);
         const int badgeWidth = baseMetrics.horizontalAdvance(status) + 22;
         const QRect badgeRect(cardRect.right() - badgeWidth - 12, cardRect.top() + 12, badgeWidth, 22);
 
-        QColor badgeBackground = palette.color(QPalette::AlternateBase);
-        QColor badgeForeground = palette.color(QPalette::Text);
+        QColor badgeBackground = palette.color(isDarkTheme ? QPalette::Midlight : QPalette::Mid);
+        QColor badgeForeground = vacancyTextColor;
         if (status == "Interested")
         {
             badgeBackground = palette.color(QPalette::Highlight);
             badgeForeground = palette.color(QPalette::HighlightedText);
+        }
+        if (isSelected)
+        {
+            badgeBackground = badgeBackground.darker(125);
         }
         painter->setPen(Qt::NoPen);
         painter->setBrush(badgeBackground);
@@ -77,14 +83,14 @@ public:
         titleFont.setPointSize(11);
         titleFont.setWeight(QFont::DemiBold);
         painter->setFont(titleFont);
-        painter->setPen(palette.color(isSelected ? QPalette::HighlightedText : QPalette::Text));
+        painter->setPen(vacancyTextColor);
         painter->drawText(QRect(left, cardRect.top() + 10, textWidth, 25), Qt::AlignVCenter | Qt::AlignLeft,
                           QFontMetrics(titleFont).elidedText(title, Qt::ElideRight, textWidth));
 
         QFont companyFont = baseFont;
         companyFont.setPointSize(9);
         painter->setFont(companyFont);
-        painter->setPen(palette.color(isSelected ? QPalette::HighlightedText : QPalette::Text));
+        painter->setPen(vacancyTextColor);
         painter->drawText(QRect(left, cardRect.top() + 38, cardRect.width() - 30, 19), Qt::AlignVCenter | Qt::AlignLeft,
                           QFontMetrics(companyFont).elidedText(company, Qt::ElideRight, cardRect.width() - 30));
 
@@ -93,7 +99,7 @@ public:
         QFont ageFont = detailFont;
         ageFont.setWeight(QFont::DemiBold);
         painter->setFont(detailFont);
-        painter->setPen(palette.color(isSelected ? QPalette::HighlightedText : QPalette::Text));
+        painter->setPen(vacancyTextColor);
         const QRect detailRect(left, cardRect.top() + 63, cardRect.width() - 30, 18);
         const int ageWidth = QFontMetrics(ageFont).horizontalAdvance(age) + 8;
         const QRect locationRect = detailRect.adjusted(0, 0, -ageWidth, 0);
@@ -101,7 +107,7 @@ public:
         painter->drawText(locationRect, Qt::AlignVCenter | Qt::AlignLeft,
                           QFontMetrics(detailFont).elidedText(location, Qt::ElideRight, locationRect.width()));
         painter->setFont(ageFont);
-        painter->setPen(palette.color(isSelected ? QPalette::HighlightedText : QPalette::Text));
+        painter->setPen(vacancyTextColor);
         painter->drawText(ageRect, Qt::AlignVCenter | Qt::AlignRight, age);
 
         painter->restore();
