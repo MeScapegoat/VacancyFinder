@@ -3,8 +3,14 @@ cmake_minimum_required(VERSION 4.3)
 set(SOURCE_FOLDER_NAME "src")
 
 project(VacancyFinder
-    VERSION 0.0.1
+    VERSION 1.0.0
     LANGUAGES CXX
+)
+
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    @ONLY
 )
 
 configure_file(
