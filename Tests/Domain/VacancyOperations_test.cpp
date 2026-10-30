@@ -82,6 +82,18 @@ TEST(VacancyOperationsTest, CompanySort)
     EXPECT_FALSE(companySort(&a, &a));
 }
 
+TEST(VacancyOperationsTest, CompanySortPlacesEmptyNamesLast)
+{
+    Vacancy emptyCompany = makeVacancy({}, "");
+    Vacancy anotherEmptyCompany = makeVacancy({}, "");
+    Vacancy namedCompany = makeVacancy({}, "Acme");
+
+    EXPECT_TRUE(companySort(&namedCompany, &emptyCompany));
+    EXPECT_FALSE(companySort(&emptyCompany, &namedCompany));
+    EXPECT_FALSE(companySort(&emptyCompany, &anotherEmptyCompany));
+    EXPECT_FALSE(companySort(&anotherEmptyCompany, &emptyCompany));
+}
+
 TEST(VacancyOperationsTest, TimeSort)
 {
     Vacancy older = makeVacancy({}, {}, QDate(2024, 1, 1));

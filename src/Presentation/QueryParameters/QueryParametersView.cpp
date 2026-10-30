@@ -22,7 +22,7 @@ QueryParametersView::QueryParametersView(QWidget* parent) :
     QLabel& keywordsLabel = *new QLabel(tr("Keywords:"));
     QLabel& locationLabel = *new QLabel(tr("Location:"));
     QLabel& maxResultsLabel = *new QLabel(tr("Max amount of processed vacancies:"));
-    m_maxResultsInput.setRange(1, 999);
+    m_maxResultsInput.setRange(1, 1000);
     m_searchButton.setText(tr("Start new search"));
     m_searchInterestedButton.setText(tr("Load interested"));
     m_searchInterestedButton.setVisible(false);

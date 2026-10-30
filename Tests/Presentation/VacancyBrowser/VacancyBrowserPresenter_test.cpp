@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <QItemSelectionModel>
+#include <QLabel>
 #include <QList>
 #include <QListView>
 #include <QModelIndex>
@@ -42,7 +43,7 @@ protected:
     void selectFirstVacancy()
     {
         const QModelIndex index = model().vacancyListModel().index(0, 0);
-        view().vacancyList().setCurrentIndex(index);
+        view().vacancyList().listView().setCurrentIndex(index);
     }
 
     QPushButton* buttonWithText(const QString& text)
@@ -61,7 +62,7 @@ protected:
 
 TEST_F(VacancyBrowserPresenterTest, ConstructorAssignsModelToVacancyList)
 {
-    EXPECT_EQ(view().vacancyList().model(), &model().vacancyListModel());
+    EXPECT_EQ(view().vacancyList().listView().model(), &model().vacancyListModel());
 }
 
 TEST_F(VacancyBrowserPresenterTest, IgnoredVacanciesGetterAndSetter)
@@ -129,7 +130,7 @@ TEST_F(VacancyBrowserPresenterTest, UpdateVisibleVacanciesUpdatesListModel)
 
     updateVisibleVacancies();
 
-    EXPECT_EQ(view().vacancyList().model()->rowCount(), 1);
+    EXPECT_EQ(view().vacancyList().listView().model()->rowCount(), 1);
 }
 
 TEST_F(VacancyBrowserPresenterTest, VacanciesReadyPopulatesVisibleList)
@@ -143,7 +144,45 @@ TEST_F(VacancyBrowserPresenterTest, VacanciesReadyPopulatesVisibleList)
 
     EXPECT_EQ(model().vacancyByUrl().size(), 2);
     EXPECT_EQ(model().visibleVacancies().size(), 2);
-    EXPECT_EQ(view().vacancyList().model()->rowCount(), 2);
+    EXPECT_EQ(view().vacancyList().listView().model()->rowCount(), 2);
+
+    QLabel* visibleVacancyCount = view().vacancyList().findChild<QLabel*>("visibleVacancyCount");
+    ASSERT_NE(visibleVacancyCount, nullptr);
+    EXPECT_EQ(visibleVacancyCount->text(), QStringLiteral("Visible vacancies: 2"));
+}
+
+TEST_F(VacancyBrowserPresenterTest, VisibleVacancyCountTracksFilteredVacancies)
+{
+    setVacancyFilter([](const Vacancy* vacancy)
+    {
+        return vacancy->title == QStringLiteral("Visible");
+    });
+    onVacanciesReady({
+        makeVacancy("Visible", QUrl("visible")),
+        makeVacancy("Hidden", QUrl("hidden"))
+    });
+
+    QLabel* visibleVacancyCount = view().vacancyList().findChild<QLabel*>("visibleVacancyCount");
+    ASSERT_NE(visibleVacancyCount, nullptr);
+    EXPECT_EQ(visibleVacancyCount->text(), QStringLiteral("Visible vacancies: 1"));
+
+    setVacancyFilter([](const Vacancy*)
+    {
+        return true;
+    });
+    updateVisibleVacancies();
+    EXPECT_EQ(visibleVacancyCount->text(), QStringLiteral("Visible vacancies: 2"));
+}
+
+TEST_F(VacancyBrowserPresenterTest, VisibleVacancyCountMatchesHeadingFont)
+{
+    QLabel* heading = view().vacancyList().findChild<QLabel*>("vacancyListHeading");
+    QLabel* visibleVacancyCount = view().vacancyList().findChild<QLabel*>("visibleVacancyCount");
+    ASSERT_NE(heading, nullptr);
+    ASSERT_NE(visibleVacancyCount, nullptr);
+
+    EXPECT_EQ(visibleVacancyCount->font().pointSize(), heading->font().pointSize());
+    EXPECT_EQ(visibleVacancyCount->font().weight(), heading->font().weight());
 }
 
 TEST_F(VacancyBrowserPresenterTest, SelectingVacancyDisplaysItsDescription)
@@ -169,7 +208,7 @@ TEST_F(VacancyBrowserPresenterTest, ChangingCurrentSelectionUpdatesDisplayedDeta
     const Vacancy* selectedVacancy = model().visibleVacancies()[1];
 
     selectFirstVacancy();
-    view().vacancyList().setCurrentIndex(model().vacancyListModel().index(1, 0));
+    view().vacancyList().listView().setCurrentIndex(model().vacancyListModel().index(1, 0));
 
     QTextBrowser* description = view().vacancyDetails().findChild<QTextBrowser*>();
     ASSERT_NE(description, nullptr);
@@ -226,8 +265,8 @@ TEST_F(VacancyBrowserPresenterTest, StatusActionUsesVacancyShownInDetails)
     ASSERT_NE(interestedButton, nullptr);
 
     {
-        const QSignalBlocker blocker(view().vacancyList().selectionModel());
-        view().vacancyList().setCurrentIndex(model().vacancyListModel().index(1, 0));
+        const QSignalBlocker blocker(view().vacancyList().listView().selectionModel());
+        view().vacancyList().listView().setCurrentIndex(model().vacancyListModel().index(1, 0));
 
         QTextBrowser* description = view().vacancyDetails().findChild<QTextBrowser*>();
         ASSERT_NE(description, nullptr);
@@ -274,6 +313,9 @@ TEST_F(VacancyBrowserPresenterTest, ResetClearsWorkflowAndPreservesMetadata)
 
     EXPECT_TRUE(model().vacancyByUrl().isEmpty());
     EXPECT_TRUE(model().visibleVacancies().isEmpty());
+    QLabel* visibleVacancyCount = view().vacancyList().findChild<QLabel*>("visibleVacancyCount");
+    ASSERT_NE(visibleVacancyCount, nullptr);
+    EXPECT_EQ(visibleVacancyCount->text(), QStringLiteral("Visible vacancies: 0"));
     EXPECT_EQ(ignoredVacancies(), QSet<QUrl>{ignoredUrl});
     EXPECT_EQ(interestedVacancies(), QSet<QUrl>{interestedUrl});
 }

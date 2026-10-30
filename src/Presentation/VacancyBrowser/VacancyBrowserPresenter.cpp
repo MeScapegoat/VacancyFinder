@@ -2,6 +2,7 @@
 
 #include <QItemSelectionModel>
 #include <QModelIndex>
+#include <QListView>
 
 #include "VacancyDetails.h"
 
@@ -17,7 +18,7 @@ VacancyBrowserPresenter::VacancyBrowserPresenter(QObject* parent) :
     QObject::connect(&view().vacancyDetails(), &VacancyDetails::removeInterestedButtonPressed, this, &VacancyBrowserPresenter::onRemoveInterestButtonPressed);
 
     view().vacancyList().setModel(&model().vacancyListModel());
-    QObject::connect(view().vacancyList().selectionModel(), &QItemSelectionModel::currentChanged, this, &VacancyBrowserPresenter::openVacancyDetails);
+    QObject::connect(view().vacancyList().listView().selectionModel(), &QItemSelectionModel::currentChanged, this, &VacancyBrowserPresenter::openVacancyDetails);
 
     view().vacancyDetails().close();
 }

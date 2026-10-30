@@ -1,10 +1,14 @@
 #include "VacancyList.h"
 
+#include <QAbstractItemModel>
 #include <QAbstractItemView>
 #include <QColor>
 #include <QFont>
 #include <QFontMetrics>
 #include <QFrame>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QListView>
 #include <QModelIndex>
 #include <QPainter>
 #include <QPalette>
@@ -15,6 +19,7 @@
 #include <QStyle>
 #include <QStyledItemDelegate>
 #include <QStyleOptionViewItem>
+#include <QVBoxLayout>
 #include <QWidget>
 
 #include "VacancyListModel.h"
@@ -121,21 +126,85 @@ public:
 }
 
 VacancyList::VacancyList(QWidget* parent) :
-    QListView(parent)
+    QWidget(parent),
+    m_listView(*new QListView(this)),
+    m_visibleVacancyCount(*new QLabel(this))
 {
-    setObjectName("vacancyList");
-    setFrameShape(QFrame::StyledPanel);
-    setBackgroundRole(QPalette::Window);
-    setAutoFillBackground(true);
-    viewport()->setBackgroundRole(QPalette::Window);
-    viewport()->setAutoFillBackground(true);
-    setItemDelegate(new VacancyCardDelegate(this));
-    setSelectionMode(QAbstractItemView::SingleSelection);
-    setSelectionBehavior(QAbstractItemView::SelectRows);
-    setUniformItemSizes(true);
-    setWrapping(false);
-    setSpacing(8);
-    setMouseTracking(true);
-    setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setObjectName("vacancyListPanel");
+
+    QVBoxLayout& mainLayout = *new QVBoxLayout(this);
+    mainLayout.setContentsMargins(0, 0, 0, 0);
+    mainLayout.setSpacing(8);
+
+    QLabel& heading = *new QLabel("Your vacancies", this);
+    heading.setObjectName("vacancyListHeading");
+    QFont headingFont = heading.font();
+    headingFont.setPointSize(12);
+    headingFont.setWeight(QFont::DemiBold);
+    heading.setFont(headingFont);
+
+    QHBoxLayout& headingLayout = *new QHBoxLayout;
+    headingLayout.setContentsMargins(0, 0, 0, 0);
+    headingLayout.addWidget(&heading);
+    headingLayout.addStretch();
+    m_visibleVacancyCount.setObjectName("visibleVacancyCount");
+    m_visibleVacancyCount.setFont(headingFont);
+    m_visibleVacancyCount.setText(tr("Visible vacancies: 0"));
+    headingLayout.addWidget(&m_visibleVacancyCount);
+    mainLayout.addLayout(&headingLayout);
+
+    QLabel& caption = *new QLabel("Select a role to review its details", this);
+    caption.setObjectName("vacancyListCaption");
+    QFont captionFont = caption.font();
+    captionFont.setPointSize(8);
+    caption.setFont(captionFont);
+    caption.setForegroundRole(QPalette::WindowText);
+    mainLayout.addWidget(&caption);
+
+    m_listView.setObjectName("vacancyList");
+    m_listView.setFrameShape(QFrame::StyledPanel);
+    m_listView.setBackgroundRole(QPalette::Window);
+    m_listView.setAutoFillBackground(true);
+    m_listView.viewport()->setBackgroundRole(QPalette::Window);
+    m_listView.viewport()->setAutoFillBackground(true);
+    m_listView.setItemDelegate(new VacancyCardDelegate(&m_listView));
+    m_listView.setSelectionMode(QAbstractItemView::SingleSelection);
+    m_listView.setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_listView.setUniformItemSizes(true);
+    m_listView.setWrapping(false);
+    m_listView.setSpacing(8);
+    m_listView.setMouseTracking(true);
+    m_listView.setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    m_listView.setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    mainLayout.addWidget(&m_listView, 1);
+}
+
+QListView& VacancyList::listView()
+{
+    return m_listView;
+}
+
+const QListView& VacancyList::listView() const
+{
+    return m_listView;
+}
+
+void VacancyList::setModel(QAbstractItemModel* model)
+{
+    m_listView.setModel(model);
+    if (model)
+    {
+        QObject::connect(model, &QAbstractItemModel::modelReset, this, [this]
+        {
+            updateVisibleVacancyCount();
+        });
+    }
+
+    updateVisibleVacancyCount();
+}
+
+void VacancyList::updateVisibleVacancyCount()
+{
+    const int count = m_listView.model() ? m_listView.model()->rowCount() : 0;
+    m_visibleVacancyCount.setText(tr("Visible vacancies: %1").arg(count));
 }

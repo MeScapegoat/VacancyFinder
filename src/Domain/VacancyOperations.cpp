@@ -66,6 +66,11 @@ bool titleSort(const Vacancy* left, const Vacancy* right)
 
 bool companySort(const Vacancy* left, const Vacancy* right)
 {
+    const bool leftCompanyNameIsEmpty = left->companyName.isEmpty();
+    const bool rightCompanyNameIsEmpty = right->companyName.isEmpty();
+    if (leftCompanyNameIsEmpty != rightCompanyNameIsEmpty)
+        return !leftCompanyNameIsEmpty;
+
     return left->companyName < right->companyName;
 }
 

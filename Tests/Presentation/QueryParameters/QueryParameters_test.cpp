@@ -48,15 +48,19 @@ TEST_F(QueryParametersPresenterTest, MaxResultsSync)
 TEST_F(QueryParametersPresenterTest, MaxResultsInputClampsValuesToSupportedRange)
 {
     EXPECT_EQ(view().maxResultsInput().minimum(), 1);
-    EXPECT_EQ(view().maxResultsInput().maximum(), 999);
+    EXPECT_EQ(view().maxResultsInput().maximum(), 1000);
 
     view().maxResultsInput().setValue(0);
     EXPECT_EQ(view().maxResultsInput().value(), 1);
     EXPECT_EQ(maxResults(), 1);
 
     view().maxResultsInput().setValue(1000);
-    EXPECT_EQ(view().maxResultsInput().value(), 999);
-    EXPECT_EQ(maxResults(), 999);
+    EXPECT_EQ(view().maxResultsInput().value(), 1000);
+    EXPECT_EQ(maxResults(), 1000);
+
+    view().maxResultsInput().setValue(1001);
+    EXPECT_EQ(view().maxResultsInput().value(), 1000);
+    EXPECT_EQ(maxResults(), 1000);
 }
 
 TEST_F(QueryParametersPresenterTest, KeywordsSync)
