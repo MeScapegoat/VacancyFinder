@@ -6,6 +6,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QJsonValue>
 
 #include <algorithm>
 
@@ -33,7 +34,14 @@ static QList<BenchmarkRun> readRuns(const QJsonArray& array)
         runs.append({
             object["run"].toInt(),
             object["elapsedMs"].toInteger(),
-                    });
+            object["requestAttempts"].toInteger(),
+            object["meaningfulReplies"].toInteger(),
+            object["meaninglessReplies"].toInteger(),
+            object["unmatchedAttempts"].toInteger(),
+            object["summariesParsed"].toInteger(),
+            object["detailsParsed"].toInteger(),
+            object["vacanciesCollected"].toInteger(),
+        });
     }
 
     return runs;
@@ -132,7 +140,8 @@ int main(int argc, char* argv[])
     {
         const QString outputFileName = QString("benchmark_combined_%1.json").arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_HH-mm-ss-zzz"));
 
-        saveResults(results, outputFileName);
+        if (!saveResults(results, outputFileName))
+            return 1;
 
         qInfo() << "Combined results saved to:" << outputFileName;
     }

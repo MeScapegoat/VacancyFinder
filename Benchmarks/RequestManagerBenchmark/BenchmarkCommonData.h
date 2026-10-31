@@ -1,10 +1,15 @@
 #pragma once
 
+#include <algorithm>
+
+#include <QByteArray>
 #include <QDebug>
-#include <QFile>
 #include <QJsonArray>
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <QList>
+#include <QSaveFile>
+#include <QString>
 #include <QtGlobal>
 
 struct BenchmarkConfig
@@ -25,6 +30,13 @@ struct BenchmarkRun
 {
     qint64 run;
     qint64 elapsedMs;
+    qint64 requestAttempts;
+    qint64 meaningfulReplies;
+    qint64 meaninglessReplies;
+    qint64 unmatchedAttempts;
+    qint64 summariesParsed;
+    qint64 detailsParsed;
+    qint64 vacanciesCollected;
 };
 
 struct BenchmarkResult
@@ -41,7 +53,7 @@ enum class SortColumn
     ElapsedMs = 4
 };
 
-static void saveResults(const QList<BenchmarkResult>& results, const QString& fileName)
+static bool saveResults(const QList<BenchmarkResult>& results, const QString& fileName)
 {
     qInfo() << "Saving results...";
     QJsonObject root;
@@ -64,6 +76,14 @@ static void saveResults(const QList<BenchmarkResult>& results, const QString& fi
             runObject["run"] = run.run;
             runObject["elapsedMs"] = run.elapsedMs;
 
+            runObject["requestAttempts"] = run.requestAttempts;
+            runObject["meaningfulReplies"] = run.meaningfulReplies;
+            runObject["meaninglessReplies"] = run.meaninglessReplies;
+            runObject["unmatchedAttempts"] = run.unmatchedAttempts;
+            runObject["summariesParsed"] = run.summariesParsed;
+            runObject["detailsParsed"] = run.detailsParsed;
+            runObject["vacanciesCollected"] = run.vacanciesCollected;
+
             runs.append(runObject);
         }
 
@@ -73,15 +93,29 @@ static void saveResults(const QList<BenchmarkResult>& results, const QString& fi
 
     root["results"] = resultsArray;
 
-    QFile file(fileName);
+    QSaveFile file(fileName);
 
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate))
+    if (!file.open(QIODevice::WriteOnly))
     {
         qWarning() << "Failed to create" << fileName << ":" << file.errorString();
-        return;
+        return false;
     }
 
-    file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+    const QByteArray json = QJsonDocument(root).toJson(QJsonDocument::Indented);
+
+    if (file.write(json) != json.size())
+    {
+        qWarning() << "Failed to write" << fileName << ":" << file.errorString();
+        return false;
+    }
+
+    if (!file.commit())
+    {
+        qWarning() << "Failed to save" << fileName << ":" << file.errorString();
+        return false;
+    }
+
+    return true;
 }
 
 static double averageElapsedMs(const BenchmarkResult& result)
@@ -96,6 +130,21 @@ static double averageElapsedMs(const BenchmarkResult& result)
 
     return total / result.runs.size();
 }
+
+static QString averageRunMetric(const BenchmarkResult& result, qint64 BenchmarkRun::* metric)
+{
+    if (result.runs.isEmpty())
+        return QStringLiteral("-");
+
+    qint64 total = 0;
+
+    for (const BenchmarkRun& run : result.runs)
+        total += run.*metric;
+
+    return QString::number(static_cast<double>(total) / result.runs.size(), 'f', 1);
+}
+
+static constexpr int benchmarkTableWidth = 110;
 
 
 static void printResults(QList<BenchmarkResult> results, const SortColumn& sortColumn)
@@ -121,10 +170,21 @@ static void printResults(QList<BenchmarkResult> results, const SortColumn& sortC
     });
 
     qInfo().noquote() << "";
-    qInfo().noquote() << "=======================================================================";
-    qInfo().noquote() << "                         BENCHMARK RESULTS";
-    qInfo().noquote() << "=======================================================================";
-    qInfo().noquote() << "   # | MaxConcurrent | RPS | Cooldown | Runs | AvgElapsedMs | AvgSecs |";
+    qInfo().noquote() << QString(benchmarkTableWidth, QLatin1Char('='));
+    const QString title = QStringLiteral("BENCHMARK RESULTS");
+    qInfo().noquote() << QString((benchmarkTableWidth - title.size()) / 2, QLatin1Char(' ')) + title;
+    qInfo().noquote() << QString(benchmarkTableWidth, QLatin1Char('='));
+    qInfo().noquote() << QStringLiteral("%1 | %2 | %3 | %4 | %5 | %6 | %7 | %8 | %9 | %10 |")
+        .arg("#", 4)
+        .arg("MaxConcurrent", -13)
+        .arg("RPS", -3)
+        .arg("Cooldown", -8)
+        .arg("Runs", -4)
+        .arg("AvgAttempts", -11)
+        .arg("AvgUseful", -9)
+        .arg("AvgNonUseful", -12)
+        .arg("AvgElapsedMs", -12)
+        .arg("AvgSecs", -7);
 
     for (qsizetype i = 0; i < results.size(); ++i)
     {
@@ -132,16 +192,19 @@ static void printResults(QList<BenchmarkResult> results, const SortColumn& sortC
 
         const double avgElapsed = averageElapsedMs(result);
                               
-        qInfo().noquote() << "-----------------------------------------------------------------------";
-        qInfo().noquote() << QString("%1 | %2 | %3 | %4 | %5 | %6 | %7 |")
+        qInfo().noquote() << QString(benchmarkTableWidth, QLatin1Char('-'));
+        qInfo().noquote() << QString("%1 | %2 | %3 | %4 | %5 | %6 | %7 | %8 | %9 | %10 |")
             .arg(i + 1, 4)
             .arg(result.config.maxConcurrent, 13)
             .arg(result.config.requestsPerSecond, 3)
             .arg(result.config.requestCooldownMs, 8)
             .arg(result.runs.size(), 4)
+            .arg(averageRunMetric(result, &BenchmarkRun::requestAttempts), 11)
+            .arg(averageRunMetric(result, &BenchmarkRun::meaningfulReplies), 9)
+            .arg(averageRunMetric(result, &BenchmarkRun::meaninglessReplies), 12)
             .arg(avgElapsed, 12, 'f', 2)
             .arg(avgElapsed / 1000.0, 7, 'f', 2);
     }
 
-    qInfo().noquote() << "=======================================================================";
+    qInfo().noquote() << QString(benchmarkTableWidth, QLatin1Char('='));
 }

@@ -1,25 +1,27 @@
 #include "BenchmarkCommonData.h"
 
+#include <atomic>
+
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QDebug>
 #include <QElapsedTimer>
-#include <QFile>
-#include <QJsonArray>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QJsonValue>
 #include <QList>
 #include <QString>
 #include <QTimer>
 
-#include <WorkCoordinator.h>
-#include <RequestManager.h>
+#include <LinkedInParserStrategy/LinkedInParserStrategy.h>
+#include <LinkedInSearchUrlProvider.h>
 #include <NetworkManager.h>
+#include <Parser.h>
+#include <RequestManager.h>
 #include <RequestStrategy/LinkedInRequestStrategy.h>
+#include <Vacancy.h>
+#include <VacancySearchWorkflow.h>
 
-static constexpr qint64 waitBetweenTestsMs = 60 * 1000;
-static constexpr qint64 linksAmount = 100;
-static constexpr qint64 totalRuns = 5;
+static constexpr qsizetype WaitBetweenTestsMs = 60 * 1000;
+static constexpr qsizetype MaximumVacancies = 50;
+static constexpr qsizetype TotalRuns = 5;
 
 
 
@@ -31,47 +33,12 @@ public:
     {
         configurations =
         {
-            //{1, 1, 0},
-
-            {2, 2, 2000},
-            {2, 2, 3000},
-
-            {3, 3, 2000},
-
-            {4, 4, 2000},
-            {4, 4, 3000},
-
-            {4, 6, 2000},
-
-            {5, 5, 1500},
-            {5, 5, 2000},
-            {5, 5, 2500},
-            {5, 5, 3000},
-            {5, 5, 5000},
-
-            {5, 6, 2000},
-
-            {6, 5, 2000},
-
-            {6, 6, 1500},
-            {6, 6, 2000},
-            {6, 6, 2500},
-            {6, 6, 3000},
-            {6, 6, 5000},
-
-            {6, 7, 2000},
-
-            {7, 6, 2000},
-
-            {7, 7, 1500},
-            {7, 7, 2500},
-            {7, 7, 3000},
-            {7, 7, 5000},
-
-            {8, 6, 2000},
-
+            {8, 8, 2000},
             {8, 8, 3000},
+            {8, 8, 4000},
             {8, 8, 5000},
+            {8, 8, 6000},
+            {8, 8, 8000},
         };
     }
 
@@ -88,128 +55,170 @@ public:
 private:
     void runNext()
     {
-        if (configurationIndex >= configurations.size())
+        if (configurations.isEmpty() || scheduleIndex >= configurations.size() * TotalRuns)
         {
             printResults(results, SortColumn::ElapsedMs);
             QCoreApplication::quit();
             return;
         }
 
-        const BenchmarkConfig config = configurations[configurationIndex];
+        const qsizetype configurationCount = configurations.size();
+        const qsizetype runRoundIndex = scheduleIndex / configurationCount;
+        const qsizetype positionInRound = scheduleIndex % configurationCount;
+        // Rotate each round to spread configurations across different positions.
+        const qsizetype roundOffset = runRoundIndex * configurationCount / TotalRuns;
+
+        currentConfigurationIndex = (positionInRound + roundOffset) % configurationCount;
+        currentRunNumber = runRoundIndex + 1;
+
+        const BenchmarkConfig config = configurations[currentConfigurationIndex];
+
+        requestAttempts.store(0);
+        meaningfulReplies.store(0);
+        meaninglessReplies.store(0);
+        summariesParsed.store(0);
+        detailsParsed.store(0);
+        vacanciesCollected = 0;
 
         qInfo() << "";
         qInfo() << "========================================";
         qInfo() << "Starting benchmark";
-        qInfo() << "Run:               " << (runIndex + 1) << "/" << totalRuns;
+        qInfo() << "Run:               " << currentRunNumber << "/" << TotalRuns;
         qInfo() << "MaxConcurrent:     " << config.maxConcurrent;
         qInfo() << "RequestsPerSecond: " << config.requestsPerSecond;
         qInfo() << "RequestCooldownMs: " << config.requestCooldownMs;
         qInfo() << "========================================";
 
-        if (runIndex == 0)
-            results.append({config, {}});
-        networkManager = new NetworkManager(this);
-        strategy = new LinkedInRequestStrategy(networkManager, config.requestsPerSecond, config.requestCooldownMs, config.maxConcurrent, this);
-        requestManager = new RequestManager(*strategy, this);
-        workCoordinator = new WorkCoordinator(this);
+        LinkedInSearchUrlProvider* searchUrlProvider = new LinkedInSearchUrlProvider;
+        NetworkManager* networkManager = new NetworkManager;
+        LinkedInRequestStrategy* requestStrategy = new LinkedInRequestStrategy(
+            networkManager,
+            config.requestsPerSecond,
+            config.requestCooldownMs,
+            config.maxConcurrent
+        );
+        RequestManager* requestManager = new RequestManager(*requestStrategy);
+        LinkedInParserStrategy* parserStrategy = new LinkedInParserStrategy;
+        Parser* parser = new Parser(*parserStrategy);
 
-        QObject::connect(requestManager, &RequestManager::urlsEnqueued, workCoordinator, &WorkCoordinator::workStarted);
-        QObject::connect(requestManager, &RequestManager::urlsDequeued, workCoordinator, &WorkCoordinator::workFinished);
-
-        QObject::connect(requestManager, &RequestManager::requestsStarted, workCoordinator, &WorkCoordinator::workStarted);
-        QObject::connect(requestManager, &RequestManager::requestsFinished, workCoordinator, &WorkCoordinator::workFinished);
-
-        QObject::connect(requestManager, &RequestManager::meaningfulRepliesReceived, workCoordinator, &WorkCoordinator::workFinished);
-        QObject::connect(requestManager, &RequestManager::meaninglessRepliesReceived, workCoordinator, &WorkCoordinator::workFinished);
-
-        connect(workCoordinator, &WorkCoordinator::allActiveWorkFinished, this, [this]()
+        QObject::connect(requestManager, &RequestManager::requestsStarted, this, [this](int amount)
         {
-            finishCurrentBenchmark();
+            requestAttempts.fetch_add(amount);
+        }, Qt::DirectConnection);
+
+        QObject::connect(requestManager, &RequestManager::meaningfulRepliesReceived, this, [this](int amount)
+        {
+            meaningfulReplies.fetch_add(amount);
+        }, Qt::DirectConnection);
+
+        QObject::connect(requestManager, &RequestManager::meaninglessRepliesReceived, this, [this](int amount)
+        {
+            meaninglessReplies.fetch_add(amount);
+        }, Qt::DirectConnection);
+
+        QObject::connect(parser, &Parser::summaryParsed, this, [this](const Vacancy&)
+        {
+            summariesParsed.fetch_add(1);
+        }, Qt::DirectConnection);
+
+        QObject::connect(parser, &Parser::detailsParsed, this, [this](const Vacancy&)
+        {
+            detailsParsed.fetch_add(1);
+        }, Qt::DirectConnection);
+
+        workflow = new VacancySearchWorkflow(*searchUrlProvider, *requestManager, *parser, this);
+
+        QObject::connect(workflow, &VacancySearchWorkflow::vacanciesReady, this, [this](const QList<Vacancy>& vacancies)
+        {
+            vacanciesCollected = vacancies.size();
         });
 
+        connect(workflow, &VacancySearchWorkflow::allActiveWorkFinished, this, [this]()
+        {
+            finishCurrentBenchmark();
+        }, Qt::QueuedConnection);
+
         timer.start();
-
-        static QList<QUrl> urls = testUrls();
-
-        requestManager->addUrls(urls);
+        workflow->startSearch(QStringLiteral("C++"), QStringLiteral("Belgrade"), MaximumVacancies);
     }
 
     void finishCurrentBenchmark()
     {
         const qint64 elapsedMs = timer.elapsed();
-        const BenchmarkConfig config = configurations[configurationIndex];
-
-        ++runIndex;
+        const BenchmarkConfig config = configurations[currentConfigurationIndex];
+        const qint64 requestAttemptsValue = requestAttempts.load();
+        const qint64 meaningfulRepliesValue = meaningfulReplies.load();
+        const qint64 meaninglessRepliesValue = meaninglessReplies.load();
+        const qint64 unmatchedAttemptsValue = requestAttemptsValue - meaningfulRepliesValue - meaninglessRepliesValue;
 
         qInfo() << "Finished run:";
-        qInfo() << "  Run:               " << runIndex << "/" << totalRuns;
+        qInfo() << "  Run:               " << currentRunNumber << "/" << TotalRuns;
         qInfo() << "  MaxConcurrent:     " << config.maxConcurrent;
         qInfo() << "  RequestsPerSecond: " << config.requestsPerSecond;
         qInfo() << "  RequestCooldownMs: " << config.requestCooldownMs;
         qInfo() << "  Elapsed:           " << elapsedMs / 1000 << "secs";
+        qInfo() << "  Request attempts:  " << requestAttemptsValue;
+        qInfo() << "  Useful replies:    " << meaningfulRepliesValue;
+        qInfo() << "  Non-useful replies:" << meaninglessRepliesValue;
+        qInfo() << "  Unmatched attempts:" << unmatchedAttemptsValue;
+        const qint64 summariesParsedValue = summariesParsed.load();
+        const qint64 detailsParsedValue = detailsParsed.load();
 
-        const BenchmarkRun currentRun{runIndex, elapsedMs};
+        qInfo() << "  Summaries parsed:  " << summariesParsedValue;
+        qInfo() << "  Details parsed:    " << detailsParsedValue;
+        qInfo() << "  Vacancies collected:" << vacanciesCollected;
 
-        results.last().runs.append(currentRun);
+        const BenchmarkRun currentRun{
+            currentRunNumber,
+            elapsedMs,
+            requestAttemptsValue,
+            meaningfulRepliesValue,
+            meaninglessRepliesValue,
+            unmatchedAttemptsValue,
+            summariesParsedValue,
+            detailsParsedValue,
+            vacanciesCollected
+        };
 
-        saveResults(results, fileName);
+        qsizetype resultIndex = 0;
+        while (resultIndex < results.size() && !(results[resultIndex].config == config))
+            ++resultIndex;
+
+        if (resultIndex == results.size())
+            results.append({config, {}});
+
+        results[resultIndex].runs.append(currentRun);
+
+        if (!saveResults(results, fileName))
+            qWarning() << "Saving the current run failed; see the save error above.";
 
 
-        networkManager->deleteLater();
-        networkManager = nullptr;
+        workflow->deleteLater();
+        workflow = nullptr;
 
-        strategy->deleteLater();
-        strategy = nullptr;
-
-        requestManager->deleteLater();
-        requestManager = nullptr;
-        
-        workCoordinator->deleteLater();
-        workCoordinator = nullptr;
-
-        if (runIndex < totalRuns)
-        {
-            QTimer::singleShot(waitBetweenTestsMs, this, &BenchmarkRunner::runNext);
-            return;
-        }
-
-        runIndex = 0;
-        ++configurationIndex;
-
-        QTimer::singleShot(waitBetweenTestsMs, this, &BenchmarkRunner::runNext);
-    }
-
-    QList<QUrl> testUrls()
-    {
-        static const QString baseUrl = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=C%2B%2B&location=Serbia&start=%1";
-
-        QList<QUrl> urls;
-
-        for (unsigned n = 0; n < linksAmount; n++)
-        {
-            urls.append(baseUrl.arg(n));
-        }
-
-        return urls;
+        ++scheduleIndex;
+        QTimer::singleShot(WaitBetweenTestsMs, this, &BenchmarkRunner::runNext);
     }
 
 private:
-    WorkCoordinator* workCoordinator = nullptr;
-
-
-    NetworkManager* networkManager = nullptr;
-    LinkedInRequestStrategy* strategy = nullptr;
-    RequestManager* requestManager = nullptr;
+    VacancySearchWorkflow* workflow = nullptr;
 
     QList<BenchmarkConfig> configurations;
     QList<BenchmarkResult> results;
 
     
     QElapsedTimer timer;
-    qsizetype configurationIndex = 0;
-    qsizetype runIndex = 0;
+    qsizetype scheduleIndex = 0;
+    qsizetype currentConfigurationIndex = 0;
+    qsizetype currentRunNumber = 0;
 
     QString fileName;
+    std::atomic<qint64> requestAttempts = 0;
+    std::atomic<qint64> meaningfulReplies = 0;
+    std::atomic<qint64> meaninglessReplies = 0;
+    std::atomic<qint64> summariesParsed = 0;
+    std::atomic<qint64> detailsParsed = 0;
+    qint64 vacanciesCollected = 0;
 };
 
 int main(int argc, char* argv[])

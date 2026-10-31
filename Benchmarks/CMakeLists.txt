@@ -26,10 +26,14 @@ target_include_directories(LinkedInRequestManagerBenchmark
 
 target_link_libraries(LinkedInRequestManagerBenchmark
     PRIVATE
-        WorkCoordinator
+        Domain
+        LinkedInParserStrategy
         NetworkManager
         LinkedInRequestStrategy
+        LinkedInSearchUrlProvider
+        Parser
         RequestManager
+        VacancySearchWorkflow
         BenchmarkCommonData
         Qt6::Network
 )
@@ -39,7 +43,7 @@ set_target_properties(LinkedInRequestManagerBenchmark PROPERTIES FOLDER "Benchma
 
 
 add_executable(BenchmarkAnalyzer EXCLUDE_FROM_ALL
-    RequestManagerBenchmark/benchmarkAnalyzer.cpp
+    RequestManagerBenchmark/BenchmarkAnalyzer.cpp
 )
 
 target_link_libraries(BenchmarkAnalyzer
