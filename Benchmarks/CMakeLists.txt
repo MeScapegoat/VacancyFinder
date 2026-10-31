@@ -15,16 +15,16 @@ set_target_properties(BenchmarkCommonData PROPERTIES FOLDER "Benchmarks/RequestM
 
 
 
-add_executable(RequestManagerBenchmark EXCLUDE_FROM_ALL
-    RequestManagerBenchmark/benchmark.cpp
+add_executable(LinkedInRequestManagerBenchmark EXCLUDE_FROM_ALL
+    RequestManagerBenchmark/LinkedInRequestManagerBenchmark.cpp
 )
 
-target_include_directories(RequestManagerBenchmark
+target_include_directories(LinkedInRequestManagerBenchmark
     PRIVATE
         ${SOURCES_DIR_PATH}
 )
 
-target_link_libraries(RequestManagerBenchmark
+target_link_libraries(LinkedInRequestManagerBenchmark
     PRIVATE
         WorkCoordinator
         NetworkManager
@@ -34,7 +34,7 @@ target_link_libraries(RequestManagerBenchmark
         Qt6::Network
 )
 
-set_target_properties(RequestManagerBenchmark PROPERTIES FOLDER "Benchmarks/RequestManagerBenchmark")
+set_target_properties(LinkedInRequestManagerBenchmark PROPERTIES FOLDER "Benchmarks/RequestManagerBenchmark")
 
 
 
