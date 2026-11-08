@@ -1,5 +1,7 @@
 #include "LinkedInRequestStrategy.h"
 
+#include <algorithm>
+
 #include <QDebug>
 #include <QLoggingCategory>
 #include <QNetworkCookie>
@@ -8,8 +10,6 @@
 #include <QNetworkRequest>
 #include <QString>
 #include <QUrlQuery>
-
-#include <algorithm>
 
 namespace
 {
@@ -173,40 +173,19 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
         return;
     }
 
-    const QNetworkReply::NetworkError errorState = reply->error();
     const QUrl url = reply->url();
-    const QString errorMessage = reply->errorString();
     const QString html = reply->readAll();
-    const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
     qCDebug(LinkedInRequestStrategyLog) << "Received response for URL:" << url;
 
-    reply->deleteLater();
-
-    if (errorState != QNetworkReply::NoError)
+    if (handleNetworkError(reply))
     {
-
-        switch (statusCode)
-        {
-            case TooManyRequestsStatusCode:
-            {
-                qCWarning(LinkedInRequestStrategyLog) << "Request was rate limited; retrying after" << m_requestCooldown << "ms:" << url;
-                m_requestCooldownTimer.start(m_requestCooldown);
-                addUrl(url);
-                break;
-            }
-            default:
-            {
-                qCWarning(LinkedInRequestStrategyLog) << "Request failed for" << url << "with network error" << errorState << errorMessage << "and HTTP status" << statusCode;
-                break;
-            }
-        }
-
-        emit meaninglessRepliesReceived();
         emitSummaryRequestsFinishedIfNeeded();
+
+        reply->deleteLater();
         return;
     }
-
+    reply->deleteLater();
 
     initCookies(url);
 
@@ -222,9 +201,31 @@ void LinkedInRequestStrategy::handleReceivedReply(QNetworkReply * reply)
     emitSummaryRequestsFinishedIfNeeded();
 }
 
+void LinkedInRequestStrategy::handleHttpStatusCode(QNetworkReply* reply)
+{
+    const QUrl url = reply->url();
+    const int statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+
+    switch (statusCode)
+    {
+        case TooManyRequestsStatusCode:
+        {
+            qCWarning(LinkedInRequestStrategyLog) << "Request was rate limited; retrying after" << m_requestCooldown << "ms:" << url;
+            m_requestCooldownTimer.start(m_requestCooldown);
+            addUrl(url);
+            break;
+        }
+        default:
+        {
+            AbstractRequestStrategy::handleHttpStatusCode(reply);
+            break;
+        }
+    }
+}
+
 bool LinkedInRequestStrategy::enqueueUrl(const QUrl& url)
 {
-    const UrlType urlType = clasifyUrl(url);
+    const UrlType urlType = classifyUrl(url);
     switch (urlType)
     {
         case UrlType::Summary:
@@ -333,7 +334,7 @@ void LinkedInRequestStrategy::initCookies(const QUrl& url)
 
 bool LinkedInRequestStrategy::updateSummaryUrlCutoff(const QString& html, const QUrl& url)
 {
-    if (clasifyUrl(url) != UrlType::Summary)
+    if (classifyUrl(url) != UrlType::Summary)
     {
         return false;
     }
@@ -362,14 +363,6 @@ bool LinkedInRequestStrategy::updateSummaryUrlCutoff(const QString& html, const 
     qCDebug(LinkedInRequestStrategyLog) << "Removed" << removed << "later result pages after an empty page at offset" << start;
 
     return true;
-}
-
-UrlType clasifyUrl(const QUrl& url)
-{
-    if (url.hasQuery())
-        return UrlType::Summary;
-
-    return UrlType::Details;
 }
 
 int getStart(const QUrl& url)

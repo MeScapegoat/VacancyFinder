@@ -10,6 +10,7 @@ target_include_directories(AbstractRequestStrategy PUBLIC
 target_link_libraries(AbstractRequestStrategy 
     PUBLIC 
         Qt6::Core
+        Qt6::Network
         AbstractNetworkManager
 )
 
@@ -29,7 +30,6 @@ target_include_directories(LinkedInRequestStrategy PUBLIC
 target_link_libraries(LinkedInRequestStrategy 
     PRIVATE
         AbstractRequestStrategy
-        Qt6::Network
 )
 
 set_target_properties(LinkedInRequestStrategy PROPERTIES FOLDER "src/Network/RequestStrategy")

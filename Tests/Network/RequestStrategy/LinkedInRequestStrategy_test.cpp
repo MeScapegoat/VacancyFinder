@@ -560,12 +560,12 @@ TEST_F(LinkedInRequestStrategyTest, ResetAllowsSummaryRequestsFinishedToEmitAgai
 
 TEST_F(LinkedInRequestStrategyTest, ClassifyUrlWithQueryAsSummary)
 {
-    EXPECT_EQ(clasifyUrl(summaryUrl()), UrlType::Summary);
+    EXPECT_EQ(strategy->classifyUrl(summaryUrl()), UrlType::Summary);
 }
 
 TEST_F(LinkedInRequestStrategyTest, ClassifyUrlWithoutQueryAsDetails)
 {
-    EXPECT_EQ(clasifyUrl(detailsUrl()), UrlType::Details);
+    EXPECT_EQ(strategy->classifyUrl(detailsUrl()), UrlType::Details);
 }
 
 TEST_F(LinkedInRequestStrategyTest, GetStartExtractsStartParameter)

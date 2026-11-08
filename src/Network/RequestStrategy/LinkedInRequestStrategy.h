@@ -1,7 +1,5 @@
 #pragma once
 
-#include "AbstractRequestStrategy.h"
-
 #include <QLoggingCategory>
 #include <QNetworkAccessManager>
 #include <QQueue>
@@ -9,14 +7,9 @@
 #include <QTimer>
 #include <QUrl>
 
-Q_DECLARE_LOGGING_CATEGORY(LinkedInRequestStrategyLog);
+#include "AbstractRequestStrategy.h"
 
-enum class UrlType
-{
-    Unknown = 0,
-    Summary,
-    Details
-};
+Q_DECLARE_LOGGING_CATEGORY(LinkedInRequestStrategyLog);
 
 class QNetworkReply;
 
@@ -44,6 +37,9 @@ public slots:
     void interrupt() override;
 
     void handleReceivedReply(QNetworkReply* reply) override;
+
+protected:
+    void handleHttpStatusCode(QNetworkReply* reply) override;
 
 private:
     void init();
@@ -88,6 +84,5 @@ private:
 };
 
 
-UrlType clasifyUrl(const QUrl& url);
 int getStart(const QUrl& url);
 bool isAfterStart(int start, const QUrl& url);

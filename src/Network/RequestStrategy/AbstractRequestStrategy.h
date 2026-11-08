@@ -1,16 +1,22 @@
 #pragma once
 
+#include <QList>
+#include <QLoggingCategory>
 #include <QObject>
-
 #include <QUrl>
 
 #include <AbstractNetworkManager.h>
 
-#include <memory>
+enum class UrlType
+{
+    Unknown = 0,
+    Summary,
+    Details
+};
 
+Q_DECLARE_LOGGING_CATEGORY(RequestStrategyLog);
 
 class QNetworkReply;
-
 
 class AbstractRequestStrategy : public QObject
 {
@@ -21,6 +27,7 @@ public:
 
 public:
     virtual void startNext() = 0;
+    virtual UrlType classifyUrl(const QUrl& url) const;
 
 public slots:
     virtual void reset();
@@ -47,6 +54,9 @@ signals:
     void receivedReply(const QString& html, const QUrl& url);
 
 protected:
+    virtual bool handleNetworkError(QNetworkReply* reply);
+    virtual void handleHttpStatusCode(QNetworkReply* reply);
+
     bool m_isInterrupted;
     AbstractNetworkManager* m_networkManager;
 };
