@@ -1,5 +1,3 @@
-#include "BenchmarkCommonData.h"
-
 #include <atomic>
 
 #include <QCoreApplication>
@@ -10,18 +8,21 @@
 #include <QString>
 #include <QTimer>
 
+#include "BenchmarkCommonData.h"
+#include "BenchmarkLinkedInRequestStrategy.h"
 #include <LinkedInParserStrategy/LinkedInParserStrategy.h>
 #include <LinkedInSearchUrlProvider.h>
 #include <NetworkManager.h>
 #include <Parser.h>
 #include <RequestManager.h>
-#include <RequestStrategy/LinkedInRequestStrategy.h>
 #include <Vacancy.h>
 #include <VacancySearchWorkflow.h>
 
 static constexpr qsizetype WaitBetweenTestsMs = 60 * 1000;
-static constexpr qsizetype MaximumVacancies = 50;
-static constexpr qsizetype TotalRuns = 5;
+static constexpr qsizetype MaximumVacancies = 1000;
+static constexpr qsizetype TotalRuns = 1;
+static const QString SearchKeywords = QStringLiteral("2d concept artists");
+static const QString SearchLocation = QStringLiteral("");
 
 
 
@@ -33,12 +34,14 @@ public:
     {
         configurations =
         {
-            {8, 8, 2000},
-            {8, 8, 3000},
-            {8, 8, 4000},
-            {8, 8, 5000},
-            {8, 8, 6000},
-            {8, 8, 8000},
+            {4, 10, 5000},
+            {4, 11, 5000},
+            {4, 12, 5000},
+            {4, 14, 5000},
+            {5, 10, 5000},
+            {6, 10, 5000},
+            {4, 10, 4500},
+            {4, 10, 4000},
         };
     }
 
@@ -87,11 +90,14 @@ private:
         qInfo() << "MaxConcurrent:     " << config.maxConcurrent;
         qInfo() << "RequestsPerSecond: " << config.requestsPerSecond;
         qInfo() << "RequestCooldownMs: " << config.requestCooldownMs;
+        qInfo() << "Maximum vacancies: " << MaximumVacancies;
+        qInfo() << "Keywords:          " << SearchKeywords;
+        qInfo() << "Location:          " << SearchLocation;
         qInfo() << "========================================";
 
         LinkedInSearchUrlProvider* searchUrlProvider = new LinkedInSearchUrlProvider;
         NetworkManager* networkManager = new NetworkManager;
-        LinkedInRequestStrategy* requestStrategy = new LinkedInRequestStrategy(
+        requestStrategy = new BenchmarkLinkedInRequestStrategy(
             networkManager,
             config.requestsPerSecond,
             config.requestCooldownMs,
@@ -139,7 +145,7 @@ private:
         }, Qt::QueuedConnection);
 
         timer.start();
-        workflow->startSearch(QStringLiteral("C++"), QStringLiteral("Belgrade"), MaximumVacancies);
+        workflow->startSearch(SearchKeywords, SearchLocation, MaximumVacancies);
     }
 
     void finishCurrentBenchmark()
@@ -167,6 +173,20 @@ private:
         qInfo() << "  Summaries parsed:  " << summariesParsedValue;
         qInfo() << "  Details parsed:    " << detailsParsedValue;
         qInfo() << "  Vacancies collected:" << vacanciesCollected;
+        const double vacanciesPerMinute = elapsedMs > 0
+            ? static_cast<double>(vacanciesCollected) * 60'000 / elapsedMs
+            : 0.0;
+        qInfo() << "  Vacancies/min:     " << vacanciesPerMinute;
+
+        const BenchmarkRequestStatistics requestStatistics = requestStrategy->statistics();
+        qInfo() << "  HTTP successful:  " << requestStatistics.successfulResponses;
+        qInfo() << "  HTTP 429:         " << requestStatistics.rateLimitedResponses;
+        qInfo() << "  429 with Retry-After:" << requestStatistics.rateLimitedResponsesWithRetryAfter;
+        qInfo() << "  429 without Retry-After:" << requestStatistics.rateLimitedResponsesWithoutRetryAfter;
+        qInfo() << "  Retry-After values/counts:" << requestStatistics.retryAfterHeaderCounts;
+        qInfo() << "  Other failures:   " << requestStatistics.failedResponses;
+        qInfo() << "  Empty summary:    " << requestStatistics.emptySummaryResponses;
+        qInfo() << "  Cooldown time:    " << requestStatistics.totalCooldownTimeMs << "ms";
 
         const BenchmarkRun currentRun{
             currentRunNumber,
@@ -177,7 +197,18 @@ private:
             unmatchedAttemptsValue,
             summariesParsedValue,
             detailsParsedValue,
-            vacanciesCollected
+            vacanciesCollected,
+            requestStatistics.successfulResponses,
+            requestStatistics.rateLimitedResponses,
+            requestStatistics.rateLimitedResponsesWithRetryAfter,
+            requestStatistics.rateLimitedResponsesWithoutRetryAfter,
+            requestStatistics.retryAfterHeaderCounts,
+            requestStatistics.failedResponses,
+            requestStatistics.emptySummaryResponses,
+            requestStatistics.totalCooldownTimeMs,
+            MaximumVacancies,
+            SearchKeywords,
+            SearchLocation
         };
 
         qsizetype resultIndex = 0;
@@ -195,13 +226,18 @@ private:
 
         workflow->deleteLater();
         workflow = nullptr;
+        requestStrategy = nullptr;
 
         ++scheduleIndex;
-        QTimer::singleShot(WaitBetweenTestsMs, this, &BenchmarkRunner::runNext);
+        if (scheduleIndex >= configurations.size() * TotalRuns)
+            runNext();
+        else
+            QTimer::singleShot(WaitBetweenTestsMs, this, &BenchmarkRunner::runNext);
     }
 
 private:
     VacancySearchWorkflow* workflow = nullptr;
+    BenchmarkLinkedInRequestStrategy* requestStrategy = nullptr;
 
     QList<BenchmarkConfig> configurations;
     QList<BenchmarkResult> results;

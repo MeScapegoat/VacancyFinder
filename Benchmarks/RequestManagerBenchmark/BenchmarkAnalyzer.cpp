@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -7,8 +9,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonValue>
-
-#include <algorithm>
+#include <QMap>
 
 #include "BenchmarkCommonData.h"
 
@@ -30,6 +31,14 @@ static QList<BenchmarkRun> readRuns(const QJsonArray& array)
     for (const QJsonValue& value : array)
     {
         const QJsonObject object = value.toObject();
+        QMap<QString, qint64> retryAfterHeaderCounts;
+        const QJsonObject retryAfterHeaderCountsObject = object["retryAfterHeaderCounts"].toObject();
+        for (QJsonObject::const_iterator it = retryAfterHeaderCountsObject.constBegin();
+             it != retryAfterHeaderCountsObject.constEnd();
+             ++it)
+        {
+            retryAfterHeaderCounts.insert(it.key(), it.value().toInteger());
+        }
 
         runs.append({
             object["run"].toInt(),
@@ -41,6 +50,17 @@ static QList<BenchmarkRun> readRuns(const QJsonArray& array)
             object["summariesParsed"].toInteger(),
             object["detailsParsed"].toInteger(),
             object["vacanciesCollected"].toInteger(),
+            object["successfulHttpResponses"].toInteger(),
+            object["rateLimitedResponses"].toInteger(),
+            object["rateLimitedResponsesWithRetryAfter"].toInteger(),
+            object["rateLimitedResponsesWithoutRetryAfter"].toInteger(),
+            retryAfterHeaderCounts,
+            object["failedResponses"].toInteger(),
+            object["emptySummaryResponses"].toInteger(),
+            object["totalCooldownTimeMs"].toInteger(),
+            object["requestedMaximumVacancies"].toInteger(),
+            object["searchKeywords"].toString(),
+            object["searchLocation"].toString(),
         });
     }
 

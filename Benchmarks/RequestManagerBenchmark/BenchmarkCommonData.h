@@ -8,6 +8,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QList>
+#include <QMap>
 #include <QSaveFile>
 #include <QString>
 #include <QtGlobal>
@@ -37,6 +38,17 @@ struct BenchmarkRun
     qint64 summariesParsed;
     qint64 detailsParsed;
     qint64 vacanciesCollected;
+    qint64 successfulHttpResponses;
+    qint64 rateLimitedResponses;
+    qint64 rateLimitedResponsesWithRetryAfter;
+    qint64 rateLimitedResponsesWithoutRetryAfter;
+    QMap<QString, qint64> retryAfterHeaderCounts;
+    qint64 failedResponses;
+    qint64 emptySummaryResponses;
+    qint64 totalCooldownTimeMs;
+    qint64 requestedMaximumVacancies;
+    QString searchKeywords;
+    QString searchLocation;
 };
 
 struct BenchmarkResult
@@ -83,6 +95,24 @@ static bool saveResults(const QList<BenchmarkResult>& results, const QString& fi
             runObject["summariesParsed"] = run.summariesParsed;
             runObject["detailsParsed"] = run.detailsParsed;
             runObject["vacanciesCollected"] = run.vacanciesCollected;
+            runObject["successfulHttpResponses"] = run.successfulHttpResponses;
+            runObject["rateLimitedResponses"] = run.rateLimitedResponses;
+            runObject["rateLimitedResponsesWithRetryAfter"] = run.rateLimitedResponsesWithRetryAfter;
+            runObject["rateLimitedResponsesWithoutRetryAfter"] = run.rateLimitedResponsesWithoutRetryAfter;
+            QJsonObject retryAfterHeaderCounts;
+            for (QMap<QString, qint64>::const_iterator it = run.retryAfterHeaderCounts.cbegin();
+                 it != run.retryAfterHeaderCounts.cend();
+                 ++it)
+            {
+                retryAfterHeaderCounts[it.key()] = it.value();
+            }
+            runObject["retryAfterHeaderCounts"] = retryAfterHeaderCounts;
+            runObject["failedResponses"] = run.failedResponses;
+            runObject["emptySummaryResponses"] = run.emptySummaryResponses;
+            runObject["totalCooldownTimeMs"] = run.totalCooldownTimeMs;
+            runObject["requestedMaximumVacancies"] = run.requestedMaximumVacancies;
+            runObject["searchKeywords"] = run.searchKeywords;
+            runObject["searchLocation"] = run.searchLocation;
 
             runs.append(runObject);
         }
@@ -144,7 +174,7 @@ static QString averageRunMetric(const BenchmarkResult& result, qint64 BenchmarkR
     return QString::number(static_cast<double>(total) / result.runs.size(), 'f', 1);
 }
 
-static constexpr int benchmarkTableWidth = 110;
+static constexpr int benchmarkTableWidth = 128;
 
 
 static void printResults(QList<BenchmarkResult> results, const SortColumn& sortColumn)
@@ -174,7 +204,7 @@ static void printResults(QList<BenchmarkResult> results, const SortColumn& sortC
     const QString title = QStringLiteral("BENCHMARK RESULTS");
     qInfo().noquote() << QString((benchmarkTableWidth - title.size()) / 2, QLatin1Char(' ')) + title;
     qInfo().noquote() << QString(benchmarkTableWidth, QLatin1Char('='));
-    qInfo().noquote() << QStringLiteral("%1 | %2 | %3 | %4 | %5 | %6 | %7 | %8 | %9 | %10 |")
+    qInfo().noquote() << QStringLiteral("%1 | %2 | %3 | %4 | %5 | %6 | %7 | %8 | %9 | %10 | %11 |")
         .arg("#", 4)
         .arg("MaxConcurrent", -13)
         .arg("RPS", -3)
@@ -184,7 +214,8 @@ static void printResults(QList<BenchmarkResult> results, const SortColumn& sortC
         .arg("AvgUseful", -9)
         .arg("AvgNonUseful", -12)
         .arg("AvgElapsedMs", -12)
-        .arg("AvgSecs", -7);
+        .arg("AvgSecs", -7)
+        .arg("AvgVacancies", -12);
 
     for (qsizetype i = 0; i < results.size(); ++i)
     {
@@ -193,7 +224,7 @@ static void printResults(QList<BenchmarkResult> results, const SortColumn& sortC
         const double avgElapsed = averageElapsedMs(result);
                               
         qInfo().noquote() << QString(benchmarkTableWidth, QLatin1Char('-'));
-        qInfo().noquote() << QString("%1 | %2 | %3 | %4 | %5 | %6 | %7 | %8 | %9 | %10 |")
+        qInfo().noquote() << QString("%1 | %2 | %3 | %4 | %5 | %6 | %7 | %8 | %9 | %10 | %11 |")
             .arg(i + 1, 4)
             .arg(result.config.maxConcurrent, 13)
             .arg(result.config.requestsPerSecond, 3)
@@ -203,7 +234,8 @@ static void printResults(QList<BenchmarkResult> results, const SortColumn& sortC
             .arg(averageRunMetric(result, &BenchmarkRun::meaningfulReplies), 9)
             .arg(averageRunMetric(result, &BenchmarkRun::meaninglessReplies), 12)
             .arg(avgElapsed, 12, 'f', 2)
-            .arg(avgElapsed / 1000.0, 7, 'f', 2);
+            .arg(avgElapsed / 1000.0, 7, 'f', 2)
+            .arg(averageRunMetric(result, &BenchmarkRun::vacanciesCollected), 12);
     }
 
     qInfo().noquote() << QString(benchmarkTableWidth, QLatin1Char('='));

@@ -16,6 +16,8 @@ set_target_properties(BenchmarkCommonData PROPERTIES FOLDER "Benchmarks/RequestM
 
 
 add_executable(LinkedInRequestManagerBenchmark EXCLUDE_FROM_ALL
+    RequestManagerBenchmark/BenchmarkLinkedInRequestStrategy.h
+    RequestManagerBenchmark/BenchmarkLinkedInRequestStrategy.cpp
     RequestManagerBenchmark/LinkedInRequestManagerBenchmark.cpp
 )
 
@@ -28,8 +30,9 @@ target_link_libraries(LinkedInRequestManagerBenchmark
     PRIVATE
         Domain
         LinkedInParserStrategy
-        NetworkManager
         LinkedInRequestStrategy
+        NetworkManager
+        AbstractRequestStrategy
         LinkedInSearchUrlProvider
         Parser
         RequestManager
